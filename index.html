@@ -1,0 +1,351 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#2f6f64" />
+    <title>회원 관리</title>
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <link rel="icon" href="/icon.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="/icon.svg" />
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <aside class="sidebar">
+        <div class="brand">
+          <div class="brand-mark">M</div>
+          <div>
+            <p class="eyebrow">Member Desk</p>
+            <h1 id="sidebarTitle">오늘 회원</h1>
+          </div>
+        </div>
+
+        <div class="search-box">
+          <span aria-hidden="true">⌕</span>
+          <input id="memberSearch" type="search" placeholder="오늘 회원 검색" />
+        </div>
+
+        <div class="filters" role="tablist" aria-label="회원 보기">
+          <button class="filter active" data-member-view="today" type="button">오늘</button>
+          <button class="filter" data-member-view="all" type="button">전체</button>
+        </div>
+
+        <button class="primary-action" id="openMemberModal" type="button">
+          <span aria-hidden="true">＋</span>
+          <span>회원 추가</span>
+        </button>
+
+        <div id="memberList" class="member-list" aria-live="polite"></div>
+      </aside>
+
+      <main class="main">
+        <header class="topbar">
+          <div>
+            <p class="eyebrow" id="todayLabel"></p>
+            <h2>오늘 요약</h2>
+          </div>
+          <div class="topbar-actions">
+            <button id="openLessonSettings" class="settings-button" type="button">설정</button>
+            <button id="saveNow" class="settings-button" type="button">저장</button>
+            <button id="exportData" class="settings-button" type="button">백업</button>
+            <button id="openSheetsModal" class="settings-button" type="button">시트</button>
+            <label class="icon-button import-button" title="데이터 가져오기">
+              ⇧
+              <input id="importData" type="file" accept="application/json" />
+            </label>
+          </div>
+        </header>
+
+        <section class="stats-grid ops-strip" aria-label="요약">
+          <article class="stat">
+            <span>수업</span>
+            <strong id="todayClasses">0</strong>
+          </article>
+          <article class="stat">
+            <span>부족</span>
+            <strong id="lowBalance">0</strong>
+          </article>
+          <article class="stat">
+            <span>월 결제</span>
+            <strong id="monthlyRevenue">0원</strong>
+          </article>
+        </section>
+
+        <section class="panel timetable-panel">
+          <div class="timetable-head">
+            <div>
+              <p class="eyebrow" id="timetableRangeLabel"></p>
+              <h3>시간표</h3>
+            </div>
+            <div class="view-toggle" role="tablist" aria-label="시간표 보기">
+              <button class="view-option active" type="button" data-view="focus">3일 보기</button>
+              <button class="view-option" type="button" data-view="week">전체 보기</button>
+            </div>
+          </div>
+          <div id="timetableGrid" class="timetable-grid" aria-live="polite"></div>
+        </section>
+
+        <section class="workspace">
+          <div class="panel member-detail">
+            <div id="emptyState" class="empty-state">
+              <h3>회원을 선택하세요</h3>
+              <p>왼쪽 목록에서 회원을 누르면 출석, 결제, 시간표가 바로 보입니다.</p>
+            </div>
+
+            <div id="detailView" class="hidden">
+              <div class="detail-head">
+                <div>
+                  <p class="eyebrow" id="memberStatus"></p>
+                  <h3 id="memberName"></h3>
+                  <p id="memberMeta" class="muted"></p>
+                </div>
+                <div class="balance-chip">
+                  <span>남은 횟수</span>
+                  <strong id="memberBalance">0</strong>
+                </div>
+              </div>
+
+              <div class="quick-actions">
+                <button id="markAttendance" class="action-button" type="button">출석 기록</button>
+                <button id="openPaymentModal" class="action-button" type="button">결제 추가</button>
+                <button id="openScheduleModal" class="action-button" type="button">시간표 추가</button>
+                <button id="deleteMember" class="danger-button" type="button">삭제</button>
+              </div>
+
+              <div class="detail-tabs" role="tablist" aria-label="회원 상세">
+                <button class="detail-tab active" type="button" data-panel="schedule">시간표</button>
+                <button class="detail-tab" type="button" data-panel="attendance">출석</button>
+                <button class="detail-tab" type="button" data-panel="payment">결제</button>
+              </div>
+
+              <div class="detail-panels">
+                <section class="detail-panel active" data-panel="schedule">
+                  <div class="section-title">
+                    <h4>시간표</h4>
+                  </div>
+                  <div id="scheduleList" class="stack-list"></div>
+                </section>
+
+                <section class="detail-panel" data-panel="attendance">
+                  <div class="section-title">
+                    <h4>최근 출석</h4>
+                  </div>
+                  <div id="attendanceList" class="stack-list"></div>
+                </section>
+
+                <section class="detail-panel" data-panel="payment">
+                  <div class="section-title">
+                    <h4>결제 기록</h4>
+                  </div>
+                  <div id="paymentList" class="table-like"></div>
+                </section>
+              </div>
+            </div>
+          </div>
+
+          <aside class="panel day-panel">
+            <div class="section-title">
+              <h3>오늘 시간표</h3>
+              <span id="todayCount" class="count-pill">0</span>
+            </div>
+            <div id="todaySchedule" class="today-schedule"></div>
+          </aside>
+        </section>
+      </main>
+    </div>
+
+    <dialog id="memberModal" class="modal">
+      <form id="memberForm" method="dialog">
+        <div class="modal-head">
+          <h3>회원 추가</h3>
+          <button class="close-button" value="cancel" type="button" data-close="memberModal">×</button>
+        </div>
+        <label>
+          이름
+          <input name="name" required autocomplete="off" />
+        </label>
+        <label>
+          연락처
+          <input name="phone" autocomplete="off" />
+        </label>
+        <label>
+          메모
+          <textarea name="memo" rows="3"></textarea>
+        </label>
+        <div class="modal-actions">
+          <button class="secondary-button" value="cancel" type="button" data-close="memberModal">취소</button>
+          <button class="primary-action" type="submit">저장</button>
+        </div>
+      </form>
+    </dialog>
+
+    <dialog id="paymentModal" class="modal">
+      <form id="paymentForm" method="dialog">
+        <div class="modal-head">
+          <h3>결제 추가</h3>
+          <button class="close-button" value="cancel" type="button" data-close="paymentModal">×</button>
+        </div>
+        <label>
+          레슨 종류
+          <select name="lessonType" required>
+            <option value="">선택</option>
+          </select>
+        </label>
+        <div class="form-row">
+          <label>
+            날짜
+            <input name="date" type="date" required />
+          </label>
+          <label>
+            횟수
+            <input name="sessions" type="number" min="0.5" step="0.5" required />
+          </label>
+        </div>
+        <div class="form-row">
+          <label>
+            할인
+            <select name="discountOption">
+              <option value="0" data-method="">할인 없음</option>
+              <option value="5" data-method="현금">현금 5%</option>
+              <option value="10" data-method="현금">현금 10%</option>
+              <option value="20" data-method="현금">현금 20%</option>
+              <option value="5" data-method="계좌이체">계좌이체 5%</option>
+              <option value="10" data-method="계좌이체">계좌이체 10%</option>
+              <option value="20" data-method="계좌이체">계좌이체 20%</option>
+            </select>
+          </label>
+          <label>
+            금액
+            <input name="amount" type="number" min="0" step="1000" required />
+          </label>
+        </div>
+        <label>
+          메모
+          <input name="memo" autocomplete="off" />
+        </label>
+        <div class="modal-actions">
+          <button class="secondary-button" value="cancel" type="button" data-close="paymentModal">취소</button>
+          <button class="primary-action" type="submit">저장</button>
+        </div>
+      </form>
+    </dialog>
+
+    <dialog id="lessonSettingsModal" class="modal wide-modal">
+      <form id="lessonSettingsForm" method="dialog">
+        <div class="modal-head">
+          <h3>레슨 설정</h3>
+          <button class="close-button" value="cancel" type="button" data-close="lessonSettingsModal">×</button>
+        </div>
+        <div class="lesson-settings-head">
+          <span>레슨 종류</span>
+          <span>금액</span>
+          <span>횟수</span>
+          <span></span>
+        </div>
+        <div id="lessonSettingsList" class="lesson-settings-list"></div>
+        <div class="modal-actions split-actions">
+          <button id="addLessonType" class="secondary-button" type="button">항목 추가</button>
+          <span>
+            <button class="secondary-button" value="cancel" type="button" data-close="lessonSettingsModal">취소</button>
+            <button class="primary-action" type="submit">저장</button>
+          </span>
+        </div>
+      </form>
+    </dialog>
+
+    <dialog id="sheetsModal" class="modal">
+      <form method="dialog">
+        <div class="modal-head">
+          <h3>구글 시트 연결</h3>
+          <button class="close-button" value="cancel" type="button" data-close="sheetsModal">×</button>
+        </div>
+        <div class="sheet-actions">
+          <button id="exportSheetCsv" class="primary-action" type="button">시트 CSV 내보내기</button>
+          <label class="secondary-button file-button">
+            시트 CSV 가져오기
+            <input id="importSheetCsv" type="file" accept=".csv,text/csv" />
+          </label>
+        </div>
+        <label>
+          회원 명단 붙여넣기
+          <textarea id="pasteMembersText" rows="7" placeholder="이름	연락처	메모&#10;김철수	010-0000-0000	월 저녁"></textarea>
+        </label>
+        <button id="importPastedMembers" class="primary-action" type="button">붙여넣은 명단 추가</button>
+        <label>
+          시간표 붙여넣기
+          <textarea id="pasteTimetableText" rows="7" placeholder="시간	월		비고	화		비고 ...&#10;6:00	최원		보강	김민진		"></textarea>
+        </label>
+        <button id="importPastedTimetable" class="primary-action" type="button">붙여넣은 시간표 적용</button>
+        <p class="modal-note">구글 시트에서 CSV로 내려받은 파일을 가져오거나, 이 앱 데이터를 CSV로 내보내 시트에 업로드할 수 있습니다.</p>
+        <div class="modal-actions">
+          <button class="secondary-button" value="cancel" type="button" data-close="sheetsModal">닫기</button>
+        </div>
+      </form>
+    </dialog>
+
+    <dialog id="scheduleModal" class="modal">
+      <form id="scheduleForm" method="dialog">
+        <div class="modal-head">
+          <h3>시간표 추가</h3>
+          <button class="close-button" value="cancel" type="button" data-close="scheduleModal">×</button>
+        </div>
+        <div class="form-row">
+          <label>
+            요일
+            <select name="day" required>
+              <option value="1">월</option>
+              <option value="2">화</option>
+              <option value="3">수</option>
+              <option value="4">목</option>
+              <option value="5">금</option>
+              <option value="6">토</option>
+              <option value="0">일</option>
+            </select>
+          </label>
+          <label>
+            시간
+            <input name="time" type="time" required />
+          </label>
+        </div>
+        <label>
+          수업명
+          <input name="className" autocomplete="off" placeholder="예: 필라테스 A" />
+        </label>
+        <label>
+          레슨 타입
+          <select name="scheduleLessonType"></select>
+        </label>
+        <label>
+          비고
+          <select name="scheduleStatus">
+            <option value="">일반</option>
+            <option value="결석">결석</option>
+            <option value="보강">보강</option>
+            <option value="보강완료">보강완료</option>
+            <option value="당일취소">당일취소</option>
+          </select>
+        </label>
+        <fieldset class="member-picker">
+          <legend>참여 회원</legend>
+          <div id="scheduleMemberOptions" class="member-options"></div>
+        </fieldset>
+        <div class="modal-actions">
+          <button class="secondary-button" value="cancel" type="button" data-close="scheduleModal">취소</button>
+          <button class="primary-action" type="submit">저장</button>
+        </div>
+      </form>
+    </dialog>
+
+    <script src="./supabase-config.js"></script>
+    <script src="./attendance-data.js"></script>
+    <script src="./app.js"></script>
+    <script>
+      if ("serviceWorker" in navigator) {
+        window.addEventListener("load", () => {
+          navigator.serviceWorker.register("/service-worker.js").catch(() => {});
+        });
+      }
+    </script>
+  </body>
+</html>

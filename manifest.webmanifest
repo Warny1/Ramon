@@ -1,0 +1,20 @@
+{
+  "name": "회원 관리",
+  "short_name": "회원관리",
+  "description": "회원 시간표, 출석, 결제, 남은 횟수를 관리하는 앱",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#f7f5ef",
+  "theme_color": "#2f6f64",
+  "orientation": "any",
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["business", "productivity"]
+}
