@@ -297,7 +297,7 @@ h4 {
 }
 
 .ops-strip {
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
 .stat {
@@ -585,6 +585,16 @@ h4 {
   border-radius: 8px;
   background: var(--panel);
   box-shadow: var(--shadow);
+}
+
+.payment-overview-panel {
+  margin-bottom: 16px;
+  padding: 18px;
+}
+
+.revenue-total {
+  color: var(--success);
+  font-size: 22px;
 }
 
 .member-detail {
@@ -1186,7 +1196,7 @@ select:focus {
 
   .stats-grid,
   .ops-strip {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 8px;
   }
 
@@ -1230,6 +1240,10 @@ select:focus {
     margin-bottom: 10px;
   }
 
+  .timetable-panel .view-toggle {
+    display: none;
+  }
+
   .view-toggle {
     grid-template-columns: repeat(2, 1fr);
   }
@@ -1240,8 +1254,9 @@ select:focus {
   }
 
   .schedule-table {
-    grid-template-columns: 58px repeat(var(--day-count), minmax(148px, 1fr));
-    min-width: 500px;
+    grid-template-columns: 58px repeat(var(--day-count), minmax(0, 1fr));
+    min-width: 0;
+    width: 100%;
   }
 
   .week-table {
@@ -1387,7 +1402,7 @@ select:focus {
     bottom: 0;
     z-index: 9;
     display: grid;
-    grid-template-columns: repeat(4, 1fr);
+    grid-template-columns: repeat(5, 1fr);
     gap: 4px;
     border-top: 1px solid var(--line);
     background: rgba(255, 255, 255, 0.96);
@@ -1412,6 +1427,7 @@ select:focus {
 
   body[data-mobile-view="today"] .sidebar,
   body[data-mobile-view="today"] .timetable-panel,
+  body[data-mobile-view="today"] .payment-overview-panel,
   body[data-mobile-view="today"] .member-detail {
     display: none;
   }
@@ -1427,6 +1443,7 @@ select:focus {
   body[data-mobile-view="timetable"] .sidebar,
   body[data-mobile-view="timetable"] .topbar,
   body[data-mobile-view="timetable"] .stats-grid,
+  body[data-mobile-view="timetable"] .payment-overview-panel,
   body[data-mobile-view="timetable"] .workspace {
     display: none;
   }
@@ -1435,9 +1452,22 @@ select:focus {
     display: none;
   }
 
+  body[data-mobile-view="payments"] .sidebar,
+  body[data-mobile-view="payments"] .topbar,
+  body[data-mobile-view="payments"] .stats-grid,
+  body[data-mobile-view="payments"] .timetable-panel,
+  body[data-mobile-view="payments"] .workspace {
+    display: none;
+  }
+
+  body[data-mobile-view="payments"] .payment-overview-panel {
+    display: block;
+  }
+
   body[data-mobile-view="detail"] .sidebar,
   body[data-mobile-view="detail"] .topbar,
   body[data-mobile-view="detail"] .stats-grid,
+  body[data-mobile-view="detail"] .payment-overview-panel,
   body[data-mobile-view="detail"] .timetable-panel,
   body[data-mobile-view="detail"] .day-panel {
     display: none;

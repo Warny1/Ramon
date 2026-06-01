@@ -201,6 +201,7 @@ const elements = {
   todayClasses: $("#todayClasses"),
   lowBalance: $("#lowBalance"),
   monthlyRevenue: $("#monthlyRevenue"),
+  monthlyPaymentList: $("#monthlyPaymentList"),
   emptyState: $("#emptyState"),
   detailView: $("#detailView"),
   memberStatus: $("#memberStatus"),
@@ -547,6 +548,7 @@ function render() {
   const selected = getSelectedMember();
   renderMobileNav();
   renderStats();
+  renderPaymentOverview();
   renderMemberList();
   renderTimetable();
   renderTodaySchedule();
@@ -581,15 +583,45 @@ function isMobileLayout() {
 function renderStats() {
   const todayItems = getTodayItems();
   const lowCount = state.members.filter((member) => getBalance(member) <= 2).length;
-  const monthKey = todayISO.slice(0, 7);
-  const revenue = state.members
-    .flatMap((member) => member.payments)
-    .filter((payment) => payment.date.startsWith(monthKey))
-    .reduce((sum, payment) => sum + Number(payment.amount || 0), 0);
 
   elements.todayClasses.textContent = String(todayItems.length);
   elements.lowBalance.textContent = String(lowCount);
+}
+
+function renderPaymentOverview() {
+  const payments = getMonthlyPayments();
+  const revenue = payments.reduce((sum, item) => sum + Number(item.payment.amount || 0), 0);
   elements.monthlyRevenue.textContent = `${currency.format(revenue)}원`;
+  elements.monthlyPaymentList.innerHTML = "";
+
+  if (!payments.length) {
+    elements.monthlyPaymentList.append(createEmptyLine("이번 달 결제 기록이 없습니다."));
+    return;
+  }
+
+  payments.forEach(({ member, payment }) => {
+    const row = createRow(
+      `${formatDate(payment.date)} · ${member.name} · ${currency.format(Number(payment.amount || 0))}원`,
+      `${payment.lessonType || "결제"} · ${payment.sessions}회${payment.memo ? ` · ${payment.memo}` : ""}`,
+      () => removePayment(member.id, payment.id),
+    );
+    row.classList.add("payment-row");
+    row.querySelector("span").addEventListener("click", () => {
+      selectedMemberId = member.id;
+      activeDetailPanel = "payment";
+      if (isMobileLayout()) setMobileView("detail");
+      render();
+    });
+    elements.monthlyPaymentList.append(row);
+  });
+}
+
+function getMonthlyPayments() {
+  const monthKey = todayISO.slice(0, 7);
+  return state.members
+    .flatMap((member) => member.payments.map((payment) => ({ member, payment })))
+    .filter(({ payment }) => payment.date?.startsWith(monthKey))
+    .sort((a, b) => b.payment.date.localeCompare(a.payment.date) || a.member.name.localeCompare(b.member.name, "ko-KR"));
 }
 
 function renderMemberList() {
@@ -714,12 +746,13 @@ function renderPayments(member) {
 function renderTimetable() {
   const groups = getScheduleGroups();
   const visibleDays = getVisibleTimetableDays();
+  const isWeekTable = timetableView === "week" && !isMobileLayout();
   elements.timetableGrid.innerHTML = "";
-  elements.timetableGrid.classList.toggle("week-view", timetableView === "week");
-  elements.timetableRangeLabel.textContent = timetableView === "week" ? "월-일 전체" : getFocusRangeLabel(visibleDays);
+  elements.timetableGrid.classList.toggle("week-view", isWeekTable);
+  elements.timetableRangeLabel.textContent = isMobileLayout() ? "오늘 하루" : isWeekTable ? "월-일 전체" : getFocusRangeLabel(visibleDays);
 
   const table = document.createElement("div");
-  table.className = `schedule-table ${timetableView === "week" ? "week-table" : "focus-table"}`;
+  table.className = `schedule-table ${isWeekTable ? "week-table" : "focus-table"}`;
   table.style.setProperty("--day-count", String(visibleDays.length));
 
   table.append(createTableHeader("시간"));
@@ -757,6 +790,7 @@ function renderTimetable() {
 }
 
 function getVisibleTimetableDays() {
+  if (isMobileLayout()) return [today.getDay()];
   if (timetableView === "week") return timetableDays;
 
   const todayDay = today.getDay();

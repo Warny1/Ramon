@@ -63,13 +63,20 @@
             <strong id="todayClasses">0</strong>
           </article>
           <article class="stat">
-            <span>부족</span>
+            <span>잔여 2회↓</span>
             <strong id="lowBalance">0</strong>
           </article>
-          <article class="stat">
-            <span>월 결제</span>
-            <strong id="monthlyRevenue">0원</strong>
-          </article>
+        </section>
+
+        <section class="panel payment-overview-panel">
+          <div class="section-title">
+            <div>
+              <p class="eyebrow">이번 달</p>
+              <h3>결제 관리</h3>
+            </div>
+            <strong id="monthlyRevenue" class="revenue-total">0원</strong>
+          </div>
+          <div id="monthlyPaymentList" class="table-like"></div>
         </section>
 
         <section class="panel timetable-panel">
@@ -164,6 +171,9 @@
       </button>
       <button class="mobile-nav-button" type="button" data-mobile-view="members">
         <span>회원</span>
+      </button>
+      <button class="mobile-nav-button" type="button" data-mobile-view="payments">
+        <span>결제</span>
       </button>
       <button class="mobile-nav-button" type="button" data-mobile-view="detail">
         <span>상세</span>
