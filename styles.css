@@ -135,7 +135,7 @@ h4 {
 
 .filters {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(2, 1fr);
   border: 1px solid var(--line);
   border-radius: 8px;
   overflow: hidden;
@@ -769,12 +769,12 @@ h4 {
 
 .today-card {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  gap: 10px;
+  grid-template-columns: minmax(0, 1fr) minmax(86px, auto);
+  gap: 12px;
   align-items: center;
   border: 1px solid #dbe4f0;
   border-radius: 8px;
-  padding: 11px;
+  padding: 12px;
   background: #ffffff;
 }
 
@@ -794,9 +794,36 @@ h4 {
   font-size: 13px;
 }
 
+.today-card small {
+  display: block;
+  margin-top: 3px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--success);
+  font-size: 12px;
+  font-weight: 800;
+}
+
 .mini-action {
   min-height: 34px;
   padding: 0 12px;
+}
+
+.attendance-big {
+  min-width: 86px;
+  min-height: 54px;
+  font-size: 15px;
+}
+
+.attendance-big.done {
+  background: var(--success-soft);
+  color: var(--success);
+}
+
+.attendance-big:disabled {
+  cursor: default;
+  opacity: 1;
 }
 
 .modal {
@@ -999,6 +1026,10 @@ select:focus {
   text-align: center;
 }
 
+.mobile-nav {
+  display: none;
+}
+
 @media (max-width: 1100px) {
   .app-shell {
     grid-template-columns: 300px minmax(0, 1fr);
@@ -1078,5 +1109,350 @@ select:focus {
 
   .member-options {
     grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 760px) {
+  body {
+    background: white;
+    padding-bottom: calc(76px + env(safe-area-inset-bottom));
+  }
+
+  h2 {
+    font-size: 22px;
+  }
+
+  h3 {
+    font-size: 19px;
+  }
+
+  .app-shell {
+    min-height: auto;
+  }
+
+  .sidebar,
+  .main {
+    padding: 14px;
+  }
+
+  .sidebar {
+    gap: 12px;
+    border-bottom: 0;
+  }
+
+  .brand-mark {
+    width: 38px;
+    height: 38px;
+  }
+
+  .search-box {
+    height: 46px;
+  }
+
+  .member-list {
+    max-height: none;
+    padding-bottom: 8px;
+  }
+
+  .member-card {
+    min-height: 64px;
+    padding: 12px;
+  }
+
+  .topbar {
+    gap: 12px;
+    margin-bottom: 12px;
+  }
+
+  body[data-mobile-view="today"] .topbar {
+    margin-bottom: 8px;
+  }
+
+  body[data-mobile-view="today"] .topbar-actions {
+    display: none;
+  }
+
+  .topbar-actions {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr)) 42px;
+    gap: 6px;
+  }
+
+  .settings-button {
+    min-height: 40px;
+    padding: 0 8px;
+    font-size: 13px;
+  }
+
+  .stats-grid,
+  .ops-strip {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  .stat {
+    display: grid;
+    justify-items: start;
+    gap: 5px;
+    padding: 10px;
+  }
+
+  .stat span {
+    font-size: 12px;
+  }
+
+  .stat strong {
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    font-size: 17px;
+  }
+
+  .panel {
+    border-radius: 0;
+    border-left: 0;
+    border-right: 0;
+    box-shadow: none;
+  }
+
+  .timetable-panel,
+  .member-detail,
+  .day-panel {
+    padding: 14px;
+  }
+
+  .timetable-panel {
+    margin-bottom: 0;
+  }
+
+  .timetable-head {
+    gap: 10px;
+    margin-bottom: 10px;
+  }
+
+  .view-toggle {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .timetable-grid {
+    max-height: calc(100vh - 186px);
+    border-radius: 8px;
+  }
+
+  .schedule-table {
+    grid-template-columns: 58px repeat(var(--day-count), minmax(148px, 1fr));
+    min-width: 500px;
+  }
+
+  .week-table {
+    grid-template-columns: 58px repeat(var(--day-count), minmax(118px, 1fr));
+    min-width: 884px;
+  }
+
+  .schedule-head {
+    min-height: 42px;
+    font-size: 14px;
+  }
+
+  .schedule-time,
+  .schedule-cell,
+  .empty-slot {
+    min-height: 44px;
+  }
+
+  .schedule-time {
+    padding: 0 4px;
+    font-size: 12px;
+  }
+
+  .schedule-cell {
+    padding: 4px;
+  }
+
+  .lesson-block {
+    grid-template-columns: minmax(0, 1fr) 34px;
+    gap: 4px;
+    padding: 4px;
+  }
+
+  .lesson-check {
+    width: 34px;
+    font-size: 11px;
+  }
+
+  .lesson-main strong {
+    font-size: 12px;
+  }
+
+  .lesson-badge {
+    max-width: 74px;
+    font-size: 9px;
+  }
+
+  .workspace {
+    display: block;
+  }
+
+  .member-detail {
+    min-height: auto;
+  }
+
+  .empty-state {
+    min-height: 360px;
+    padding: 30px 14px;
+  }
+
+  .detail-head {
+    gap: 10px;
+    padding-bottom: 12px;
+    margin-bottom: 12px;
+  }
+
+  .quick-actions {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+    margin-bottom: 14px;
+  }
+
+  .quick-actions button,
+  .primary-action,
+  .action-button,
+  .secondary-button,
+  .danger-button {
+    min-height: 54px;
+  }
+
+  .row-item,
+  .payment-row,
+  .today-card {
+    min-height: 58px;
+    padding: 11px;
+  }
+
+  .today-card {
+    grid-template-columns: minmax(0, 1fr) 108px;
+    min-height: 86px;
+    padding: 12px;
+  }
+
+  .today-card strong {
+    font-size: 17px;
+  }
+
+  .today-card span {
+    font-size: 15px;
+  }
+
+  .today-card small {
+    font-size: 13px;
+  }
+
+  .attendance-big {
+    min-width: 108px;
+    min-height: 62px;
+    font-size: 17px;
+  }
+
+  .mini-action {
+    border-radius: 8px;
+  }
+
+  .modal {
+    inset: auto 0 0 0;
+    transform: none;
+    width: 100%;
+    max-height: calc(100vh - 20px);
+    border-radius: 14px 14px 0 0;
+    overflow: auto;
+  }
+
+  .modal form {
+    padding: 18px 14px calc(18px + env(safe-area-inset-bottom));
+  }
+
+  .form-row {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+
+  .modal-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .mobile-nav {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 9;
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 4px;
+    border-top: 1px solid var(--line);
+    background: rgba(255, 255, 255, 0.96);
+    padding: 8px 8px calc(8px + env(safe-area-inset-bottom));
+    box-shadow: 0 -12px 30px rgba(15, 23, 42, 0.08);
+  }
+
+  .mobile-nav-button {
+    border: 0;
+    border-radius: 8px;
+    min-height: 56px;
+    background: transparent;
+    color: var(--muted);
+    font-size: 14px;
+    font-weight: 900;
+  }
+
+  .mobile-nav-button.active {
+    background: var(--accent);
+    color: white;
+  }
+
+  body[data-mobile-view="today"] .sidebar,
+  body[data-mobile-view="today"] .timetable-panel,
+  body[data-mobile-view="today"] .member-detail {
+    display: none;
+  }
+
+  body[data-mobile-view="today"] .workspace {
+    display: block;
+  }
+
+  body[data-mobile-view="today"] .day-panel {
+    display: block;
+  }
+
+  body[data-mobile-view="timetable"] .sidebar,
+  body[data-mobile-view="timetable"] .topbar,
+  body[data-mobile-view="timetable"] .stats-grid,
+  body[data-mobile-view="timetable"] .workspace {
+    display: none;
+  }
+
+  body[data-mobile-view="members"] .main {
+    display: none;
+  }
+
+  body[data-mobile-view="detail"] .sidebar,
+  body[data-mobile-view="detail"] .topbar,
+  body[data-mobile-view="detail"] .stats-grid,
+  body[data-mobile-view="detail"] .timetable-panel,
+  body[data-mobile-view="detail"] .day-panel {
+    display: none;
+  }
+
+  body[data-mobile-view="detail"] .workspace {
+    display: block;
+  }
+}
+
+@media (pointer: coarse) {
+  button,
+  input,
+  select,
+  textarea {
+    min-height: 48px;
   }
 }

@@ -187,6 +187,7 @@ let selectedMemberId = null;
 let memberView = "today";
 let timetableView = "focus";
 let activeDetailPanel = "schedule";
+let mobileView = "today";
 
 const $ = (selector) => document.querySelector(selector);
 
@@ -195,6 +196,7 @@ const elements = {
   memberSearch: $("#memberSearch"),
   memberList: $("#memberList"),
   memberViewButtons: document.querySelectorAll("[data-member-view]"),
+  mobileNavButtons: document.querySelectorAll("[data-mobile-view]"),
   todayLabel: $("#todayLabel"),
   todayClasses: $("#todayClasses"),
   lowBalance: $("#lowBalance"),
@@ -288,6 +290,11 @@ document.addEventListener("DOMContentLoaded", async () => {
       renderTimetable();
     });
   });
+  elements.mobileNavButtons.forEach((button) => {
+    button.addEventListener("click", () => {
+      setMobileView(button.dataset.mobileView);
+    });
+  });
   elements.detailTabs.forEach((button) => {
     button.addEventListener("click", () => {
       activeDetailPanel = button.dataset.panel;
@@ -305,6 +312,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   await initializeData();
   fillLessonTypeOptions();
   fillScheduleLessonTypeOptions();
+  setMobileView("today");
 
   render();
 });
@@ -537,6 +545,7 @@ function getSupabaseHeaders() {
 
 function render() {
   const selected = getSelectedMember();
+  renderMobileNav();
   renderStats();
   renderMemberList();
   renderTimetable();
@@ -551,6 +560,22 @@ function render() {
   elements.emptyState.classList.add("hidden");
   elements.detailView.classList.remove("hidden");
   renderDetail(selected);
+}
+
+function setMobileView(view) {
+  mobileView = view || "today";
+  document.body.dataset.mobileView = mobileView;
+  renderMobileNav();
+}
+
+function renderMobileNav() {
+  elements.mobileNavButtons.forEach((button) => {
+    button.classList.toggle("active", button.dataset.mobileView === mobileView);
+  });
+}
+
+function isMobileLayout() {
+  return window.matchMedia("(max-width: 760px)").matches;
 }
 
 function renderStats() {
@@ -609,6 +634,7 @@ function renderMemberList() {
     `;
     button.addEventListener("click", () => {
       selectedMemberId = member.id;
+      if (isMobileLayout()) setMobileView("detail");
       render();
     });
     elements.memberList.append(button);
@@ -900,16 +926,19 @@ function renderTodaySchedule() {
     const card = document.createElement("div");
     card.className = "today-card";
     const status = getScheduleStatus(item);
+    const attendance = getGroupAttendanceState(item);
     card.innerHTML = `
       <span>
         <strong>${escapeHTML(item.time)} · ${escapeHTML(item.className || "수업")}${status ? ` · ${escapeHTML(status)}` : ""}</strong>
         <span>${escapeHTML(item.members.map((member) => member.name).join(", "))}</span>
+        <small>${escapeHTML(item.members.map((member) => `${member.name} ${getBalance(member)}회`).join(" / "))}</small>
       </span>
     `;
     const button = document.createElement("button");
-    button.className = "mini-action";
+    button.className = `mini-action attendance-big ${attendance.done ? "done" : ""}`;
     button.type = "button";
-    button.textContent = "출석";
+    button.textContent = attendance.done ? "완료" : attendance.partial ? "남은 출석" : "출석";
+    button.disabled = attendance.done;
     button.addEventListener("click", () => markGroupAttendance(item));
     card.append(button);
     elements.todaySchedule.append(card);
@@ -933,6 +962,7 @@ function addMember(event) {
 
   state.members.unshift(member);
   selectedMemberId = member.id;
+  if (isMobileLayout()) setMobileView("detail");
   elements.memberForm.reset();
   closeModal(elements.memberModal);
   commit();
@@ -1008,6 +1038,7 @@ function markGroupAttendance(group) {
   group.members.forEach((member) => {
     recordAttendance(member, group.className || "출석", group.time, "");
   });
+  selectedMemberId = group.members[0]?.id ?? selectedMemberId;
   commit();
 }
 
@@ -1031,6 +1062,26 @@ function recordAttendance(member, className, time, status = "") {
   });
 }
 
+function getGroupAttendanceState(group) {
+  const recorded = group.members.filter((member) => hasAttendanceForGroup(member, group)).length;
+  return {
+    recorded,
+    total: group.members.length,
+    done: recorded === group.members.length,
+    partial: recorded > 0 && recorded < group.members.length,
+  };
+}
+
+function hasAttendanceForGroup(member, group) {
+  return member.attendances.some(
+    (item) =>
+      item.date === todayISO &&
+      (item.className || "출석") === (group.className || "출석") &&
+      (item.time || "") === (group.time || "") &&
+      normalizeAttendanceStatus(item.status) === "",
+  );
+}
+
 function deleteSelectedMember() {
   const member = getSelectedMember();
   if (!member) return;
@@ -1040,6 +1091,7 @@ function deleteSelectedMember() {
 
   state.members = state.members.filter((item) => item.id !== member.id);
   selectedMemberId = state.members[0]?.id ?? null;
+  if (isMobileLayout()) setMobileView("members");
   commit();
 }
 
