@@ -1,5 +1,6 @@
 const STORAGE_KEY = "member-desk-data-v5-corrected-payments";
 const LEGACY_STORAGE_KEY = "member-desk-data-v1";
+const AUTH_STORAGE_KEY = "member-desk-auth-session";
 const SUPABASE_TABLE = "app_state";
 const SUPABASE_RECORD_ID = "member-desk";
 const PRESET_TIMETABLE_VERSION = "2026-06-photo-timetable-1";
@@ -188,6 +189,8 @@ let memberView = "today";
 let timetableView = "focus";
 let activeDetailPanel = "schedule";
 let mobileView = "today";
+let authSession = null;
+let currentProfile = { role: "admin", memberName: "" };
 
 const $ = (selector) => document.querySelector(selector);
 
@@ -202,6 +205,10 @@ const elements = {
   lowBalance: $("#lowBalance"),
   monthlyRevenue: $("#monthlyRevenue"),
   monthlyPaymentList: $("#monthlyPaymentList"),
+  roleBadge: $("#roleBadge"),
+  authModal: $("#authModal"),
+  authForm: $("#authForm"),
+  authError: $("#authError"),
   emptyState: $("#emptyState"),
   detailView: $("#detailView"),
   memberStatus: $("#memberStatus"),
@@ -260,6 +267,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     openModal(elements.lessonSettingsModal);
   });
   $("#saveNow").addEventListener("click", saveNow);
+  $("#signOut").addEventListener("click", signOut);
   $("#openSheetsModal").addEventListener("click", () => openModal(elements.sheetsModal));
   $("#exportSheetCsv").addEventListener("click", exportSheetCsv);
   $("#importSheetCsv").addEventListener("change", importSheetCsv);
@@ -309,7 +317,9 @@ document.addEventListener("DOMContentLoaded", async () => {
   getPaymentDiscountSelect().addEventListener("change", applyPaymentDiscountToAmount);
   elements.lessonSettingsForm.addEventListener("submit", saveLessonSettings);
   elements.scheduleForm.addEventListener("submit", addSchedule);
+  elements.authForm.addEventListener("submit", signIn);
 
+  await initializeAuth();
   await initializeData();
   fillLessonTypeOptions();
   fillScheduleLessonTypeOptions();
@@ -320,10 +330,31 @@ document.addEventListener("DOMContentLoaded", async () => {
 
 async function initializeData() {
   state = await loadData();
-  selectedMemberId = state.members[0]?.id ?? null;
+  selectedMemberId = getAccessibleMembers()[0]?.id ?? null;
+}
+
+async function initializeAuth() {
+  if (!hasSupabaseConfig()) {
+    currentProfile = { role: "admin", memberName: "" };
+    applyRoleUI();
+    return;
+  }
+
+  authSession = loadStoredSession();
+  if (!authSession?.access_token) {
+    applySignedOutUI();
+    return;
+  }
+
+  currentProfile = await loadProfile(authSession.user);
+  applyRoleUI();
 }
 
 async function loadData() {
+  if (hasSupabaseConfig() && !authSession?.access_token) {
+    return cloneData(seedData);
+  }
+
   if (hasSupabaseConfig()) {
     const remoteData = await loadSupabaseData();
     if (remoteData) return remoteData;
@@ -481,7 +512,7 @@ function loadLegacySettings() {
 
 function saveData() {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-  if (hasSupabaseConfig()) {
+  if (hasSupabaseConfig() && canEditSharedData()) {
     saveSupabaseData(state).catch(() => {
       alert("Supabase 저장에 실패했습니다. 현재 브라우저 백업은 유지됩니다.");
     });
@@ -539,13 +570,140 @@ function getSupabaseRestUrl() {
 function getSupabaseHeaders() {
   return {
     apikey: window.SUPABASE_CONFIG.anonKey,
-    Authorization: `Bearer ${window.SUPABASE_CONFIG.anonKey}`,
+    Authorization: `Bearer ${authSession?.access_token || window.SUPABASE_CONFIG.anonKey}`,
     "Content-Type": "application/json",
   };
 }
 
+function getSupabaseAuthHeaders() {
+  return {
+    apikey: window.SUPABASE_CONFIG.anonKey,
+    "Content-Type": "application/json",
+  };
+}
+
+function loadStoredSession() {
+  try {
+    return JSON.parse(localStorage.getItem(AUTH_STORAGE_KEY));
+  } catch {
+    return null;
+  }
+}
+
+async function signIn(event) {
+  event.preventDefault();
+  elements.authError.textContent = "";
+
+  const form = new FormData(elements.authForm);
+  const response = await fetch(`${window.SUPABASE_CONFIG.url.replace(/\/$/, "")}/auth/v1/token?grant_type=password`, {
+    method: "POST",
+    headers: getSupabaseAuthHeaders(),
+    body: JSON.stringify({
+      email: String(form.get("email")).trim(),
+      password: String(form.get("password")),
+    }),
+  });
+
+  if (!response.ok) {
+    elements.authError.textContent = "이메일 또는 비밀번호를 확인해주세요.";
+    return;
+  }
+
+  authSession = await response.json();
+  localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(authSession));
+  currentProfile = await loadProfile(authSession.user);
+  closeModal(elements.authModal);
+  applyRoleUI();
+  await initializeData();
+  fillLessonTypeOptions();
+  fillScheduleLessonTypeOptions();
+  render();
+}
+
+async function signOut() {
+  authSession = null;
+  currentProfile = { role: "member", memberName: "" };
+  localStorage.removeItem(AUTH_STORAGE_KEY);
+  state = cloneData(seedData);
+  selectedMemberId = null;
+  applySignedOutUI();
+  render();
+}
+
+async function loadProfile(user) {
+  if (!user?.id) return { role: "member", memberName: "" };
+
+  const response = await fetch(
+    `${window.SUPABASE_CONFIG.url.replace(/\/$/, "")}/rest/v1/profiles?user_id=eq.${encodeURIComponent(user.id)}&select=role,member_name`,
+    { headers: getSupabaseHeaders() },
+  );
+
+  if (!response.ok) return { role: "member", memberName: "" };
+
+  const rows = await response.json();
+  return {
+    role: normalizeRole(rows[0]?.role),
+    memberName: rows[0]?.member_name || "",
+  };
+}
+
+function normalizeRole(role) {
+  return ["admin", "coach", "member"].includes(role) ? role : "member";
+}
+
+function applySignedOutUI() {
+  document.body.dataset.auth = "signed-out";
+  document.body.dataset.role = "guest";
+  elements.roleBadge.textContent = "로그인 필요";
+  openModal(elements.authModal);
+}
+
+function applyRoleUI() {
+  const role = getCurrentRole();
+  document.body.dataset.auth = "signed-in";
+  document.body.dataset.role = role;
+  elements.roleBadge.textContent = getRoleLabel(role);
+  if (!getAllowedMobileViews().includes(mobileView)) {
+    mobileView = getAllowedMobileViews()[0];
+    document.body.dataset.mobileView = mobileView;
+  }
+  renderMobileNav();
+}
+
+function getCurrentRole() {
+  return hasSupabaseConfig() ? normalizeRole(currentProfile.role) : "admin";
+}
+
+function getRoleLabel(role = getCurrentRole()) {
+  return { admin: "관리자", coach: "코치", member: "회원" }[role] || "회원";
+}
+
+function canManagePayments() {
+  return getCurrentRole() === "admin";
+}
+
+function canManageSettings() {
+  return getCurrentRole() === "admin";
+}
+
+function canEditSharedData() {
+  return ["admin", "coach"].includes(getCurrentRole());
+}
+
+function isMemberRole() {
+  return getCurrentRole() === "member";
+}
+
+function getAccessibleMembers() {
+  if (!isMemberRole()) return state.members;
+  return state.members.filter((member) => member.name === currentProfile.memberName);
+}
+
 function render() {
   const selected = getSelectedMember();
+  if (selected && !getAccessibleMembers().some((member) => member.id === selected.id)) {
+    selectedMemberId = getAccessibleMembers()[0]?.id ?? null;
+  }
   renderMobileNav();
   renderStats();
   renderPaymentOverview();
@@ -565,15 +723,24 @@ function render() {
 }
 
 function setMobileView(view) {
-  mobileView = view || "today";
+  const allowedViews = getAllowedMobileViews();
+  mobileView = allowedViews.includes(view) ? view : allowedViews[0];
   document.body.dataset.mobileView = mobileView;
   renderMobileNav();
 }
 
 function renderMobileNav() {
   elements.mobileNavButtons.forEach((button) => {
+    const allowed = getAllowedMobileViews().includes(button.dataset.mobileView);
+    button.hidden = !allowed;
     button.classList.toggle("active", button.dataset.mobileView === mobileView);
   });
+}
+
+function getAllowedMobileViews() {
+  if (getCurrentRole() === "admin") return ["today", "timetable", "members", "payments", "detail"];
+  if (getCurrentRole() === "coach") return ["today", "timetable", "members", "detail"];
+  return ["today", "timetable", "detail"];
 }
 
 function isMobileLayout() {
@@ -582,13 +749,15 @@ function isMobileLayout() {
 
 function renderStats() {
   const todayItems = getTodayItems();
-  const lowCount = state.members.filter((member) => getBalance(member) <= 2).length;
+  const lowCount = getAccessibleMembers().filter((member) => getBalance(member) <= 2).length;
 
   elements.todayClasses.textContent = String(todayItems.length);
   elements.lowBalance.textContent = String(lowCount);
 }
 
 function renderPaymentOverview() {
+  if (!canManagePayments()) return;
+
   const payments = getMonthlyPayments();
   const revenue = payments.reduce((sum, item) => sum + Number(item.payment.amount || 0), 0);
   elements.monthlyRevenue.textContent = `${currency.format(revenue)}원`;
@@ -617,8 +786,10 @@ function renderPaymentOverview() {
 }
 
 function getMonthlyPayments() {
+  if (!canManagePayments()) return [];
+
   const monthKey = todayISO.slice(0, 7);
-  return state.members
+  return getAccessibleMembers()
     .flatMap((member) => member.payments.map((payment) => ({ member, payment })))
     .filter(({ payment }) => payment.date?.startsWith(monthKey))
     .sort((a, b) => b.payment.date.localeCompare(a.payment.date) || a.member.name.localeCompare(b.member.name, "ko-KR"));
@@ -629,7 +800,7 @@ function renderMemberList() {
   const entries =
     memberView === "today"
       ? getTodayEntries()
-      : state.members
+      : getAccessibleMembers()
           .map((member) => ({
             member,
             time: "",
@@ -676,10 +847,13 @@ function renderMemberList() {
 function renderDetail(member) {
   const balance = getBalance(member);
   const paidSessions = member.payments.reduce((sum, item) => sum + Number(item.sessions || 0), 0);
+  if (!canManagePayments() && activeDetailPanel === "payment") activeDetailPanel = "schedule";
 
   elements.memberStatus.textContent = balance <= 2 ? "잔여 횟수 확인 필요" : "정상 이용";
   elements.memberName.textContent = member.name;
-  elements.memberMeta.textContent = `${member.phone || "연락처 없음"} · ${member.defaultLessonType || "레슨 미지정"} · 결제 ${paidSessions}회 / 출석 ${member.attendances.length}회`;
+  elements.memberMeta.textContent = canManagePayments()
+    ? `${member.phone || "연락처 없음"} · ${member.defaultLessonType || "레슨 미지정"} · 결제 ${paidSessions}회 / 출석 ${member.attendances.length}회`
+    : `${member.phone || "연락처 없음"} · ${member.defaultLessonType || "레슨 미지정"} · 출석 ${member.attendances.length}회`;
   elements.memberBalance.textContent = String(balance);
 
   renderSchedule(member);
@@ -725,6 +899,11 @@ function renderAttendance(member) {
 
 function renderPayments(member) {
   elements.paymentList.innerHTML = "";
+  if (!canManagePayments()) {
+    elements.paymentList.append(createEmptyLine("결제 기록은 관리자만 볼 수 있습니다."));
+    return;
+  }
+
   const sorted = [...member.payments].sort((a, b) => b.date.localeCompare(a.date));
 
   if (!sorted.length) {
@@ -930,6 +1109,8 @@ function addLessonSettingsRow(lesson = { name: "", amount: 0, sessions: 1 }) {
 
 function saveLessonSettings(event) {
   event.preventDefault();
+  if (!canManageSettings()) return;
+
   const rows = [...elements.lessonSettingsList.querySelectorAll(".lesson-settings-row")];
   const nextLessonTypes = rows
     .map((row) => ({
@@ -981,6 +1162,8 @@ function renderTodaySchedule() {
 
 function addMember(event) {
   event.preventDefault();
+  if (!canManageSettings()) return;
+
   const form = new FormData(elements.memberForm);
   const member = {
     id: crypto.randomUUID(),
@@ -1004,6 +1187,8 @@ function addMember(event) {
 
 function addPayment(event) {
   event.preventDefault();
+  if (!canManagePayments()) return;
+
   const member = getSelectedMember();
   if (!member) return;
 
@@ -1032,6 +1217,8 @@ function addPayment(event) {
 
 function addSchedule(event) {
   event.preventDefault();
+  if (!canManageSettings()) return;
+
   const form = new FormData(elements.scheduleForm);
   const memberIds = form.getAll("memberIds");
 
@@ -1060,6 +1247,8 @@ function addSchedule(event) {
 }
 
 function markAttendance() {
+  if (!canEditSharedData()) return;
+
   const member = getSelectedMember();
   if (!member) return;
 
@@ -1069,6 +1258,8 @@ function markAttendance() {
 }
 
 function markGroupAttendance(group) {
+  if (!canEditSharedData()) return;
+
   group.members.forEach((member) => {
     recordAttendance(member, group.className || "출석", group.time, "");
   });
@@ -1117,6 +1308,8 @@ function hasAttendanceForGroup(member, group) {
 }
 
 function deleteSelectedMember() {
+  if (!canManageSettings()) return;
+
   const member = getSelectedMember();
   if (!member) return;
 
@@ -1130,24 +1323,32 @@ function deleteSelectedMember() {
 }
 
 function removeSchedule(memberId, scheduleId) {
+  if (!canManageSettings()) return;
+
   const member = state.members.find((item) => item.id === memberId);
   member.schedules = member.schedules.filter((item) => item.id !== scheduleId);
   commit();
 }
 
 function removeAttendance(memberId, attendanceId) {
+  if (!canEditSharedData()) return;
+
   const member = state.members.find((item) => item.id === memberId);
   member.attendances = member.attendances.filter((item) => item.id !== attendanceId);
   commit();
 }
 
 function removePayment(memberId, paymentId) {
+  if (!canManagePayments()) return;
+
   const member = state.members.find((item) => item.id === memberId);
   member.payments = member.payments.filter((item) => item.id !== paymentId);
   commit();
 }
 
 function exportData() {
+  if (!canManageSettings()) return;
+
   const blob = new Blob([JSON.stringify(state, null, 2)], { type: "application/json" });
   const url = URL.createObjectURL(blob);
   const link = document.createElement("a");
@@ -1177,6 +1378,8 @@ async function saveNow() {
 }
 
 function exportSheetCsv() {
+  if (!canManageSettings()) return;
+
   const headers = ["type", "memberName", "phone", "memo", "day", "time", "className", "lessonType", "date", "sessions", "amount", "note"];
   const rows = [headers];
 
@@ -1197,6 +1400,8 @@ function exportSheetCsv() {
 }
 
 function importSheetCsv(event) {
+  if (!canManageSettings()) return;
+
   const file = event.target.files?.[0];
   if (!file) return;
 
@@ -1281,6 +1486,8 @@ function importSheetCsv(event) {
 }
 
 function importData(event) {
+  if (!canManageSettings()) return;
+
   const file = event.target.files?.[0];
   if (!file) return;
 
@@ -1307,6 +1514,8 @@ function importData(event) {
 }
 
 function importPastedMembers() {
+  if (!canManageSettings()) return;
+
   const text = elements.pasteMembersText.value.trim();
   if (!text) {
     alert("붙여넣은 명단이 없습니다.");
@@ -1367,6 +1576,8 @@ function importPastedMembers() {
 }
 
 function importPastedTimetable() {
+  if (!canManageSettings()) return;
+
   const text = elements.pasteTimetableText.value.trim();
   if (!text) {
     alert("붙여넣은 시간표가 없습니다.");
@@ -1428,7 +1639,7 @@ function importPastedTimetable() {
 }
 
 function getSelectedMember() {
-  return state.members.find((member) => member.id === selectedMemberId) ?? null;
+  return getAccessibleMembers().find((member) => member.id === selectedMemberId) ?? null;
 }
 
 function getBalance(member) {
@@ -1460,7 +1671,7 @@ function getTodayEntries() {
 }
 
 function getScheduleItems() {
-  return state.members.flatMap((member) => member.schedules.map((item) => ({ ...item, member })));
+  return getAccessibleMembers().flatMap((member) => member.schedules.map((item) => ({ ...item, member })));
 }
 
 function getScheduleGroups() {

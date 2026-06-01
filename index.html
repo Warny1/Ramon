@@ -46,10 +46,12 @@
             <h2>오늘 요약</h2>
           </div>
           <div class="topbar-actions">
+            <span id="roleBadge" class="role-badge">관리자</span>
             <button id="openLessonSettings" class="settings-button" type="button">설정</button>
             <button id="saveNow" class="settings-button" type="button">저장</button>
             <button id="exportData" class="settings-button" type="button">백업</button>
             <button id="openSheetsModal" class="settings-button" type="button">시트</button>
+            <button id="signOut" class="settings-button" type="button">로그아웃</button>
             <label class="icon-button import-button" title="데이터 가져오기">
               ⇧
               <input id="importData" type="file" accept="application/json" />
@@ -179,6 +181,30 @@
         <span>상세</span>
       </button>
     </nav>
+
+    <dialog id="authModal" class="modal auth-modal">
+      <form id="authForm" method="dialog">
+        <div class="modal-head">
+          <div>
+            <p class="eyebrow">Ramon Tennis</p>
+            <h3>로그인</h3>
+          </div>
+        </div>
+        <p class="modal-note">관리자, 코치, 회원 권한에 따라 보이는 화면이 달라집니다.</p>
+        <label>
+          이메일
+          <input name="email" type="email" required autocomplete="email" />
+        </label>
+        <label>
+          비밀번호
+          <input name="password" type="password" required autocomplete="current-password" />
+        </label>
+        <p id="authError" class="form-error" role="alert"></p>
+        <div class="modal-actions">
+          <button class="primary-action" type="submit">로그인</button>
+        </div>
+      </form>
+    </dialog>
 
     <dialog id="memberModal" class="modal">
       <form id="memberForm" method="dialog">

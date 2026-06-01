@@ -34,6 +34,30 @@ SUPABASE_ANON_KEY=your-supabase-anon-key
 
 Supabase SQL Editor에서 [supabase-schema.sql](./supabase-schema.sql)을 먼저 실행해야 저장이 됩니다.
 
+## 권한 설정
+
+앱은 Supabase Auth 로그인 후 `profiles` 테이블의 역할을 확인합니다.
+
+역할은 세 가지입니다.
+
+- `admin`: 전체 회원, 시간표, 출석, 결제, 설정, 백업 관리
+- `coach`: 오늘 수업, 시간표, 회원 잔여 횟수 확인, 출석 체크
+- `member`: 본인 시간표와 출석/잔여 횟수 확인
+
+Supabase에서 사용자를 만든 뒤 SQL Editor에서 `profiles`에 역할을 넣어야 합니다.
+
+예시:
+
+```sql
+insert into public.profiles (user_id, email, role, member_name)
+values
+  ('Supabase Auth user id', 'admin@example.com', 'admin', null),
+  ('Supabase Auth user id', 'coach@example.com', 'coach', null),
+  ('Supabase Auth user id', 'member@example.com', 'member', '회원이름');
+```
+
+회원용 계정은 `member_name`이 앱의 회원 이름과 정확히 같아야 본인 정보가 보입니다.
+
 ## 앱처럼 설치하기
 
 Vercel 주소로 접속한 뒤 브라우저 메뉴에서 앱 설치를 누르면 독립 앱처럼 사용할 수 있습니다.
@@ -69,4 +93,4 @@ npm run preview
 
 Supabase URL과 anon key가 비어 있으면 앱은 기존처럼 접속한 브라우저의 로컬 저장소에 저장됩니다. 기존 localStorage 데이터는 `백업` 버튼으로 JSON 파일로 내보낼 수 있고, 오른쪽 위 가져오기 버튼으로 다시 불러올 수 있습니다.
 
-현재 Supabase 정책은 별도 로그인 없이 같은 주소를 아는 사람이 데이터를 읽고 수정할 수 있는 형태입니다. 직원용 내부 앱으로만 공유하거나, 공개 범위를 제한하려면 다음 단계에서 로그인 기능을 추가하는 편이 좋습니다.
+현재 앱은 로그인/역할 기반으로 화면을 나눕니다. 다만 데이터는 아직 `app_state` JSON 한 덩어리에 저장되므로, 결제 데이터의 DB 레벨 완전 분리까지 하려면 다음 단계에서 `members`, `schedules`, `attendances`, `payments` 테이블을 분리하고 `payments`를 관리자 전용 정책으로 잠그는 작업이 필요합니다.

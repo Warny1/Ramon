@@ -1,13 +1,13 @@
 :root {
   color-scheme: light;
-  --ink: #18212f;
-  --muted: #6b7280;
-  --line: #e2e8f0;
-  --paper: #f5f7fb;
+  --ink: #172033;
+  --muted: #64748b;
+  --line: #d8e0ea;
+  --paper: #f4f6f8;
   --panel: #ffffff;
-  --accent: #2563eb;
-  --accent-dark: #1d4ed8;
-  --accent-soft: #dbeafe;
+  --accent: #1f6f68;
+  --accent-dark: #15534f;
+  --accent-soft: #dcefeb;
   --success: #0f766e;
   --success-soft: #ccfbf1;
   --warn: #b45309;
@@ -15,7 +15,7 @@
   --danger: #dc2626;
   --danger-soft: #fee2e2;
   --row-soft: #f8fafc;
-  --shadow: 0 18px 44px rgba(15, 23, 42, 0.08);
+  --shadow: 0 14px 34px rgba(15, 23, 42, 0.06);
 }
 
 * {
@@ -47,17 +47,17 @@ button {
 
 .app-shell {
   display: grid;
-  grid-template-columns: 312px minmax(0, 1fr);
+  grid-template-columns: 286px minmax(0, 1fr);
   min-height: 100vh;
 }
 
 .sidebar {
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 12px;
   border-right: 1px solid var(--line);
-  background: #ffffff;
-  padding: 22px;
+  background: #fbfcfd;
+  padding: 18px;
   min-width: 0;
 }
 
@@ -73,7 +73,7 @@ button {
   width: 44px;
   height: 44px;
   border-radius: 8px;
-  background: linear-gradient(135deg, #2563eb, #0f766e);
+  background: #1f6f68;
   color: white;
   font-weight: 800;
 }
@@ -102,12 +102,12 @@ h1 {
 
 h2 {
   margin-bottom: 0;
-  font-size: 26px;
+  font-size: 23px;
 }
 
 h3 {
   margin-bottom: 0;
-  font-size: 22px;
+  font-size: 19px;
 }
 
 h4 {
@@ -119,7 +119,7 @@ h4 {
   display: flex;
   align-items: center;
   gap: 8px;
-  height: 44px;
+  height: 40px;
   border: 1px solid var(--line);
   border-radius: 8px;
   background: var(--row-soft);
@@ -148,7 +148,8 @@ h4 {
   border-radius: 6px;
   background: transparent;
   color: var(--muted);
-  padding: 8px;
+  padding: 7px;
+  font-size: 13px;
   font-weight: 700;
 }
 
@@ -165,7 +166,7 @@ h4 {
 .icon-button {
   border: 0;
   border-radius: 8px;
-  min-height: 42px;
+  min-height: 38px;
   font-weight: 800;
 }
 
@@ -187,7 +188,7 @@ h4 {
 .member-list {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 8px;
   overflow: auto;
   padding-right: 2px;
 }
@@ -195,12 +196,12 @@ h4 {
 .member-card {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
-  gap: 8px;
+  gap: 10px;
   width: 100%;
   border: 1px solid transparent;
   border-radius: 8px;
   background: var(--row-soft);
-  padding: 12px;
+  padding: 10px;
   text-align: left;
 }
 
@@ -214,23 +215,25 @@ h4 {
 .member-card span {
   overflow: hidden;
   text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
 .member-card strong {
-  font-size: 15px;
+  font-size: 14px;
+  line-height: 1.25;
+  white-space: nowrap;
 }
 
 .member-card span {
   color: var(--muted);
-  font-size: 13px;
+  font-size: 12px;
+  line-height: 1.3;
 }
 
 .mini-balance {
   display: grid;
   place-items: center;
-  min-width: 44px;
-  height: 34px;
+  min-width: 38px;
+  height: 30px;
   border-radius: 8px;
   background: var(--success-soft);
   color: var(--success);
@@ -244,7 +247,7 @@ h4 {
 
 .main {
   min-width: 0;
-  padding: 24px;
+  padding: 18px;
   overflow-x: hidden;
 }
 
@@ -253,21 +256,21 @@ h4 {
   align-items: center;
   justify-content: space-between;
   gap: 16px;
-  margin-bottom: 20px;
+  margin-bottom: 14px;
 }
 
 .topbar-actions {
   display: flex;
   flex-wrap: wrap;
   justify-content: flex-end;
-  gap: 8px;
+  gap: 6px;
 }
 
 .icon-button {
   display: grid;
   place-items: center;
-  width: 42px;
-  height: 42px;
+  width: 38px;
+  height: 38px;
   background: white;
   border: 1px solid var(--line);
   color: var(--ink);
@@ -277,10 +280,11 @@ h4 {
 .settings-button {
   border: 1px solid var(--line);
   border-radius: 8px;
-  min-height: 42px;
+  min-height: 38px;
   background: white;
   color: var(--ink);
-  padding: 0 14px;
+  padding: 0 12px;
+  font-size: 13px;
   font-weight: 800;
 }
 
@@ -292,8 +296,8 @@ h4 {
 .stats-grid {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 10px;
-  margin-bottom: 14px;
+  gap: 8px;
+  margin-bottom: 0;
 }
 
 .ops-strip {
@@ -308,7 +312,7 @@ h4 {
   border: 1px solid var(--line);
   border-radius: 8px;
   background: white;
-  padding: 12px 14px;
+  padding: 11px 12px;
 }
 
 .stat span {
@@ -320,21 +324,20 @@ h4 {
 }
 
 .stat strong {
-  font-size: 20px;
+  font-size: 22px;
 }
 
 .workspace {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) 320px;
-  gap: 16px;
-  align-items: start;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
 }
 
 .timetable-panel {
   min-width: 0;
-  margin-bottom: 16px;
-  padding: 18px;
-  border-color: #d7dee9;
+  padding: 14px;
+  border-color: var(--line);
 }
 
 .timetable-head {
@@ -372,7 +375,7 @@ h4 {
 }
 
 .timetable-grid {
-  max-height: 610px;
+  max-height: calc(100vh - 270px);
   overflow: auto;
   border: 1px solid var(--line);
   border-radius: 8px;
@@ -381,13 +384,13 @@ h4 {
 
 .schedule-table {
   display: grid;
-  grid-template-columns: 70px repeat(var(--day-count), minmax(230px, 1fr));
+  grid-template-columns: 62px repeat(var(--day-count), minmax(210px, 1fr));
   min-width: 760px;
   background: white;
 }
 
 .week-table {
-  grid-template-columns: 70px repeat(var(--day-count), minmax(138px, 1fr));
+  grid-template-columns: 62px repeat(var(--day-count), minmax(142px, 1fr));
   min-width: 1020px;
 }
 
@@ -403,11 +406,11 @@ h4 {
   position: sticky;
   top: 0;
   z-index: 2;
-  min-height: 48px;
+  min-height: 42px;
   border-bottom: 1px solid var(--line);
   border-right: 1px solid var(--line);
   color: var(--ink);
-  font-size: 17px;
+  font-size: 14px;
   font-weight: 900;
 }
 
@@ -419,13 +422,13 @@ h4 {
 .schedule-time {
   display: grid;
   place-items: center;
-  min-height: 48px;
-  padding: 0 8px;
+  min-height: 44px;
+  padding: 0 6px;
   border-right: 1px solid var(--line);
   border-bottom: 1px solid var(--line);
   background: #f8fafc;
   color: var(--ink);
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 900;
 }
 
@@ -435,8 +438,8 @@ h4 {
   flex-direction: column;
   justify-content: center;
   gap: 5px;
-  min-height: 48px;
-  padding: 5px 8px;
+  min-height: 44px;
+  padding: 4px 6px;
   border-right: 1px solid var(--line);
   border-bottom: 1px solid var(--line);
 }
@@ -458,7 +461,7 @@ h4 {
 .empty-slot {
   width: 100%;
   height: 100%;
-  min-height: 48px;
+  min-height: 44px;
   border: 0;
   background: transparent;
 }
@@ -473,13 +476,13 @@ h4 {
 .lesson-block {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
-  gap: 8px;
+  gap: 6px;
   align-items: stretch;
   border: 1px solid rgba(37, 99, 235, 0.18);
   border-left: 4px solid var(--accent);
   border-radius: 8px;
   background: #eff6ff;
-  padding: 5px;
+  padding: 4px;
 }
 
 .lesson-block.active {
@@ -511,12 +514,12 @@ h4 {
   align-items: center;
   gap: 6px;
   margin-bottom: 2px;
-  font-size: 14px;
+  font-size: 12px;
 }
 
 .lesson-badge {
   flex: 0 0 auto;
-  max-width: 92px;
+  max-width: 78px;
   border-radius: 999px;
   background: white;
   color: var(--accent-dark);
@@ -576,7 +579,7 @@ h4 {
 }
 
 .lesson-check {
-  width: 42px;
+  width: 38px;
 }
 
 .panel {
@@ -588,18 +591,19 @@ h4 {
 }
 
 .payment-overview-panel {
-  margin-bottom: 16px;
-  padding: 18px;
+  padding: 14px;
+  max-height: 220px;
+  overflow: hidden;
 }
 
 .revenue-total {
   color: var(--success);
-  font-size: 22px;
+  font-size: 20px;
 }
 
 .member-detail {
-  min-height: 580px;
-  padding: 20px;
+  min-height: 0;
+  padding: 16px;
 }
 
 .empty-state {
@@ -637,7 +641,7 @@ h4 {
   flex: 0 0 auto;
   display: grid;
   gap: 2px;
-  min-width: 112px;
+  min-width: 94px;
   border-radius: 8px;
   background: var(--success-soft);
   color: var(--success);
@@ -651,12 +655,12 @@ h4 {
 }
 
 .balance-chip strong {
-  font-size: 30px;
+  font-size: 26px;
 }
 
 .quick-actions {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 8px;
   margin-bottom: 18px;
 }
@@ -734,7 +738,7 @@ h4 {
   align-items: center;
   border: 1px solid var(--line);
   border-radius: 8px;
-  padding: 10px 12px;
+  padding: 9px 10px;
   background: var(--row-soft);
 }
 
@@ -744,13 +748,14 @@ h4 {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  font-size: 13px;
   font-weight: 800;
 }
 
 .row-item span,
 .payment-row span {
   color: var(--muted);
-  font-size: 13px;
+  font-size: 12px;
 }
 
 .item-action {
@@ -763,7 +768,7 @@ h4 {
 }
 
 .day-panel {
-  padding: 16px;
+  padding: 14px;
 }
 
 .count-pill {
@@ -779,12 +784,12 @@ h4 {
 
 .today-card {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(86px, auto);
-  gap: 12px;
+  grid-template-columns: minmax(0, 1fr) minmax(72px, auto);
+  gap: 10px;
   align-items: center;
   border: 1px solid #dbe4f0;
   border-radius: 8px;
-  padding: 12px;
+  padding: 10px;
   background: #ffffff;
 }
 
@@ -792,7 +797,7 @@ h4 {
   display: block;
   margin-bottom: 3px;
   color: var(--ink);
-  font-size: 14px;
+  font-size: 13px;
 }
 
 .today-card span {
@@ -821,9 +826,9 @@ h4 {
 }
 
 .attendance-big {
-  min-width: 86px;
-  min-height: 54px;
-  font-size: 15px;
+  min-width: 72px;
+  min-height: 42px;
+  font-size: 13px;
 }
 
 .attendance-big.done {
@@ -1038,6 +1043,151 @@ select:focus {
 
 .mobile-nav {
   display: none;
+}
+
+.role-badge {
+  display: inline-flex;
+  align-items: center;
+  min-height: 38px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--success-soft);
+  color: var(--success);
+  padding: 0 12px;
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.topbar .eyebrow {
+  margin-bottom: 2px;
+}
+
+.form-error {
+  min-height: 18px;
+  margin: 0;
+  color: var(--danger);
+  font-size: 13px;
+  font-weight: 800;
+}
+
+body[data-auth="signed-out"] .app-shell,
+body[data-auth="signed-out"] .mobile-nav {
+  display: none;
+}
+
+body[data-role="coach"] #openLessonSettings,
+body[data-role="coach"] #exportData,
+body[data-role="coach"] #openSheetsModal,
+body[data-role="coach"] .import-button,
+body[data-role="coach"] #openMemberModal,
+body[data-role="coach"] #openPaymentModal,
+body[data-role="coach"] #openScheduleModal,
+body[data-role="coach"] #deleteMember,
+body[data-role="coach"] .payment-overview-panel,
+body[data-role="coach"] .detail-tab[data-panel="payment"],
+body[data-role="coach"] .detail-panel[data-panel="payment"],
+body[data-role="member"] #openLessonSettings,
+body[data-role="member"] #saveNow,
+body[data-role="member"] #exportData,
+body[data-role="member"] #openSheetsModal,
+body[data-role="member"] .import-button,
+body[data-role="member"] #openMemberModal,
+body[data-role="member"] #openPaymentModal,
+body[data-role="member"] #openScheduleModal,
+body[data-role="member"] #deleteMember,
+body[data-role="member"] #markAttendance,
+body[data-role="member"] .lesson-check,
+body[data-role="member"] .attendance-big,
+body[data-role="member"] .payment-overview-panel,
+body[data-role="member"] .detail-tab[data-panel="payment"],
+body[data-role="member"] .detail-panel[data-panel="payment"] {
+  display: none !important;
+}
+
+@media (min-width: 981px) {
+  .app-shell {
+    height: 100vh;
+    overflow: hidden;
+  }
+
+  .sidebar {
+    height: 100vh;
+    overflow: hidden;
+  }
+
+  .member-list {
+    min-height: 0;
+  }
+
+  .main {
+    display: grid;
+    grid-template-columns: minmax(680px, 1fr) 360px;
+    grid-template-rows: auto auto minmax(0, 1fr);
+    gap: 12px;
+    height: 100vh;
+    overflow: hidden;
+  }
+
+  .topbar {
+    grid-column: 1 / -1;
+  }
+
+  .stats-grid {
+    grid-column: 1;
+    align-self: stretch;
+  }
+
+  .payment-overview-panel {
+    grid-column: 2;
+    grid-row: 2;
+  }
+
+  .timetable-panel {
+    grid-column: 1;
+    grid-row: 3;
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  .workspace {
+    grid-column: 2;
+    grid-row: 3;
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  .member-detail {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow: auto;
+  }
+
+  .day-panel {
+    flex: 0 0 260px;
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  .today-schedule {
+    max-height: 200px;
+    overflow: auto;
+    padding-right: 2px;
+  }
+
+  .payment-overview-panel .table-like {
+    max-height: 132px;
+    overflow: auto;
+    padding-right: 2px;
+  }
+
+  .timetable-grid {
+    height: calc(100vh - 186px);
+    max-height: none;
+  }
+
+  .topbar-actions {
+    align-items: center;
+  }
 }
 
 @media (max-width: 1100px) {
@@ -1350,6 +1500,10 @@ select:focus {
     padding: 12px;
   }
 
+  body[data-role="member"] .today-card {
+    grid-template-columns: 1fr;
+  }
+
   .today-card strong {
     font-size: 17px;
   }
@@ -1423,6 +1577,14 @@ select:focus {
   .mobile-nav-button.active {
     background: var(--accent);
     color: white;
+  }
+
+  body[data-role="coach"] .mobile-nav {
+    grid-template-columns: repeat(4, 1fr);
+  }
+
+  body[data-role="member"] .mobile-nav {
+    grid-template-columns: repeat(3, 1fr);
   }
 
   body[data-mobile-view="today"] .sidebar,
