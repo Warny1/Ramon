@@ -184,7 +184,6 @@ const presetPaymentEntries = [
 
 let state = cloneData(seedData);
 let selectedMemberId = null;
-let memberView = "today";
 let timetableView = "focus";
 let activeDetailPanel = "schedule";
 let mobileView = "today";
@@ -196,7 +195,6 @@ const elements = {
   sidebarTitle: $("#sidebarTitle"),
   memberSearch: $("#memberSearch"),
   memberList: $("#memberList"),
-  memberViewButtons: document.querySelectorAll("[data-member-view]"),
   mobileNavButtons: document.querySelectorAll("[data-mobile-view]"),
   desktopNavButtons: document.querySelectorAll("[data-desktop-view]"),
   pageTitle: $("#pageTitle"),
@@ -280,17 +278,6 @@ document.addEventListener("DOMContentLoaded", async () => {
   });
 
   elements.memberSearch.addEventListener("input", render);
-  elements.memberViewButtons.forEach((button) => {
-    button.addEventListener("click", () => {
-      memberView = button.dataset.memberView;
-      elements.memberViewButtons.forEach((item) => item.classList.toggle("active", item === button));
-      elements.memberSearch.value = "";
-      if (!isMobileLayout()) {
-        setDesktopView(memberView === "all" ? "members" : "operations");
-      }
-      renderMemberList();
-    });
-  });
   elements.desktopNavButtons.forEach((button) => {
     button.addEventListener("click", () => setDesktopView(button.dataset.desktopView));
   });
@@ -614,9 +601,6 @@ function setDesktopView(view) {
     payments: "결제 관리",
   }[desktopView];
 
-  if (desktopView === "operations") memberView = "today";
-  if (desktopView === "members") memberView = "all";
-  elements.memberViewButtons.forEach((button) => button.classList.toggle("active", button.dataset.memberView === memberView));
   elements.desktopNavButtons.forEach((button) => button.classList.toggle("active", button.dataset.desktopView === desktopView));
   render();
 }
@@ -687,11 +671,12 @@ function getMonthlyPayments() {
 
 function renderMemberList() {
   const query = elements.memberSearch.value.trim().toLowerCase();
-  elements.sidebarTitle.textContent = memberView === "today" ? "오늘 회원" : "전체 회원";
-  elements.memberSearch.placeholder = memberView === "today" ? "오늘 회원 검색" : "전체 회원 검색";
+  const showAllMembers = isMobileLayout() && mobileView === "members";
+  elements.sidebarTitle.textContent = showAllMembers ? "전체 회원" : "오늘 수업";
+  elements.memberSearch.placeholder = showAllMembers ? "전체 회원 검색" : "오늘 수업 검색";
   elements.memberList.innerHTML = "";
 
-  if (memberView === "today") {
+  if (!showAllMembers) {
     renderTodaySidebarList(query);
     return;
   }
@@ -750,12 +735,19 @@ function renderTodaySidebarList(query) {
     const primaryMember = entry.members[0];
     const isActive = entry.members.some((member) => member.id === selectedMemberId);
     const attendance = getCombinedAttendanceState(entry.groups);
+    const names = entry.members.map((member) => member.name).join(", ");
+    const balanceValues = entry.members.map(getBalance);
+    const balances = balanceValues.every((balance) => balance === balanceValues[0])
+      ? `${balanceValues[0]}회`
+      : `${balanceValues.join("/")}회`;
     const card = document.createElement("div");
     card.className = `member-card today-attendance-card ${isActive ? "active" : ""}`;
     card.innerHTML = `
       <button class="today-attendance-main" type="button">
-        <strong>${escapeHTML(entry.timeLabel)} · ${escapeHTML(entry.members.map((member) => member.name).join(", "))}</strong>
-        <span>${escapeHTML(entry.lessonType)} · 잔여 ${escapeHTML(entry.members.map((member) => `${member.name} ${getBalance(member)}회`).join(" / "))}</span>
+        <span class="today-lesson-time">${escapeHTML(entry.timeLabel)}</span>
+        <strong class="today-lesson-names">${escapeHTML(names)}</strong>
+        <span class="today-lesson-type">${escapeHTML(compactLessonType(entry.lessonType, entry.groups.length))}</span>
+        <span class="today-lesson-balance">${escapeHTML(balances)}</span>
       </button>
     `;
 
@@ -801,7 +793,6 @@ function renderAllMembersOverview() {
     `;
     card.addEventListener("click", () => {
       selectedMemberId = member.id;
-      memberView = "all";
       setDesktopView("operations");
     });
     elements.allMembersGrid.append(card);
@@ -1726,8 +1717,8 @@ function createLessonBlock(group) {
   mainButton.className = "lesson-main";
   mainButton.type = "button";
   mainButton.innerHTML = `
-    <strong><span class="lesson-badge">${escapeHTML(group.lessonType)}</span>${getStatusBadge(group.status)}${escapeHTML(group.className || "수업")}</strong>
-    <span>${escapeHTML(group.members.map((member) => member.name).join(", "))}</span>
+    <span class="lesson-member-names">${escapeHTML(group.members.map((member) => member.name).join(", "))}</span>
+    <strong>${getStatusBadge(group.status)}<span class="lesson-badge">${escapeHTML(compactLessonType(group.lessonType))}</span><span class="lesson-class-name">${escapeHTML(group.className || "수업")}</span></strong>
     <small>${group.members.length}명 · 잔여 ${escapeHTML(group.members.map((member) => `${member.name} ${getBalance(member)}회`).join(" / "))}</small>
   `;
   mainButton.addEventListener("click", () => {
@@ -1746,6 +1737,20 @@ function createLessonBlock(group) {
   }
 
   return block;
+}
+
+function compactLessonType(lessonType = "", consecutiveSlots = 1) {
+  const frequency = lessonType.match(/주\s*(\d+)/)?.[1];
+  const people = lessonType.match(/\/\s*(\d+)인/)?.[1];
+  const minutes = lessonType.match(/\((\d+)분\)/)?.[1];
+  const duration = consecutiveSlots > 1 ? consecutiveSlots * 30 : Number(minutes || 0);
+  const parts = [];
+
+  if (frequency) parts.push(`주${frequency}`);
+  if (people) parts.push(`${people}:1`);
+  if (duration) parts.push(`${duration}분`);
+
+  return parts.length ? parts.join(" ") : lessonType;
 }
 
 function renderScheduleMemberOptions(selectedIds = []) {

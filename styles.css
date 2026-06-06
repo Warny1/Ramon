@@ -47,7 +47,7 @@ button {
 
 .app-shell {
   display: grid;
-  grid-template-columns: 286px minmax(0, 1fr);
+  grid-template-columns: 400px minmax(0, 1fr);
   min-height: 100vh;
 }
 
@@ -133,32 +133,6 @@ h4 {
   background: transparent;
 }
 
-.filters {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  border: 1px solid var(--line);
-  border-radius: 8px;
-  overflow: hidden;
-  background: var(--row-soft);
-  padding: 3px;
-}
-
-.filter {
-  border: 0;
-  border-radius: 6px;
-  background: transparent;
-  color: var(--muted);
-  padding: 7px;
-  font-size: 13px;
-  font-weight: 700;
-}
-
-.filter.active {
-  background: white;
-  color: var(--ink);
-  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.08);
-}
-
 .primary-action,
 .action-button,
 .secondary-button,
@@ -206,21 +180,53 @@ h4 {
 }
 
 .today-attendance-card {
-  grid-template-columns: minmax(0, 1fr) 58px;
+  grid-template-columns: minmax(0, 1fr) 72px;
   align-items: stretch;
+  gap: 8px;
+  min-height: 58px;
+  padding: 6px;
 }
 
 .today-attendance-main {
+  display: grid;
+  grid-template-columns: 82px minmax(58px, 1fr) 82px minmax(48px, auto);
+  align-items: center;
+  gap: 8px;
   min-width: 0;
   border: 0;
   background: transparent;
-  padding: 0;
+  padding: 0 4px;
   text-align: left;
 }
 
+.today-attendance-main > * {
+  min-width: 0;
+  white-space: nowrap;
+}
+
+.today-lesson-time {
+  color: var(--ink) !important;
+  font-size: 12px !important;
+  font-weight: 900;
+}
+
+.today-lesson-names {
+  font-size: 14px !important;
+}
+
+.today-lesson-type,
+.today-lesson-balance {
+  font-size: 11px !important;
+}
+
+.today-lesson-balance {
+  text-align: right;
+}
+
 .sidebar-attendance {
-  min-height: 46px;
-  padding: 0 8px;
+  min-height: 48px;
+  padding: 0 10px;
+  font-size: 13px;
 }
 
 .sidebar-attendance.done {
@@ -440,8 +446,8 @@ h4 {
 }
 
 .week-table {
-  grid-template-columns: 62px repeat(var(--day-count), minmax(142px, 1fr));
-  min-width: 1020px;
+  grid-template-columns: 62px repeat(var(--day-count), minmax(158px, 1fr));
+  min-width: 1168px;
 }
 
 .schedule-head,
@@ -611,6 +617,11 @@ h4 {
   color: var(--ink);
   font-size: 12px;
   font-weight: 800;
+}
+
+.lesson-member-names {
+  font-size: 13px !important;
+  font-weight: 900 !important;
 }
 
 .lesson-main small {
@@ -1195,7 +1206,7 @@ body[data-role="member"] .detail-panel[data-panel="payment"] {
 
   .main {
     display: grid;
-    grid-template-columns: minmax(680px, 1fr) 360px;
+    grid-template-columns: minmax(580px, 1fr) 320px;
     grid-template-rows: auto auto minmax(0, 1fr);
     gap: 12px;
     height: 100vh;
@@ -1220,6 +1231,14 @@ body[data-role="member"] .detail-panel[data-panel="payment"] {
   body[data-desktop-view="schedule"] .payment-overview-panel,
   body[data-desktop-view="schedule"] .member-overview-panel,
   body[data-desktop-view="schedule"] .workspace {
+    display: none;
+  }
+
+  body[data-desktop-view="schedule"] .app-shell {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  body[data-desktop-view="schedule"] .sidebar {
     display: none;
   }
 
@@ -1315,6 +1334,43 @@ body[data-role="member"] .detail-panel[data-panel="payment"] {
     height: calc(100vh - 116px);
   }
 
+  .week-table .lesson-block {
+    grid-template-columns: minmax(0, 1fr);
+    padding: 3px 5px;
+  }
+
+  .week-table .lesson-main {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 6px;
+    padding: 2px 3px;
+  }
+
+  .week-table .lesson-member-names {
+    grid-column: 1;
+    grid-row: 1;
+  }
+
+  .week-table .lesson-main strong {
+    grid-column: 2;
+    grid-row: 1;
+    margin: 0;
+  }
+
+  .week-table .lesson-main small,
+  .week-table .lesson-class-name {
+    display: none;
+  }
+
+  .week-table .lesson-badge {
+    max-width: 70px;
+  }
+
+  .week-table .lesson-check {
+    display: none;
+  }
+
   .topbar-actions {
     align-items: center;
   }
@@ -1322,7 +1378,7 @@ body[data-role="member"] .detail-panel[data-panel="payment"] {
 
 @media (max-width: 1100px) {
   .app-shell {
-    grid-template-columns: 300px minmax(0, 1fr);
+    grid-template-columns: 360px minmax(0, 1fr);
   }
 
   .stats-grid {
