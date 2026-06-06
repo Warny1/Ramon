@@ -332,6 +332,22 @@ h4 {
   margin-bottom: 14px;
 }
 
+.page-brand-lockup {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+}
+
+.page-logo-placeholder {
+  display: none;
+  flex: 0 0 auto;
+  width: 38px;
+  height: 38px;
+  border: 1px solid #d8e3df;
+  border-radius: 8px;
+  background: linear-gradient(145deg, #e9f3f0, #f8eee5);
+}
+
 .topbar-actions {
   display: flex;
   flex-wrap: wrap;
@@ -1246,11 +1262,6 @@ select:focus {
   display: none;
 }
 
-.mobile-section-brand,
-.today-schedule-brand {
-  display: none;
-}
-
 .mobile-today-actions,
 .mobile-detail-back {
   display: none;
@@ -1952,10 +1963,13 @@ body[data-role="member"] .detail-panel[data-panel="payment"] {
   }
 
   body[data-mobile-view="timetable"] .sidebar,
-  body[data-mobile-view="timetable"] .topbar,
   body[data-mobile-view="timetable"] .stats-grid,
   body[data-mobile-view="timetable"] .payment-overview-panel,
   body[data-mobile-view="timetable"] .workspace {
+    display: none;
+  }
+
+  body[data-mobile-view="timetable"] .topbar-actions {
     display: none;
   }
 
@@ -2379,8 +2393,12 @@ select {
     font-size: 24px;
   }
 
-  .topbar .eyebrow {
-    margin-bottom: 4px;
+  .topbar #todayLabel {
+    display: none;
+  }
+
+  .page-logo-placeholder {
+    display: block;
   }
 
   body[data-mobile-view="today"] .stats-grid {
@@ -2406,15 +2424,6 @@ select {
   .day-panel .section-title h3 {
     font-size: 20px;
     line-height: 1.2;
-  }
-
-  .today-schedule-brand,
-  .mobile-section-brand {
-    display: block;
-    margin: 0 0 4px;
-    color: var(--accent-dark);
-    font-size: 12px;
-    font-weight: 900;
   }
 
   .count-pill {
@@ -2508,6 +2517,9 @@ select {
   }
 
   .today-card-time {
+    display: grid !important;
+    justify-items: start;
+    gap: 4px;
     color: #5e676c !important;
     font-size: 12px !important;
     font-weight: 800;
@@ -2515,6 +2527,18 @@ select {
     overflow: visible !important;
     text-overflow: clip !important;
     white-space: nowrap;
+  }
+
+  .today-card-status {
+    display: inline-flex;
+    width: max-content;
+    border-radius: 5px;
+    background: #fff0dc;
+    color: #a55b10;
+    padding: 2px 6px;
+    font-size: 10px;
+    font-weight: 800;
+    line-height: 1.3;
   }
 
   .today-card-copy {
@@ -2542,9 +2566,26 @@ select {
   }
 
   .today-card-balance {
+    width: max-content;
     margin-top: 3px !important;
-    color: var(--accent-dark) !important;
+    border-radius: 5px;
+    padding: 3px 7px;
     font-weight: 800 !important;
+  }
+
+  .today-card-balance.balance-good {
+    background: #e5f2ee;
+    color: #176b5b !important;
+  }
+
+  .today-card-balance.balance-mid {
+    background: #fff0dc;
+    color: #9b5818 !important;
+  }
+
+  .today-card-balance.balance-low {
+    background: #fbe7e5;
+    color: #ad4640 !important;
   }
 
   .today-card-actions {

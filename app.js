@@ -296,7 +296,10 @@ document.addEventListener("DOMContentLoaded", async () => {
   $("#addLessonType").addEventListener("click", () => addLessonSettingsRow());
   $("#markAttendance").addEventListener("click", markAttendance);
   $("#deleteMember").addEventListener("click", deleteSelectedMember);
-  $("#mobileDetailBack").addEventListener("click", () => setMobileView("members"));
+  $("#mobileDetailBack").addEventListener("click", () => {
+    setMobileView("members");
+    render();
+  });
   $("#exportData").addEventListener("click", exportData);
   $("#importData").addEventListener("change", importData);
 
@@ -322,6 +325,8 @@ document.addEventListener("DOMContentLoaded", async () => {
   elements.mobileNavButtons.forEach((button) => {
     button.addEventListener("click", () => {
       setMobileView(button.dataset.mobileView);
+      elements.memberSearch.value = "";
+      render();
     });
   });
   elements.detailTabs.forEach((button) => {
@@ -711,7 +716,7 @@ function getMonthlyPayments() {
 function renderMemberList() {
   const query = elements.memberSearch.value.trim().toLowerCase();
   const showAllMembers = isMobileLayout() && mobileView === "members";
-  elements.sidebarTitle.textContent = showAllMembers ? "회원" : "오늘 수업";
+  elements.sidebarTitle.textContent = showAllMembers ? "회원관리" : "오늘 수업";
   elements.memberSearch.placeholder = showAllMembers ? "전체 회원 검색" : "오늘 수업 검색";
   elements.memberList.innerHTML = "";
 
@@ -947,6 +952,7 @@ function renderTimetable() {
     visibleDays.forEach((day) => {
       const cell = document.createElement("div");
       cell.className = `schedule-cell ${getTimePeriod(time)}`;
+      cell.dataset.time = time;
       const matches = groups.filter((item) => item.time === time && Number(item.day) === day);
 
       if (!matches.length) {
@@ -960,6 +966,7 @@ function renderTimetable() {
       }
 
       matches.forEach((group) => {
+        cell.dataset.hasLesson = "true";
         cell.append(createLessonBlock(group));
       });
 
@@ -968,6 +975,17 @@ function renderTimetable() {
   });
 
   elements.timetableGrid.append(table);
+  scrollTimetableToFirstLesson();
+}
+
+function scrollTimetableToFirstLesson() {
+  if (!isMobileLayout() || mobileView !== "timetable") return;
+  const firstLesson = elements.timetableGrid.querySelector('[data-has-lesson="true"]');
+  if (!firstLesson) return;
+
+  requestAnimationFrame(() => {
+    elements.timetableGrid.scrollTop = Math.max(0, firstLesson.offsetTop - 150);
+  });
 }
 
 function getVisibleTimetableDays() {
@@ -1143,16 +1161,20 @@ function renderTodaySchedule() {
     const balances = balanceValues.every((balance) => balance === balanceValues[0])
       ? `${balanceValues[0]}회 남음`
       : `${balanceValues.join("/")}회 남음`;
+    const balanceTone = getBalanceTone(balanceValues);
     card.innerHTML = `
       <button class="today-card-main" type="button">
-        <span class="today-card-time">${escapeHTML(item.timeLabel)}</span>
+        <span class="today-card-time">
+          <span>${escapeHTML(item.timeLabel)}</span>
+          ${status === "보강" ? '<small class="today-card-status">보강</small>' : ""}
+        </span>
         <span class="today-card-copy">
           <strong>${escapeHTML(item.members.map((member) => member.name).join(", "))}</strong>
         </span>
       </button>
       <span class="today-card-details">
-        <small class="today-card-lesson">${status ? `${escapeHTML(status)} · ` : ""}${escapeHTML(compactLessonType(item.lessonType, item.groups.length))}</small>
-        <small class="today-card-balance">${escapeHTML(balances)}</small>
+        <small class="today-card-lesson">${escapeHTML(compactLessonType(item.lessonType, item.groups.length))}</small>
+        <small class="today-card-balance ${balanceTone}">${escapeHTML(balances)}</small>
       </span>
     `;
     const actions = document.createElement("div");
@@ -1178,6 +1200,13 @@ function renderTodaySchedule() {
     card.append(actions);
     elements.todaySchedule.append(card);
   });
+}
+
+function getBalanceTone(balances) {
+  const lowest = Math.min(...balances);
+  if (lowest <= 2) return "balance-low";
+  if (lowest <= 4) return "balance-mid";
+  return "balance-good";
 }
 
 function addMember(event) {
