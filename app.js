@@ -220,6 +220,7 @@ const elements = {
   viewOptions: document.querySelectorAll(".view-option"),
   todaySchedule: $("#todaySchedule"),
   todayCount: $("#todayCount"),
+  todayScheduleDate: $("#todayScheduleDate"),
   memberModal: $("#memberModal"),
   memberForm: $("#memberForm"),
   paymentModal: $("#paymentModal"),
@@ -242,6 +243,11 @@ const elements = {
 document.addEventListener("DOMContentLoaded", async () => {
   elements.todayLabel.textContent = new Intl.DateTimeFormat("ko-KR", {
     year: "numeric",
+    month: "long",
+    day: "numeric",
+    weekday: "long",
+  }).format(today);
+  elements.todayScheduleDate.textContent = new Intl.DateTimeFormat("ko-KR", {
     month: "long",
     day: "numeric",
     weekday: "long",
@@ -627,7 +633,7 @@ function setDesktopView(view) {
   document.body.dataset.desktopView = desktopView;
   timetableView = desktopView === "schedule" ? "week" : "focus";
   elements.pageTitle.textContent = {
-    operations: "오늘 운영",
+    operations: "RAMON",
     schedule: "전체 시간표",
     members: "회원 관리",
     payments: "결제 관리",
@@ -653,7 +659,7 @@ function getAllowedMobileViews() {
 }
 
 function isMobileLayout() {
-  return window.matchMedia("(max-width: 760px)").matches;
+  return window.matchMedia("(max-width: 980px)").matches;
 }
 
 function renderStats() {
@@ -705,7 +711,7 @@ function getMonthlyPayments() {
 function renderMemberList() {
   const query = elements.memberSearch.value.trim().toLowerCase();
   const showAllMembers = isMobileLayout() && mobileView === "members";
-  elements.sidebarTitle.textContent = showAllMembers ? "회원 관리" : "오늘 수업";
+  elements.sidebarTitle.textContent = showAllMembers ? "회원" : "오늘 수업";
   elements.memberSearch.placeholder = showAllMembers ? "전체 회원 검색" : "오늘 수업 검색";
   elements.memberList.innerHTML = "";
 

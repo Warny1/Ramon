@@ -628,6 +628,20 @@ h4 {
   font-weight: 900;
 }
 
+.focus-table .lesson-main strong {
+  flex-wrap: wrap;
+  overflow: visible;
+  text-overflow: clip;
+  white-space: normal;
+}
+
+.focus-table .lesson-badge {
+  max-width: none;
+  overflow: visible;
+  text-overflow: clip;
+  white-space: nowrap;
+}
+
 .status-badge {
   flex: 0 0 auto;
   border-radius: 999px;
@@ -1033,6 +1047,8 @@ h4 {
   box-shadow: 0 28px 80px rgba(15, 23, 42, 0.24);
   padding: 0;
   z-index: 10;
+  max-height: calc(100dvh - 24px);
+  overflow: auto;
 }
 
 .wide-modal {
@@ -1227,6 +1243,11 @@ select:focus {
 }
 
 .mobile-nav {
+  display: none;
+}
+
+.mobile-section-brand,
+.today-schedule-brand {
   display: none;
 }
 
@@ -1542,6 +1563,26 @@ body[data-role="member"] .detail-panel[data-panel="payment"] {
 
   .member-options {
     grid-template-columns: 1fr;
+  }
+
+  body[data-mobile-view="members"] .sidebar-quick-actions {
+    grid-template-columns: 1fr;
+  }
+
+  body[data-mobile-view="members"] #openMakeupSchedule,
+  body[data-mobile-view="members"] .sidebar-attendance-actions {
+    display: none;
+  }
+
+  body[data-mobile-view="members"] .member-card {
+    grid-template-columns: minmax(0, 1fr) 78px;
+    align-items: center;
+  }
+
+  body[data-mobile-view="members"] .mini-balance {
+    width: 78px;
+    min-width: 78px;
+    white-space: nowrap;
   }
 }
 
@@ -2359,10 +2400,21 @@ select {
 
   .day-panel .section-title {
     margin: 0 2px 10px;
+    align-items: flex-end;
   }
 
   .day-panel .section-title h3 {
-    font-size: 15px;
+    font-size: 20px;
+    line-height: 1.2;
+  }
+
+  .today-schedule-brand,
+  .mobile-section-brand {
+    display: block;
+    margin: 0 0 4px;
+    color: var(--accent-dark);
+    font-size: 12px;
+    font-weight: 900;
   }
 
   .count-pill {
@@ -2625,7 +2677,9 @@ select {
   }
 
   .focus-table .lesson-block {
+    grid-template-columns: minmax(0, 1fr) 48px;
     min-height: 52px;
+    overflow: hidden;
   }
 
   .focus-table .lesson-main {
@@ -2674,6 +2728,7 @@ select {
 
   .focus-table .lesson-attendance-state {
     align-self: center;
+    width: 46px;
     min-width: 46px;
     border-radius: 6px;
     padding: 6px 5px;
@@ -2701,5 +2756,7 @@ select {
   .modal {
     border: 0;
     border-radius: 14px 14px 0 0;
+    max-height: calc(100dvh - 12px);
+    overscroll-behavior: contain;
   }
 }
