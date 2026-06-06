@@ -284,6 +284,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   $("#addLessonType").addEventListener("click", () => addLessonSettingsRow());
   $("#markAttendance").addEventListener("click", markAttendance);
   $("#deleteMember").addEventListener("click", deleteSelectedMember);
+  $("#mobileDetailBack").addEventListener("click", () => setMobileView("members"));
   $("#exportData").addEventListener("click", exportData);
   $("#importData").addEventListener("change", importData);
 
@@ -634,7 +635,8 @@ function renderMobileNav() {
   elements.mobileNavButtons.forEach((button) => {
     const allowed = getAllowedMobileViews().includes(button.dataset.mobileView);
     button.hidden = !allowed;
-    button.classList.toggle("active", button.dataset.mobileView === mobileView);
+    const activeView = mobileView === "detail" ? "members" : mobileView;
+    button.classList.toggle("active", button.dataset.mobileView === activeView);
   });
 }
 
@@ -732,9 +734,9 @@ function renderMemberList() {
     button.innerHTML = `
       <span>
         <strong>${escapeHTML(member.name)}</strong>
-        <span>${escapeHTML([time, className, lessonType].filter(Boolean).join(" · "))}</span>
+        <span>${escapeHTML(compactLessonType(lessonType))}</span>
       </span>
-      <span class="mini-balance ${balance <= 2 ? "low" : ""}">${balance}</span>
+      <span class="mini-balance ${balance <= 2 ? "low" : ""}">잔여 ${balance}회</span>
     `;
     button.addEventListener("click", () => {
       selectedMemberId = member.id;
@@ -822,7 +824,7 @@ function renderAllMembersOverview() {
         <small>${escapeHTML(member.phone || "연락처 없음")}</small>
         <small>${escapeHTML(member.defaultLessonType || "레슨 미지정")}</small>
       </span>
-      <span class="mini-balance ${balance <= 2 ? "low" : ""}">${balance}</span>
+      <span class="mini-balance ${balance <= 2 ? "low" : ""}">잔여 ${balance}회</span>
     `;
     card.addEventListener("click", () => {
       selectedMemberId = member.id;
@@ -1705,7 +1707,6 @@ function getTodaySidebarEntries() {
 function getGroupKey(group) {
   return [
     group.className || "수업",
-    group.lessonType || "",
     group.status || "",
     group.members.map((member) => member.id).sort().join(","),
   ].join("|");

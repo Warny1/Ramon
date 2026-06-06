@@ -298,12 +298,13 @@ h4 {
 .mini-balance {
   display: grid;
   place-items: center;
-  min-width: 38px;
+  min-width: 64px;
   height: 30px;
   border-radius: 8px;
   background: var(--success-soft);
   color: var(--success);
   font-weight: 900;
+  font-size: 11px;
 }
 
 .mini-balance.low {
@@ -1197,6 +1198,10 @@ select:focus {
   display: none;
 }
 
+.mobile-detail-back {
+  display: none;
+}
+
 .topbar .eyebrow {
   margin-bottom: 2px;
 }
@@ -1554,6 +1559,24 @@ body[data-role="member"] .detail-panel[data-panel="payment"] {
     padding: 12px;
   }
 
+  body[data-mobile-view="members"] .sidebar-quick-actions {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  body[data-mobile-view="members"] .member-card {
+    border-bottom: 1px solid #edf0f0;
+    border-radius: 0;
+    background: transparent;
+  }
+
+  body[data-mobile-view="members"] .member-card:last-child {
+    border-bottom: 0;
+  }
+
+  body[data-mobile-view="members"] .member-card.active {
+    background: var(--accent-soft);
+  }
+
   .topbar {
     gap: 12px;
     margin-bottom: 12px;
@@ -1795,7 +1818,7 @@ body[data-role="member"] .detail-panel[data-panel="payment"] {
     bottom: 0;
     z-index: 9;
     display: grid;
-    grid-template-columns: repeat(5, 1fr);
+    grid-template-columns: repeat(4, 1fr);
     gap: 4px;
     border-top: 1px solid var(--line);
     background: rgba(255, 255, 255, 0.96);
@@ -1876,6 +1899,10 @@ body[data-role="member"] .detail-panel[data-panel="payment"] {
 
   body[data-mobile-view="detail"] .workspace {
     display: block;
+  }
+
+  body[data-mobile-view="detail"] .mobile-detail-back {
+    display: inline-flex;
   }
 }
 
@@ -2297,7 +2324,7 @@ select {
   }
 
   .today-card {
-    grid-template-columns: minmax(0, 1fr) 106px;
+    grid-template-columns: minmax(0, 1fr) 92px;
     gap: 8px;
     min-height: 72px;
     border: 0;
@@ -2313,7 +2340,7 @@ select {
 
   .today-card-main {
     display: grid;
-    grid-template-columns: 72px minmax(0, 1fr);
+    grid-template-columns: 68px minmax(0, 1fr);
     align-items: center;
     gap: 8px;
     min-width: 0;
@@ -2345,20 +2372,24 @@ select {
     color: #7b8388;
     font-size: 11px;
     font-weight: 600;
+    white-space: normal;
+    line-height: 1.35;
   }
 
   .today-card-actions {
     display: grid;
-    grid-template-columns: 58px 42px;
+    grid-template-columns: 48px 40px;
     gap: 4px;
   }
 
   .attendance-big {
     min-width: 0;
-    min-height: 46px;
+    min-height: 44px;
     border: 1px solid transparent;
     border-radius: 7px;
-    font-size: 13px;
+    font-size: 12px;
+    white-space: nowrap;
+    writing-mode: horizontal-tb;
   }
 
   .attendance-big.present {
@@ -2397,6 +2428,19 @@ select {
   .mobile-nav-button.active {
     background: var(--accent-soft);
     color: var(--accent-dark);
+  }
+
+  .mobile-detail-back {
+    align-items: center;
+    gap: 6px;
+    min-height: 38px;
+    margin: -4px 0 12px;
+    border: 0;
+    background: transparent;
+    color: var(--accent-dark);
+    padding: 0 2px;
+    font-size: 13px;
+    font-weight: 800;
   }
 
   .modal {
