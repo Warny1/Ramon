@@ -760,7 +760,6 @@ function renderTodaySidebarList(query) {
 
   filtered.forEach((entry) => {
     const primaryMember = entry.members[0];
-    const isActive = entry.members.some((member) => member.id === selectedMemberId);
     const attendanceStatus = getCombinedAttendanceStatus(entry.groups);
     const names = entry.members.map((member) => member.name).join(", ");
     const balanceValues = entry.members.map(getBalance);
@@ -768,7 +767,7 @@ function renderTodaySidebarList(query) {
       ? `${balanceValues[0]}회`
       : `${balanceValues.join("/")}회`;
     const card = document.createElement("div");
-    card.className = `member-card today-attendance-card ${isActive ? "active" : ""}`;
+    card.className = "member-card today-attendance-card";
     card.innerHTML = `
       <button class="today-attendance-main" type="button">
         <span class="today-lesson-time">${escapeHTML(entry.timeLabel)}</span>
@@ -787,7 +786,7 @@ function renderTodaySidebarList(query) {
       const button = document.createElement("button");
       button.className = `mini-action sidebar-attendance ${action.className} ${attendanceStatus === action.status ? "selected" : ""}`;
       button.type = "button";
-      button.innerHTML = `<span class="action-icon" aria-hidden="true">${action.status === "출석" ? "✓" : "×"}</span><span>${action.label}</span>`;
+      button.textContent = action.label;
       button.setAttribute("aria-label", action.label);
       button.disabled = !canEditSharedData();
       button.addEventListener("click", () => markCombinedAttendance(entry.groups, action.status));
@@ -1150,7 +1149,7 @@ function renderTodaySchedule() {
       const button = document.createElement("button");
       button.className = `mini-action attendance-big ${action.className} ${attendanceStatus === action.status ? "selected" : ""}`;
       button.type = "button";
-      button.innerHTML = `<span class="action-icon" aria-hidden="true">${action.status === "출석" ? "✓" : "×"}</span><span class="action-label">${action.label}</span>`;
+      button.textContent = action.label;
       button.setAttribute("aria-label", action.label);
       button.disabled = !canEditSharedData();
       button.addEventListener("click", () => markCombinedAttendance(item.groups, action.status));
@@ -1733,7 +1732,6 @@ function markCombinedAttendance(groups, status = "출석") {
       recordAttendance(member, group.className || "출석", group.time, status);
     });
   });
-  selectedMemberId = groups[0]?.members[0]?.id ?? selectedMemberId;
   commit();
 }
 
@@ -1802,8 +1800,7 @@ function getScheduleGroups() {
 
 function createLessonBlock(group) {
   const block = document.createElement("div");
-  const isActive = group.members.some((member) => member.id === selectedMemberId);
-  block.className = `lesson-block ${isActive ? "active" : ""}`;
+  block.className = "lesson-block";
 
   const mainButton = document.createElement("button");
   mainButton.className = "lesson-main";
