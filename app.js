@@ -1142,10 +1142,12 @@ function renderTodaySchedule() {
         <span class="today-card-time">${escapeHTML(item.timeLabel)}</span>
         <span class="today-card-copy">
           <strong>${escapeHTML(item.members.map((member) => member.name).join(", "))}</strong>
-          <small class="today-card-lesson">${status ? `${escapeHTML(status)} · ` : ""}${escapeHTML(compactLessonType(item.lessonType, item.groups.length))}</small>
-          <small class="today-card-balance">${escapeHTML(balances)}</small>
         </span>
       </button>
+      <span class="today-card-details">
+        <small class="today-card-lesson">${status ? `${escapeHTML(status)} · ` : ""}${escapeHTML(compactLessonType(item.lessonType, item.groups.length))}</small>
+        <small class="today-card-balance">${escapeHTML(balances)}</small>
+      </span>
     `;
     const actions = document.createElement("div");
     actions.className = "today-card-actions";

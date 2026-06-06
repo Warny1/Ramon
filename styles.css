@@ -2401,9 +2401,10 @@ select {
   }
 
   .today-card {
-    grid-template-columns: minmax(0, 1fr);
-    gap: 8px;
-    min-height: 98px;
+    grid-template-columns: 88px minmax(0, 1fr) 108px;
+    grid-template-rows: auto auto;
+    gap: 5px 8px;
+    min-height: 88px;
     border: 0;
     border-bottom: 1px solid #edf0f0;
     border-radius: 0;
@@ -2416,10 +2417,37 @@ select {
   }
 
   .today-card-main {
-    display: grid;
-    grid-template-columns: 88px minmax(0, 1fr);
+    display: contents;
+  }
+
+  .today-card-main .today-card-time {
+    grid-column: 1;
+    grid-row: 1;
+    align-self: center;
+  }
+
+  .today-card-main .today-card-copy {
+    grid-column: 2 / 4;
+    grid-row: 1;
+    align-self: center;
+  }
+
+  .today-card-details {
+    display: grid !important;
+    grid-column: 2;
+    grid-row: 2;
+    align-self: center;
+    gap: 2px;
+    min-width: 0;
+  }
+
+  .today-card-details small {
+    display: block;
+    min-width: 0;
+  }
+
+  .today-card-main {
     align-items: center;
-    gap: 8px;
     min-width: 0;
     border: 0;
     background: transparent;
@@ -2469,9 +2497,11 @@ select {
 
   .today-card-actions {
     display: grid;
+    grid-column: 3;
+    grid-row: 2;
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 6px;
-    padding-left: 88px;
+    padding-left: 0;
   }
 
   .attendance-big {
