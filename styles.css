@@ -2668,20 +2668,6 @@ select {
     color: #737b80;
   }
 
-  .focus-table .combined-continuation {
-    justify-content: flex-start;
-    min-height: 42px;
-    border-left: 3px solid var(--accent);
-    background: linear-gradient(to right, #edf5f2, #f7faf9);
-    padding: 5px 10px;
-  }
-
-  .focus-table .continuation-label {
-    color: #789088;
-    font-size: 10px;
-    font-weight: 700;
-  }
-
   .modal {
     border: 0;
     border-radius: 14px 14px 0 0;

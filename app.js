@@ -922,9 +922,6 @@ function renderTimetable() {
   const groups = getScheduleGroups();
   const visibleDays = getVisibleTimetableDays();
   const isWeekTable = timetableView === "week" && !isMobileLayout();
-  const combinedByDay = new Map(
-    visibleDays.map((day) => [day, combineConsecutiveGroups(groups.filter((group) => Number(group.day) === day))]),
-  );
   elements.timetableGrid.innerHTML = "";
   elements.timetableGrid.classList.toggle("week-view", isWeekTable);
   elements.timetableRangeLabel.textContent = isMobileLayout() || desktopView === "operations" ? "오늘 하루" : "월-일 전체";
@@ -944,29 +941,9 @@ function renderTimetable() {
     visibleDays.forEach((day) => {
       const cell = document.createElement("div");
       cell.className = `schedule-cell ${getTimePeriod(time)}`;
-      const combinedEntries = combinedByDay.get(day) || [];
-      const combinedEntry = !isWeekTable
-        ? combinedEntries.find((entry) => entry.startTime === time)
-        : null;
-      const isContinuation = !isWeekTable && combinedEntries.some(
-        (entry) =>
-          entry.groups.length > 1 &&
-          timeToMinutes(time) > timeToMinutes(entry.startTime) &&
-          timeToMinutes(time) <= timeToMinutes(entry.endTime),
-      );
-      const matches = isWeekTable
-        ? groups.filter((item) => item.time === time && Number(item.day) === day)
-        : combinedEntry
-          ? [combinedEntry]
-          : [];
+      const matches = groups.filter((item) => item.time === time && Number(item.day) === day);
 
-      if (isContinuation) {
-        cell.classList.add("combined-continuation");
-        const continuation = document.createElement("span");
-        continuation.className = "continuation-label";
-        continuation.textContent = "연속 수업";
-        cell.append(continuation);
-      } else if (!matches.length) {
+      if (!matches.length) {
         cell.classList.add("empty");
         const emptyButton = document.createElement("button");
         emptyButton.className = "empty-slot";
