@@ -1,6 +1,5 @@
 const STORAGE_KEY = "member-desk-data-v5-corrected-payments";
 const LEGACY_STORAGE_KEY = "member-desk-data-v1";
-const AUTH_STORAGE_KEY = "member-desk-auth-session";
 const SUPABASE_TABLE = "app_state";
 const SUPABASE_RECORD_ID = "member-desk";
 const PRESET_TIMETABLE_VERSION = "2026-06-photo-timetable-1";
@@ -189,8 +188,6 @@ let memberView = "today";
 let timetableView = "focus";
 let activeDetailPanel = "schedule";
 let mobileView = "today";
-let authSession = null;
-let currentProfile = { role: "admin", memberName: "" };
 
 const $ = (selector) => document.querySelector(selector);
 
@@ -202,13 +199,8 @@ const elements = {
   mobileNavButtons: document.querySelectorAll("[data-mobile-view]"),
   todayLabel: $("#todayLabel"),
   todayClasses: $("#todayClasses"),
-  lowBalance: $("#lowBalance"),
   monthlyRevenue: $("#monthlyRevenue"),
   monthlyPaymentList: $("#monthlyPaymentList"),
-  roleBadge: $("#roleBadge"),
-  authModal: $("#authModal"),
-  authForm: $("#authForm"),
-  authError: $("#authError"),
   emptyState: $("#emptyState"),
   detailView: $("#detailView"),
   memberStatus: $("#memberStatus"),
@@ -267,7 +259,6 @@ document.addEventListener("DOMContentLoaded", async () => {
     openModal(elements.lessonSettingsModal);
   });
   $("#saveNow").addEventListener("click", saveNow);
-  $("#signOut").addEventListener("click", signOut);
   $("#openSheetsModal").addEventListener("click", () => openModal(elements.sheetsModal));
   $("#exportSheetCsv").addEventListener("click", exportSheetCsv);
   $("#importSheetCsv").addEventListener("change", importSheetCsv);
@@ -317,9 +308,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   getPaymentDiscountSelect().addEventListener("change", applyPaymentDiscountToAmount);
   elements.lessonSettingsForm.addEventListener("submit", saveLessonSettings);
   elements.scheduleForm.addEventListener("submit", addSchedule);
-  elements.authForm.addEventListener("submit", signIn);
 
-  await initializeAuth();
   await initializeData();
   fillLessonTypeOptions();
   fillScheduleLessonTypeOptions();
@@ -333,28 +322,7 @@ async function initializeData() {
   selectedMemberId = getAccessibleMembers()[0]?.id ?? null;
 }
 
-async function initializeAuth() {
-  if (!hasSupabaseConfig()) {
-    currentProfile = { role: "admin", memberName: "" };
-    applyRoleUI();
-    return;
-  }
-
-  authSession = loadStoredSession();
-  if (!authSession?.access_token) {
-    applySignedOutUI();
-    return;
-  }
-
-  currentProfile = await loadProfile(authSession.user);
-  applyRoleUI();
-}
-
 async function loadData() {
-  if (hasSupabaseConfig() && !authSession?.access_token) {
-    return cloneData(seedData);
-  }
-
   if (hasSupabaseConfig()) {
     const remoteData = await loadSupabaseData();
     if (remoteData) return remoteData;
@@ -570,112 +538,13 @@ function getSupabaseRestUrl() {
 function getSupabaseHeaders() {
   return {
     apikey: window.SUPABASE_CONFIG.anonKey,
-    Authorization: `Bearer ${authSession?.access_token || window.SUPABASE_CONFIG.anonKey}`,
+    Authorization: `Bearer ${window.SUPABASE_CONFIG.anonKey}`,
     "Content-Type": "application/json",
   };
-}
-
-function getSupabaseAuthHeaders() {
-  return {
-    apikey: window.SUPABASE_CONFIG.anonKey,
-    "Content-Type": "application/json",
-  };
-}
-
-function loadStoredSession() {
-  try {
-    return JSON.parse(localStorage.getItem(AUTH_STORAGE_KEY));
-  } catch {
-    return null;
-  }
-}
-
-async function signIn(event) {
-  event.preventDefault();
-  elements.authError.textContent = "";
-
-  const form = new FormData(elements.authForm);
-  const response = await fetch(`${window.SUPABASE_CONFIG.url.replace(/\/$/, "")}/auth/v1/token?grant_type=password`, {
-    method: "POST",
-    headers: getSupabaseAuthHeaders(),
-    body: JSON.stringify({
-      email: String(form.get("email")).trim(),
-      password: String(form.get("password")),
-    }),
-  });
-
-  if (!response.ok) {
-    elements.authError.textContent = "이메일 또는 비밀번호를 확인해주세요.";
-    return;
-  }
-
-  authSession = await response.json();
-  localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(authSession));
-  currentProfile = await loadProfile(authSession.user);
-  closeModal(elements.authModal);
-  applyRoleUI();
-  await initializeData();
-  fillLessonTypeOptions();
-  fillScheduleLessonTypeOptions();
-  render();
-}
-
-async function signOut() {
-  authSession = null;
-  currentProfile = { role: "member", memberName: "" };
-  localStorage.removeItem(AUTH_STORAGE_KEY);
-  state = cloneData(seedData);
-  selectedMemberId = null;
-  applySignedOutUI();
-  render();
-}
-
-async function loadProfile(user) {
-  if (!user?.id) return { role: "member", memberName: "" };
-
-  const response = await fetch(
-    `${window.SUPABASE_CONFIG.url.replace(/\/$/, "")}/rest/v1/profiles?user_id=eq.${encodeURIComponent(user.id)}&select=role,member_name`,
-    { headers: getSupabaseHeaders() },
-  );
-
-  if (!response.ok) return { role: "member", memberName: "" };
-
-  const rows = await response.json();
-  return {
-    role: normalizeRole(rows[0]?.role),
-    memberName: rows[0]?.member_name || "",
-  };
-}
-
-function normalizeRole(role) {
-  return ["admin", "coach", "member"].includes(role) ? role : "member";
-}
-
-function applySignedOutUI() {
-  document.body.dataset.auth = "signed-out";
-  document.body.dataset.role = "guest";
-  elements.roleBadge.textContent = "로그인 필요";
-  openModal(elements.authModal);
-}
-
-function applyRoleUI() {
-  const role = getCurrentRole();
-  document.body.dataset.auth = "signed-in";
-  document.body.dataset.role = role;
-  elements.roleBadge.textContent = getRoleLabel(role);
-  if (!getAllowedMobileViews().includes(mobileView)) {
-    mobileView = getAllowedMobileViews()[0];
-    document.body.dataset.mobileView = mobileView;
-  }
-  renderMobileNav();
 }
 
 function getCurrentRole() {
-  return hasSupabaseConfig() ? normalizeRole(currentProfile.role) : "admin";
-}
-
-function getRoleLabel(role = getCurrentRole()) {
-  return { admin: "관리자", coach: "코치", member: "회원" }[role] || "회원";
+  return "admin";
 }
 
 function canManagePayments() {
@@ -691,12 +560,11 @@ function canEditSharedData() {
 }
 
 function isMemberRole() {
-  return getCurrentRole() === "member";
+  return false;
 }
 
 function getAccessibleMembers() {
-  if (!isMemberRole()) return state.members;
-  return state.members.filter((member) => member.name === currentProfile.memberName);
+  return state.members;
 }
 
 function render() {
@@ -749,10 +617,8 @@ function isMobileLayout() {
 
 function renderStats() {
   const todayItems = getTodayItems();
-  const lowCount = getAccessibleMembers().filter((member) => getBalance(member) <= 2).length;
 
   elements.todayClasses.textContent = String(todayItems.length);
-  elements.lowBalance.textContent = String(lowCount);
 }
 
 function renderPaymentOverview() {
@@ -797,29 +663,30 @@ function getMonthlyPayments() {
 
 function renderMemberList() {
   const query = elements.memberSearch.value.trim().toLowerCase();
-  const entries =
-    memberView === "today"
-      ? getTodayEntries()
-      : getAccessibleMembers()
-          .map((member) => ({
-            member,
-            time: "",
-            className: member.phone || "연락처 없음",
-            lessonType: member.defaultLessonType || "레슨 미지정",
-          }))
-          .sort((a, b) => a.member.name.localeCompare(b.member.name, "ko-KR"));
-
   elements.sidebarTitle.textContent = memberView === "today" ? "오늘 회원" : "전체 회원";
   elements.memberSearch.placeholder = memberView === "today" ? "오늘 회원 검색" : "전체 회원 검색";
+  elements.memberList.innerHTML = "";
+
+  if (memberView === "today") {
+    renderTodaySidebarList(query);
+    return;
+  }
+
+  const entries = getAccessibleMembers()
+    .map((member) => ({
+      member,
+      time: "",
+      className: member.phone || "연락처 없음",
+      lessonType: member.defaultLessonType || "레슨 미지정",
+    }))
+    .sort((a, b) => a.member.name.localeCompare(b.member.name, "ko-KR"));
 
   const filtered = entries.filter((entry) =>
     `${entry.member.name} ${entry.member.phone} ${entry.time} ${entry.className} ${entry.lessonType}`.toLowerCase().includes(query),
   );
 
-  elements.memberList.innerHTML = "";
-
   if (!filtered.length) {
-    elements.memberList.append(createEmptyLine(memberView === "today" ? "오늘 예정된 회원이 없습니다." : "등록된 회원이 없습니다."));
+    elements.memberList.append(createEmptyLine("등록된 회원이 없습니다."));
     return;
   }
 
@@ -841,6 +708,47 @@ function renderMemberList() {
       render();
     });
     elements.memberList.append(button);
+  });
+}
+
+function renderTodaySidebarList(query) {
+  const entries = getTodaySidebarEntries();
+  const filtered = entries.filter((entry) =>
+    `${entry.members.map((member) => member.name).join(" ")} ${entry.timeLabel} ${entry.className} ${entry.lessonType}`.toLowerCase().includes(query),
+  );
+
+  if (!filtered.length) {
+    elements.memberList.append(createEmptyLine("오늘 예정된 수업이 없습니다."));
+    return;
+  }
+
+  filtered.forEach((entry) => {
+    const primaryMember = entry.members[0];
+    const isActive = entry.members.some((member) => member.id === selectedMemberId);
+    const attendance = getCombinedAttendanceState(entry.groups);
+    const card = document.createElement("div");
+    card.className = `member-card today-attendance-card ${isActive ? "active" : ""}`;
+    card.innerHTML = `
+      <button class="today-attendance-main" type="button">
+        <strong>${escapeHTML(entry.timeLabel)} · ${escapeHTML(entry.members.map((member) => member.name).join(", "))}</strong>
+        <span>${escapeHTML(entry.lessonType)} · 잔여 ${escapeHTML(entry.members.map((member) => `${member.name} ${getBalance(member)}회`).join(" / "))}</span>
+      </button>
+    `;
+
+    const attendanceButton = document.createElement("button");
+    attendanceButton.className = `mini-action sidebar-attendance ${attendance.done ? "done" : ""}`;
+    attendanceButton.type = "button";
+    attendanceButton.textContent = attendance.done ? "완료" : "출석";
+    attendanceButton.disabled = attendance.done || !canEditSharedData();
+    attendanceButton.addEventListener("click", () => markCombinedAttendance(entry.groups));
+
+    card.querySelector(".today-attendance-main").addEventListener("click", () => {
+      selectedMemberId = primaryMember?.id ?? selectedMemberId;
+      if (isMobileLayout()) setMobileView("detail");
+      render();
+    });
+    card.append(attendanceButton);
+    elements.memberList.append(card);
   });
 }
 
@@ -1655,6 +1563,66 @@ function isCountedAttendance(item) {
 
 function getTodayItems() {
   return getScheduleGroups().filter((item) => Number(item.day) === today.getDay());
+}
+
+function getTodaySidebarEntries() {
+  const sorted = getTodayItems().sort((a, b) => a.time.localeCompare(b.time) || getGroupKey(a).localeCompare(getGroupKey(b)));
+  const combined = [];
+
+  sorted.forEach((group) => {
+    const previous = combined.at(-1);
+    if (previous && previous.key === getGroupKey(group) && timeToMinutes(group.time) === timeToMinutes(previous.endTime) + 30) {
+      previous.groups.push(group);
+      previous.endTime = group.time;
+      previous.timeLabel = `${previous.startTime}-${minutesToTime(timeToMinutes(group.time) + 30)}`;
+      return;
+    }
+
+    combined.push({
+      key: getGroupKey(group),
+      startTime: group.time,
+      endTime: group.time,
+      timeLabel: group.time,
+      className: group.className,
+      lessonType: group.lessonType,
+      members: group.members,
+      groups: [group],
+    });
+  });
+
+  return combined;
+}
+
+function getGroupKey(group) {
+  return [
+    group.className || "수업",
+    group.lessonType || "",
+    group.status || "",
+    group.members.map((member) => member.id).sort().join(","),
+  ].join("|");
+}
+
+function getCombinedAttendanceState(groups) {
+  const states = groups.map(getGroupAttendanceState);
+  const recorded = states.reduce((sum, item) => sum + item.recorded, 0);
+  const total = states.reduce((sum, item) => sum + item.total, 0);
+  return {
+    recorded,
+    total,
+    done: total > 0 && recorded === total,
+    partial: recorded > 0 && recorded < total,
+  };
+}
+
+function markCombinedAttendance(groups) {
+  if (!canEditSharedData()) return;
+  groups.forEach((group) => {
+    group.members.forEach((member) => {
+      recordAttendance(member, group.className || "출석", group.time, "");
+    });
+  });
+  selectedMemberId = groups[0]?.members[0]?.id ?? selectedMemberId;
+  commit();
 }
 
 function getTodayEntries() {

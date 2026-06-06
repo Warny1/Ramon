@@ -205,6 +205,29 @@ h4 {
   text-align: left;
 }
 
+.today-attendance-card {
+  grid-template-columns: minmax(0, 1fr) 58px;
+  align-items: stretch;
+}
+
+.today-attendance-main {
+  min-width: 0;
+  border: 0;
+  background: transparent;
+  padding: 0;
+  text-align: left;
+}
+
+.sidebar-attendance {
+  min-height: 46px;
+  padding: 0 8px;
+}
+
+.sidebar-attendance.done {
+  background: var(--success-soft);
+  color: var(--success);
+}
+
 .member-card.active {
   border-color: rgba(37, 99, 235, 0.34);
   background: white;
@@ -264,6 +287,33 @@ h4 {
   flex-wrap: wrap;
   justify-content: flex-end;
   gap: 6px;
+}
+
+.desktop-nav {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--row-soft);
+  padding: 3px;
+}
+
+.desktop-nav-button {
+  border: 0;
+  border-radius: 6px;
+  min-height: 32px;
+  background: transparent;
+  color: var(--muted);
+  padding: 0 14px;
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.desktop-nav-button.active {
+  background: white;
+  color: var(--accent-dark);
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.08);
 }
 
 .icon-button {
@@ -591,6 +641,7 @@ h4 {
 }
 
 .payment-overview-panel {
+  display: none;
   padding: 14px;
   max-height: 220px;
   overflow: hidden;
@@ -1045,34 +1096,8 @@ select:focus {
   display: none;
 }
 
-.role-badge {
-  display: inline-flex;
-  align-items: center;
-  min-height: 38px;
-  border: 1px solid var(--line);
-  border-radius: 8px;
-  background: var(--success-soft);
-  color: var(--success);
-  padding: 0 12px;
-  font-size: 13px;
-  font-weight: 900;
-}
-
 .topbar .eyebrow {
   margin-bottom: 2px;
-}
-
-.form-error {
-  min-height: 18px;
-  margin: 0;
-  color: var(--danger);
-  font-size: 13px;
-  font-weight: 800;
-}
-
-body[data-auth="signed-out"] .app-shell,
-body[data-auth="signed-out"] .mobile-nav {
-  display: none;
 }
 
 body[data-role="coach"] #openLessonSettings,
@@ -1138,8 +1163,31 @@ body[data-role="member"] .detail-panel[data-panel="payment"] {
   }
 
   .payment-overview-panel {
+    display: block;
     grid-column: 2;
     grid-row: 2;
+  }
+
+  body[data-mobile-view="today"] .payment-overview-panel {
+    display: none;
+  }
+
+  body[data-mobile-view="payments"] .stats-grid,
+  body[data-mobile-view="payments"] .timetable-panel,
+  body[data-mobile-view="payments"] .workspace {
+    display: none;
+  }
+
+  body[data-mobile-view="payments"] .payment-overview-panel {
+    display: block;
+    grid-column: 1 / -1;
+    grid-row: 2 / 4;
+    max-height: none;
+    overflow: auto;
+  }
+
+  body[data-mobile-view="payments"] .payment-overview-panel .table-like {
+    max-height: none;
   }
 
   .timetable-panel {
@@ -1163,9 +1211,7 @@ body[data-role="member"] .detail-panel[data-panel="payment"] {
   }
 
   .day-panel {
-    flex: 0 0 260px;
-    min-height: 0;
-    overflow: hidden;
+    display: none;
   }
 
   .today-schedule {
@@ -1322,6 +1368,10 @@ body[data-role="member"] .detail-panel[data-panel="payment"] {
   .topbar {
     gap: 12px;
     margin-bottom: 12px;
+  }
+
+  .desktop-nav {
+    display: none;
   }
 
   body[data-mobile-view="today"] .topbar {
