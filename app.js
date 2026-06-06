@@ -746,6 +746,7 @@ function renderMemberList() {
 
   filtered.forEach(({ member, time, className, lessonType }) => {
     const balance = getBalance(member);
+    const balanceTone = getBalanceTone([balance]);
     const button = document.createElement("button");
     button.className = `member-card ${member.id === selectedMemberId ? "active" : ""}`;
     button.type = "button";
@@ -754,7 +755,7 @@ function renderMemberList() {
         <strong>${escapeHTML(member.name)}</strong>
         <span>${escapeHTML(compactLessonType(lessonType))}</span>
       </span>
-      <span class="mini-balance ${balance <= 2 ? "low" : ""}">잔여 ${balance}회</span>
+      <span class="mini-balance ${balanceTone}">잔여 ${balance}회</span>
     `;
     button.addEventListener("click", () => {
       selectedMemberId = member.id;
@@ -784,6 +785,7 @@ function renderTodaySidebarList(query) {
     const balances = balanceValues.every((balance) => balance === balanceValues[0])
       ? `${balanceValues[0]}회`
       : `${balanceValues.join("/")}회`;
+    const balanceTone = getBalanceTone(balanceValues);
     const card = document.createElement("div");
     card.className = "member-card today-attendance-card";
     card.innerHTML = `
@@ -791,7 +793,7 @@ function renderTodaySidebarList(query) {
         <span class="today-lesson-time">${escapeHTML(entry.timeLabel)}</span>
         <strong class="today-lesson-names">${escapeHTML(names)}</strong>
         <span class="today-lesson-type ${entry.status === "보강" ? "today-lesson-status" : ""}">${entry.status === "보강" ? "보강 · " : ""}${escapeHTML(compactLessonType(entry.lessonType, entry.groups.length))}</span>
-        <span class="today-lesson-balance">${escapeHTML(balances)}</span>
+        <span class="today-lesson-balance ${balanceTone}">${escapeHTML(balances)}</span>
       </button>
     `;
 
@@ -833,6 +835,7 @@ function renderAllMembersOverview() {
 
   members.forEach((member) => {
     const balance = getBalance(member);
+    const balanceTone = getBalanceTone([balance]);
     const card = document.createElement("button");
     card.className = "directory-member";
     card.type = "button";
@@ -842,7 +845,7 @@ function renderAllMembersOverview() {
         <small>${escapeHTML(member.phone || "연락처 없음")}</small>
         <small>${escapeHTML(member.defaultLessonType || "레슨 미지정")}</small>
       </span>
-      <span class="mini-balance ${balance <= 2 ? "low" : ""}">잔여 ${balance}회</span>
+      <span class="mini-balance ${balanceTone}">잔여 ${balance}회</span>
     `;
     card.addEventListener("click", () => {
       selectedMemberId = member.id;
@@ -865,6 +868,8 @@ function renderDetail(member) {
     <span class="member-meta-row"><small>이용 기록</small><strong>${canManagePayments() ? `결제 ${paidSessions}회 · ` : ""}출석 ${member.attendances.length}회</strong></span>
   `;
   elements.memberBalance.textContent = String(balance);
+  elements.memberBalance.parentElement.classList.remove("balance-good", "balance-mid", "balance-low");
+  elements.memberBalance.parentElement.classList.add(getBalanceTone([balance]));
 
   renderSchedule(member);
   renderAttendance(member);

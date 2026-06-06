@@ -307,15 +307,35 @@ h4 {
   min-width: 64px;
   height: 30px;
   border-radius: 8px;
-  background: var(--success-soft);
-  color: var(--success);
   font-weight: 900;
   font-size: 11px;
 }
 
-.mini-balance.low {
-  background: var(--warn-soft);
-  color: var(--warn);
+.mini-balance.balance-good,
+.today-lesson-balance.balance-good,
+.balance-chip.balance-good {
+  background: #e5f2ee;
+  color: #176b5b;
+}
+
+.mini-balance.balance-mid,
+.today-lesson-balance.balance-mid,
+.balance-chip.balance-mid {
+  background: #fff0dc;
+  color: #9b5818;
+}
+
+.mini-balance.balance-low,
+.today-lesson-balance.balance-low,
+.balance-chip.balance-low {
+  background: #fbe7e5;
+  color: #ad4640;
+}
+
+.today-lesson-balance {
+  border-radius: 5px;
+  padding: 3px 6px;
+  font-weight: 800;
 }
 
 .main {
@@ -2554,6 +2574,16 @@ select {
   .today-card-details small {
     display: block;
     min-width: 0;
+  }
+
+  .today-card-lesson {
+    width: max-content;
+    max-width: 100%;
+    border-radius: 5px;
+    background: #e8eff9;
+    color: #355f91 !important;
+    padding: 3px 7px;
+    font-weight: 800 !important;
   }
 
   .today-card-main {
