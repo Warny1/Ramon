@@ -188,6 +188,7 @@ let memberView = "today";
 let timetableView = "focus";
 let activeDetailPanel = "schedule";
 let mobileView = "today";
+let desktopView = "operations";
 
 const $ = (selector) => document.querySelector(selector);
 
@@ -197,10 +198,14 @@ const elements = {
   memberList: $("#memberList"),
   memberViewButtons: document.querySelectorAll("[data-member-view]"),
   mobileNavButtons: document.querySelectorAll("[data-mobile-view]"),
+  desktopNavButtons: document.querySelectorAll("[data-desktop-view]"),
+  pageTitle: $("#pageTitle"),
   todayLabel: $("#todayLabel"),
   todayClasses: $("#todayClasses"),
   monthlyRevenue: $("#monthlyRevenue"),
   monthlyPaymentList: $("#monthlyPaymentList"),
+  allMembersGrid: $("#allMembersGrid"),
+  allMembersCount: $("#allMembersCount"),
   emptyState: $("#emptyState"),
   detailView: $("#detailView"),
   memberStatus: $("#memberStatus"),
@@ -280,15 +285,14 @@ document.addEventListener("DOMContentLoaded", async () => {
       memberView = button.dataset.memberView;
       elements.memberViewButtons.forEach((item) => item.classList.toggle("active", item === button));
       elements.memberSearch.value = "";
+      if (!isMobileLayout()) {
+        setDesktopView(memberView === "all" ? "members" : "operations");
+      }
       renderMemberList();
     });
   });
-  elements.viewOptions.forEach((button) => {
-    button.addEventListener("click", () => {
-      timetableView = button.dataset.view;
-      elements.viewOptions.forEach((item) => item.classList.toggle("active", item === button));
-      renderTimetable();
-    });
+  elements.desktopNavButtons.forEach((button) => {
+    button.addEventListener("click", () => setDesktopView(button.dataset.desktopView));
   });
   elements.mobileNavButtons.forEach((button) => {
     button.addEventListener("click", () => {
@@ -313,6 +317,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   fillLessonTypeOptions();
   fillScheduleLessonTypeOptions();
   setMobileView("today");
+  document.body.dataset.desktopView = desktopView;
 
   render();
 });
@@ -576,6 +581,7 @@ function render() {
   renderStats();
   renderPaymentOverview();
   renderMemberList();
+  renderAllMembersOverview();
   renderTimetable();
   renderTodaySchedule();
 
@@ -595,6 +601,24 @@ function setMobileView(view) {
   mobileView = allowedViews.includes(view) ? view : allowedViews[0];
   document.body.dataset.mobileView = mobileView;
   renderMobileNav();
+}
+
+function setDesktopView(view) {
+  desktopView = ["operations", "schedule", "members", "payments"].includes(view) ? view : "operations";
+  document.body.dataset.desktopView = desktopView;
+  timetableView = desktopView === "schedule" ? "week" : "focus";
+  elements.pageTitle.textContent = {
+    operations: "오늘 운영",
+    schedule: "전체 시간표",
+    members: "회원 관리",
+    payments: "결제 관리",
+  }[desktopView];
+
+  if (desktopView === "operations") memberView = "today";
+  if (desktopView === "members") memberView = "all";
+  elements.memberViewButtons.forEach((button) => button.classList.toggle("active", button.dataset.memberView === memberView));
+  elements.desktopNavButtons.forEach((button) => button.classList.toggle("active", button.dataset.desktopView === desktopView));
+  render();
 }
 
 function renderMobileNav() {
@@ -752,6 +776,38 @@ function renderTodaySidebarList(query) {
   });
 }
 
+function renderAllMembersOverview() {
+  const members = [...getAccessibleMembers()].sort((a, b) => a.name.localeCompare(b.name, "ko-KR"));
+  elements.allMembersCount.textContent = String(members.length);
+  elements.allMembersGrid.innerHTML = "";
+
+  if (!members.length) {
+    elements.allMembersGrid.append(createEmptyLine("등록된 회원이 없습니다."));
+    return;
+  }
+
+  members.forEach((member) => {
+    const balance = getBalance(member);
+    const card = document.createElement("button");
+    card.className = "directory-member";
+    card.type = "button";
+    card.innerHTML = `
+      <span>
+        <strong>${escapeHTML(member.name)}</strong>
+        <small>${escapeHTML(member.phone || "연락처 없음")}</small>
+        <small>${escapeHTML(member.defaultLessonType || "레슨 미지정")}</small>
+      </span>
+      <span class="mini-balance ${balance <= 2 ? "low" : ""}">${balance}</span>
+    `;
+    card.addEventListener("click", () => {
+      selectedMemberId = member.id;
+      memberView = "all";
+      setDesktopView("operations");
+    });
+    elements.allMembersGrid.append(card);
+  });
+}
+
 function renderDetail(member) {
   const balance = getBalance(member);
   const paidSessions = member.payments.reduce((sum, item) => sum + Number(item.sessions || 0), 0);
@@ -836,7 +892,7 @@ function renderTimetable() {
   const isWeekTable = timetableView === "week" && !isMobileLayout();
   elements.timetableGrid.innerHTML = "";
   elements.timetableGrid.classList.toggle("week-view", isWeekTable);
-  elements.timetableRangeLabel.textContent = isMobileLayout() ? "오늘 하루" : isWeekTable ? "월-일 전체" : getFocusRangeLabel(visibleDays);
+  elements.timetableRangeLabel.textContent = isMobileLayout() || desktopView === "operations" ? "오늘 하루" : "월-일 전체";
 
   const table = document.createElement("div");
   table.className = `schedule-table ${isWeekTable ? "week-table" : "focus-table"}`;
@@ -878,14 +934,8 @@ function renderTimetable() {
 
 function getVisibleTimetableDays() {
   if (isMobileLayout()) return [today.getDay()];
-  if (timetableView === "week") return timetableDays;
-
-  const todayDay = today.getDay();
-  return [-1, 0, 1].map((offset) => (todayDay + offset + 7) % 7);
-}
-
-function getFocusRangeLabel(days) {
-  return `${dayNames[days[0]]}-${dayNames[days[2]]} 집중 보기`;
+  if (desktopView === "schedule" || timetableView === "week") return timetableDays;
+  return [today.getDay()];
 }
 
 function openScheduleAt(day, time) {

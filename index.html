@@ -43,11 +43,13 @@
         <header class="topbar">
           <div>
             <p class="eyebrow" id="todayLabel"></p>
-            <h2>오늘 요약</h2>
+            <h2 id="pageTitle">오늘 운영</h2>
           </div>
           <div class="desktop-nav" role="tablist" aria-label="관리자 화면">
-            <button class="desktop-nav-button active" type="button" data-mobile-view="today">운영</button>
-            <button class="desktop-nav-button" type="button" data-mobile-view="payments">결제</button>
+            <button class="desktop-nav-button active" type="button" data-desktop-view="operations">운영</button>
+            <button class="desktop-nav-button" type="button" data-desktop-view="schedule">전체 시간표</button>
+            <button class="desktop-nav-button" type="button" data-desktop-view="members">회원</button>
+            <button class="desktop-nav-button" type="button" data-desktop-view="payments">결제</button>
           </div>
           <div class="topbar-actions">
             <button id="openLessonSettings" class="settings-button" type="button">설정</button>
@@ -79,15 +81,22 @@
           <div id="monthlyPaymentList" class="table-like"></div>
         </section>
 
+        <section class="panel member-overview-panel">
+          <div class="section-title">
+            <div>
+              <p class="eyebrow">회원 관리</p>
+              <h3>전체 회원</h3>
+            </div>
+            <span id="allMembersCount" class="count-pill">0</span>
+          </div>
+          <div id="allMembersGrid" class="all-members-grid"></div>
+        </section>
+
         <section class="panel timetable-panel">
           <div class="timetable-head">
             <div>
               <p class="eyebrow" id="timetableRangeLabel"></p>
               <h3>시간표</h3>
-            </div>
-            <div class="view-toggle" role="tablist" aria-label="시간표 보기">
-              <button class="view-option active" type="button" data-view="focus">3일 보기</button>
-              <button class="view-option" type="button" data-view="week">전체 보기</button>
             </div>
           </div>
           <div id="timetableGrid" class="timetable-grid" aria-live="polite"></div>

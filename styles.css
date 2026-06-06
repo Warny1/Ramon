@@ -647,6 +647,55 @@ h4 {
   overflow: hidden;
 }
 
+.member-overview-panel {
+  display: none;
+  padding: 16px;
+  overflow: hidden;
+}
+
+.all-members-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 8px;
+  overflow: auto;
+}
+
+.directory-member {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: center;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: white;
+  padding: 12px;
+  text-align: left;
+}
+
+.directory-member:hover {
+  border-color: #9fbeb8;
+  background: #f7fbfa;
+}
+
+.directory-member strong,
+.directory-member small {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.directory-member strong {
+  margin-bottom: 4px;
+  color: var(--ink);
+  font-size: 14px;
+}
+
+.directory-member small {
+  color: var(--muted);
+  font-size: 12px;
+}
+
 .revenue-total {
   color: var(--success);
   font-size: 20px;
@@ -1162,23 +1211,48 @@ body[data-role="member"] .detail-panel[data-panel="payment"] {
     align-self: stretch;
   }
 
-  .payment-overview-panel {
+  body[data-desktop-view="operations"] .payment-overview-panel,
+  body[data-desktop-view="operations"] .member-overview-panel {
+    display: none;
+  }
+
+  body[data-desktop-view="schedule"] .stats-grid,
+  body[data-desktop-view="schedule"] .payment-overview-panel,
+  body[data-desktop-view="schedule"] .member-overview-panel,
+  body[data-desktop-view="schedule"] .workspace {
+    display: none;
+  }
+
+  body[data-desktop-view="schedule"] .timetable-panel {
+    grid-column: 1 / -1;
+    grid-row: 2 / 4;
+  }
+
+  body[data-desktop-view="members"] .stats-grid,
+  body[data-desktop-view="members"] .payment-overview-panel,
+  body[data-desktop-view="members"] .timetable-panel,
+  body[data-desktop-view="members"] .workspace {
+    display: none;
+  }
+
+  body[data-desktop-view="members"] .member-overview-panel {
     display: block;
-    grid-column: 2;
-    grid-row: 2;
+    grid-column: 1 / -1;
+    grid-row: 2 / 4;
   }
 
-  body[data-mobile-view="today"] .payment-overview-panel {
+  body[data-desktop-view="members"] .all-members-grid {
+    max-height: calc(100vh - 150px);
+  }
+
+  body[data-desktop-view="payments"] .stats-grid,
+  body[data-desktop-view="payments"] .member-overview-panel,
+  body[data-desktop-view="payments"] .timetable-panel,
+  body[data-desktop-view="payments"] .workspace {
     display: none;
   }
 
-  body[data-mobile-view="payments"] .stats-grid,
-  body[data-mobile-view="payments"] .timetable-panel,
-  body[data-mobile-view="payments"] .workspace {
-    display: none;
-  }
-
-  body[data-mobile-view="payments"] .payment-overview-panel {
+  body[data-desktop-view="payments"] .payment-overview-panel {
     display: block;
     grid-column: 1 / -1;
     grid-row: 2 / 4;
@@ -1186,7 +1260,7 @@ body[data-role="member"] .detail-panel[data-panel="payment"] {
     overflow: auto;
   }
 
-  body[data-mobile-view="payments"] .payment-overview-panel .table-like {
+  body[data-desktop-view="payments"] .payment-overview-panel .table-like {
     max-height: none;
   }
 
@@ -1229,6 +1303,16 @@ body[data-role="member"] .detail-panel[data-panel="payment"] {
   .timetable-grid {
     height: calc(100vh - 186px);
     max-height: none;
+  }
+
+  .focus-table {
+    grid-template-columns: 62px minmax(0, 1fr);
+    min-width: 0;
+    width: 100%;
+  }
+
+  body[data-desktop-view="schedule"] .timetable-grid {
+    height: calc(100vh - 116px);
   }
 
   .topbar-actions {
