@@ -1203,6 +1203,7 @@ select:focus {
   display: none;
 }
 
+.mobile-today-actions,
 .mobile-detail-back {
   display: none;
 }
@@ -1565,7 +1566,11 @@ body[data-role="member"] .detail-panel[data-panel="payment"] {
   }
 
   body[data-mobile-view="members"] .sidebar-quick-actions {
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: 1fr;
+  }
+
+  body[data-mobile-view="members"] #openMakeupSchedule {
+    display: none;
   }
 
   body[data-mobile-view="members"] .member-card {
@@ -2332,6 +2337,25 @@ select {
     font-size: 12px;
   }
 
+  .mobile-today-actions {
+    display: flex;
+    justify-content: flex-end;
+    margin: -2px 0 10px;
+  }
+
+  .mobile-today-actions .secondary-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    min-height: 40px;
+    border: 1px solid #dfe4e3;
+    background: #ffffff;
+    color: var(--ink);
+    padding: 0 14px;
+    font-size: 12px;
+  }
+
   .today-schedule {
     gap: 0;
     overflow: hidden;
@@ -2341,9 +2365,9 @@ select {
   }
 
   .today-card {
-    grid-template-columns: minmax(0, 1fr) 108px;
+    grid-template-columns: minmax(0, 1fr);
     gap: 8px;
-    min-height: 72px;
+    min-height: 98px;
     border: 0;
     border-bottom: 1px solid #edf0f0;
     border-radius: 0;
@@ -2357,7 +2381,7 @@ select {
 
   .today-card-main {
     display: grid;
-    grid-template-columns: 84px minmax(0, 1fr);
+    grid-template-columns: 88px minmax(0, 1fr);
     align-items: center;
     gap: 8px;
     min-width: 0;
@@ -2385,6 +2409,10 @@ select {
     margin: 0 0 3px;
     font-size: 15px;
     font-weight: 800;
+    overflow: visible;
+    text-overflow: clip;
+    white-space: normal;
+    line-height: 1.3;
   }
 
   .today-card-copy small {
@@ -2398,16 +2426,16 @@ select {
 
   .today-card-actions {
     display: grid;
-    grid-template-columns: repeat(2, 52px);
-    justify-content: end;
-    gap: 4px;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 6px;
+    padding-left: 88px;
   }
 
   .attendance-big {
     display: grid;
     place-items: center;
     min-width: 0;
-    width: 52px;
+    width: 100%;
     min-height: 44px;
     border: 1px solid #dfe4e3;
     border-radius: 7px;
@@ -2507,12 +2535,13 @@ select {
   .mobile-detail-back {
     align-items: center;
     gap: 6px;
-    min-height: 38px;
-    margin: -4px 0 12px;
-    border: 0;
-    background: transparent;
+    min-height: 42px;
+    margin: -4px 0 14px;
+    border: 1px solid #dfe4e3;
+    border-radius: 7px;
+    background: #ffffff;
     color: var(--accent-dark);
-    padding: 0 2px;
+    padding: 0 12px;
     font-size: 13px;
     font-weight: 800;
   }

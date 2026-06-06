@@ -107,7 +107,7 @@
           <div class="panel member-detail">
             <button id="mobileDetailBack" class="mobile-detail-back" type="button" aria-label="회원 목록으로 돌아가기">
               <span aria-hidden="true">←</span>
-              <span>회원 목록</span>
+              <span>전체 회원</span>
             </button>
             <div id="emptyState" class="empty-state">
               <h3>회원을 선택하세요</h3>
@@ -170,6 +170,12 @@
               <h3>오늘 시간표</h3>
               <span id="todayCount" class="count-pill">0</span>
             </div>
+            <div class="mobile-today-actions">
+              <button id="mobileOpenMakeupSchedule" class="secondary-button" type="button">
+                <span aria-hidden="true">＋</span>
+                <span>보강 추가</span>
+              </button>
+            </div>
             <div id="todaySchedule" class="today-schedule"></div>
           </aside>
         </section>
@@ -187,7 +193,7 @@
       </button>
       <button class="mobile-nav-button" type="button" data-mobile-view="members">
         <span class="mobile-nav-icon members-icon" aria-hidden="true">●●</span>
-        <span class="mobile-nav-label">회원</span>
+        <span class="mobile-nav-label">회원관리</span>
       </button>
       <button class="mobile-nav-button" type="button" data-mobile-view="payments">
         <span class="mobile-nav-icon" aria-hidden="true">₩</span>

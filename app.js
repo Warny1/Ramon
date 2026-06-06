@@ -263,6 +263,12 @@ document.addEventListener("DOMContentLoaded", async () => {
     openModal(elements.scheduleModal);
   });
   $("#openMakeupSchedule").addEventListener("click", () => {
+    openMakeupScheduleModal();
+  });
+  $("#mobileOpenMakeupSchedule").addEventListener("click", () => {
+    openMakeupScheduleModal();
+  });
+  function openMakeupScheduleModal() {
     prepareScheduleModal("makeup");
     elements.scheduleForm.date.value = todayISO;
     elements.scheduleForm.time.value = roundToNextHalfHour();
@@ -270,7 +276,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     elements.scheduleForm.querySelector('[name="scheduleStatus"]').value = "보강";
     renderScheduleMemberOptions([]);
     openModal(elements.scheduleModal);
-  });
+  }
   $("#openLessonSettings").addEventListener("click", () => {
     renderLessonSettings();
     openModal(elements.lessonSettingsModal);
@@ -699,7 +705,7 @@ function getMonthlyPayments() {
 function renderMemberList() {
   const query = elements.memberSearch.value.trim().toLowerCase();
   const showAllMembers = isMobileLayout() && mobileView === "members";
-  elements.sidebarTitle.textContent = showAllMembers ? "전체 회원" : "오늘 수업";
+  elements.sidebarTitle.textContent = showAllMembers ? "회원 관리" : "오늘 수업";
   elements.memberSearch.placeholder = showAllMembers ? "전체 회원 검색" : "오늘 수업 검색";
   elements.memberList.innerHTML = "";
 
