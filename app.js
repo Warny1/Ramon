@@ -716,11 +716,12 @@ function getMonthlyPayments() {
 function renderMemberList() {
   const query = elements.memberSearch.value.trim().toLowerCase();
   const showAllMembers = isMobileLayout() && mobileView === "members";
+  const searchAllMembers = !isMobileLayout() && Boolean(query);
   elements.sidebarTitle.textContent = showAllMembers ? "회원관리" : "오늘 수업";
-  elements.memberSearch.placeholder = showAllMembers ? "전체 회원 검색" : "오늘 수업 검색";
+  elements.memberSearch.placeholder = showAllMembers || !isMobileLayout() ? "전체 회원 검색" : "오늘 수업 검색";
   elements.memberList.innerHTML = "";
 
-  if (!showAllMembers) {
+  if (!showAllMembers && !searchAllMembers) {
     renderTodaySidebarList(query);
     return;
   }
@@ -858,9 +859,11 @@ function renderDetail(member) {
 
   elements.memberStatus.textContent = balance <= 2 ? "잔여 횟수 확인 필요" : "정상 이용";
   elements.memberName.textContent = member.name;
-  elements.memberMeta.textContent = canManagePayments()
-    ? `${member.phone || "연락처 없음"} · ${member.defaultLessonType || "레슨 미지정"} · 결제 ${paidSessions}회 / 출석 ${member.attendances.length}회`
-    : `${member.phone || "연락처 없음"} · ${member.defaultLessonType || "레슨 미지정"} · 출석 ${member.attendances.length}회`;
+  elements.memberMeta.innerHTML = `
+    <span class="member-meta-row"><small>연락처</small><strong>${escapeHTML(member.phone || "연락처 없음")}</strong></span>
+    <span class="member-meta-row"><small>레슨</small><strong>${escapeHTML(member.defaultLessonType || "레슨 미지정")}</strong></span>
+    <span class="member-meta-row"><small>이용 기록</small><strong>${canManagePayments() ? `결제 ${paidSessions}회 · ` : ""}출석 ${member.attendances.length}회</strong></span>
+  `;
   elements.memberBalance.textContent = String(balance);
 
   renderSchedule(member);
