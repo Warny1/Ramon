@@ -26,10 +26,16 @@
           <input id="memberSearch" type="search" placeholder="오늘 회원 검색" />
         </div>
 
-        <button class="primary-action" id="openMemberModal" type="button">
-          <span aria-hidden="true">＋</span>
-          <span>회원 추가</span>
-        </button>
+        <div class="sidebar-quick-actions">
+          <button class="primary-action" id="openMemberModal" type="button">
+            <span aria-hidden="true">＋</span>
+            <span>회원 추가</span>
+          </button>
+          <button class="secondary-button makeup-add-button" id="openMakeupSchedule" type="button">
+            <span aria-hidden="true">＋</span>
+            <span>보강 추가</span>
+          </button>
+        </div>
 
         <div id="memberList" class="member-list" aria-live="polite"></div>
       </aside>
@@ -316,11 +322,11 @@
     <dialog id="scheduleModal" class="modal">
       <form id="scheduleForm" method="dialog">
         <div class="modal-head">
-          <h3>시간표 추가</h3>
+          <h3 id="scheduleModalTitle">시간표 추가</h3>
           <button class="close-button" value="cancel" type="button" data-close="scheduleModal">×</button>
         </div>
         <div class="form-row">
-          <label>
+          <label id="scheduleDayField">
             요일
             <select name="day" required>
               <option value="1">월</option>
@@ -337,6 +343,10 @@
             <input name="time" type="time" required />
           </label>
         </div>
+        <label id="makeupDateField" hidden>
+          보강 날짜
+          <input name="date" type="date" />
+        </label>
         <label>
           수업명
           <input name="className" autocomplete="off" placeholder="예: 필라테스 A" />
@@ -355,6 +365,10 @@
             <option value="당일취소">당일취소</option>
           </select>
         </label>
+        <div class="search-box schedule-member-search">
+          <span aria-hidden="true">⌕</span>
+          <input id="scheduleMemberSearch" type="search" placeholder="회원 이름 검색" />
+        </div>
         <fieldset class="member-picker">
           <legend>참여 회원</legend>
           <div id="scheduleMemberOptions" class="member-options"></div>

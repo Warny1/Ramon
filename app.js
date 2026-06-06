@@ -231,7 +231,11 @@ const elements = {
   lessonSettingsForm: $("#lessonSettingsForm"),
   lessonSettingsList: $("#lessonSettingsList"),
   scheduleModal: $("#scheduleModal"),
+  scheduleModalTitle: $("#scheduleModalTitle"),
   scheduleForm: $("#scheduleForm"),
+  scheduleDayField: $("#scheduleDayField"),
+  makeupDateField: $("#makeupDateField"),
+  scheduleMemberSearch: $("#scheduleMemberSearch"),
   scheduleMemberOptions: $("#scheduleMemberOptions"),
 };
 
@@ -251,10 +255,20 @@ document.addEventListener("DOMContentLoaded", async () => {
     openModal(elements.paymentModal);
   });
   $("#openScheduleModal").addEventListener("click", () => {
+    prepareScheduleModal("regular");
     elements.scheduleForm.day.value = String(today.getDay());
     elements.scheduleForm.time.value = roundToNextHalfHour();
     applyMemberDefaultLessonTypeToSchedule();
     renderScheduleMemberOptions([selectedMemberId].filter(Boolean));
+    openModal(elements.scheduleModal);
+  });
+  $("#openMakeupSchedule").addEventListener("click", () => {
+    prepareScheduleModal("makeup");
+    elements.scheduleForm.date.value = todayISO;
+    elements.scheduleForm.time.value = roundToNextHalfHour();
+    elements.scheduleForm.querySelector('[name="className"]').value = "보강";
+    elements.scheduleForm.querySelector('[name="scheduleStatus"]').value = "보강";
+    renderScheduleMemberOptions([]);
     openModal(elements.scheduleModal);
   });
   $("#openLessonSettings").addEventListener("click", () => {
@@ -278,6 +292,17 @@ document.addEventListener("DOMContentLoaded", async () => {
   });
 
   elements.memberSearch.addEventListener("input", render);
+  elements.scheduleMemberSearch.addEventListener("input", filterScheduleMemberOptions);
+  elements.scheduleMemberOptions.addEventListener("change", (event) => {
+    const checkbox = event.target.closest('input[name="memberIds"]');
+    if (!checkbox?.checked) return;
+    const member = state.members.find((item) => item.id === checkbox.value);
+    if (!member?.defaultLessonType) return;
+    const select = elements.scheduleForm.querySelector('[name="scheduleLessonType"]');
+    if (state.lessonTypes.some((lesson) => lesson.name === member.defaultLessonType)) {
+      select.value = member.defaultLessonType;
+    }
+  });
   elements.desktopNavButtons.forEach((button) => {
     button.addEventListener("click", () => setDesktopView(button.dataset.desktopView));
   });
@@ -734,7 +759,7 @@ function renderTodaySidebarList(query) {
   filtered.forEach((entry) => {
     const primaryMember = entry.members[0];
     const isActive = entry.members.some((member) => member.id === selectedMemberId);
-    const attendance = getCombinedAttendanceState(entry.groups);
+    const attendanceStatus = getCombinedAttendanceStatus(entry.groups);
     const names = entry.members.map((member) => member.name).join(", ");
     const balanceValues = entry.members.map(getBalance);
     const balances = balanceValues.every((balance) => balance === balanceValues[0])
@@ -746,24 +771,32 @@ function renderTodaySidebarList(query) {
       <button class="today-attendance-main" type="button">
         <span class="today-lesson-time">${escapeHTML(entry.timeLabel)}</span>
         <strong class="today-lesson-names">${escapeHTML(names)}</strong>
-        <span class="today-lesson-type">${escapeHTML(compactLessonType(entry.lessonType, entry.groups.length))}</span>
+        <span class="today-lesson-type ${entry.status === "보강" ? "today-lesson-status" : ""}">${entry.status === "보강" ? "보강 · " : ""}${escapeHTML(compactLessonType(entry.lessonType, entry.groups.length))}</span>
         <span class="today-lesson-balance">${escapeHTML(balances)}</span>
       </button>
     `;
 
-    const attendanceButton = document.createElement("button");
-    attendanceButton.className = `mini-action sidebar-attendance ${attendance.done ? "done" : ""}`;
-    attendanceButton.type = "button";
-    attendanceButton.textContent = attendance.done ? "완료" : "출석";
-    attendanceButton.disabled = attendance.done || !canEditSharedData();
-    attendanceButton.addEventListener("click", () => markCombinedAttendance(entry.groups));
+    const attendanceActions = document.createElement("div");
+    attendanceActions.className = "sidebar-attendance-actions";
+    [
+      { status: "출석", label: "출석", className: "present" },
+      { status: "결석", label: "결석", className: "absent" },
+    ].forEach((action) => {
+      const button = document.createElement("button");
+      button.className = `mini-action sidebar-attendance ${action.className} ${attendanceStatus === action.status ? "selected" : ""}`;
+      button.type = "button";
+      button.textContent = action.label;
+      button.disabled = !canEditSharedData();
+      button.addEventListener("click", () => markCombinedAttendance(entry.groups, action.status));
+      attendanceActions.append(button);
+    });
 
     card.querySelector(".today-attendance-main").addEventListener("click", () => {
       selectedMemberId = primaryMember?.id ?? selectedMemberId;
       if (isMobileLayout()) setMobileView("detail");
       render();
     });
-    card.append(attendanceButton);
+    card.append(attendanceActions);
     elements.memberList.append(card);
   });
 }
@@ -936,6 +969,7 @@ function openScheduleAt(day, time) {
     return;
   }
 
+  prepareScheduleModal("regular");
   elements.scheduleForm.day.value = String(day);
   elements.scheduleForm.time.value = time;
   const classNameInput = elements.scheduleForm.querySelector('[name="className"]');
@@ -1170,11 +1204,20 @@ function addSchedule(event) {
 
   const form = new FormData(elements.scheduleForm);
   const memberIds = form.getAll("memberIds");
+  const isMakeup = elements.scheduleForm.dataset.mode === "makeup";
+  const scheduleDate = isMakeup ? String(form.get("date")) : "";
 
   if (!memberIds.length) {
     alert("참여 회원을 선택해주세요.");
     return;
   }
+
+  if (isMakeup && !scheduleDate) {
+    alert("보강 날짜를 선택해주세요.");
+    return;
+  }
+
+  const scheduleDay = isMakeup ? new Date(`${scheduleDate}T12:00:00`).getDay() : Number(form.get("day"));
 
   memberIds.forEach((memberId) => {
     const member = state.members.find((item) => item.id === memberId);
@@ -1182,15 +1225,17 @@ function addSchedule(event) {
 
     member.schedules.push({
       id: crypto.randomUUID(),
-      day: Number(form.get("day")),
+      day: scheduleDay,
       time: String(form.get("time")),
       className: String(form.get("className")).trim() || "수업",
       lessonType: String(form.get("scheduleLessonType")),
       status: String(form.get("scheduleStatus")),
+      date: scheduleDate,
     });
   });
 
   elements.scheduleForm.reset();
+  prepareScheduleModal("regular");
   closeModal(elements.scheduleModal);
   commit();
 }
@@ -1217,22 +1262,25 @@ function markGroupAttendance(group) {
 }
 
 function recordAttendance(member, className, time, status = "") {
-  const alreadyRecorded = member.attendances.some(
+  const normalizedStatus = normalizeAttendanceStatus(status);
+  const existing = member.attendances.find(
     (item) =>
       item.date === todayISO &&
       (item.className || "출석") === className &&
-      (item.time || "") === (time || "") &&
-      (item.status || "") === normalizeAttendanceStatus(status),
+      (item.time || "") === (time || ""),
   );
 
-  if (alreadyRecorded) return;
+  if (existing) {
+    existing.status = normalizedStatus;
+    return;
+  }
 
   member.attendances.push({
     id: crypto.randomUUID(),
     date: todayISO,
     className,
     time,
-    status: normalizeAttendanceStatus(status),
+    status: normalizedStatus,
   });
 }
 
@@ -1252,7 +1300,7 @@ function hasAttendanceForGroup(member, group) {
       item.date === todayISO &&
       (item.className || "출석") === (group.className || "출석") &&
       (item.time || "") === (group.time || "") &&
-      normalizeAttendanceStatus(item.status) === "",
+      normalizeAttendanceStatus(item.status) === "출석",
   );
 }
 
@@ -1626,6 +1674,7 @@ function getTodaySidebarEntries() {
       timeLabel: group.time,
       className: group.className,
       lessonType: group.lessonType,
+      status: group.status,
       members: group.members,
       groups: [group],
     });
@@ -1655,15 +1704,31 @@ function getCombinedAttendanceState(groups) {
   };
 }
 
-function markCombinedAttendance(groups) {
+function markCombinedAttendance(groups, status = "출석") {
   if (!canEditSharedData()) return;
   groups.forEach((group) => {
     group.members.forEach((member) => {
-      recordAttendance(member, group.className || "출석", group.time, "");
+      recordAttendance(member, group.className || "출석", group.time, status);
     });
   });
   selectedMemberId = groups[0]?.members[0]?.id ?? selectedMemberId;
   commit();
+}
+
+function getCombinedAttendanceStatus(groups) {
+  const statuses = groups.flatMap((group) =>
+    group.members.map((member) => {
+      const record = member.attendances.find(
+        (item) =>
+          item.date === todayISO &&
+          (item.className || "출석") === (group.className || "출석") &&
+          (item.time || "") === (group.time || ""),
+      );
+      return record ? normalizeAttendanceStatus(record.status) : "";
+    }),
+  );
+
+  return statuses.length && statuses.every((status) => status && status === statuses[0]) ? statuses[0] : "";
 }
 
 function getTodayEntries() {
@@ -1680,14 +1745,18 @@ function getTodayEntries() {
 }
 
 function getScheduleItems() {
-  return getAccessibleMembers().flatMap((member) => member.schedules.map((item) => ({ ...item, member })));
+  return getAccessibleMembers().flatMap((member) =>
+    member.schedules
+      .filter((item) => !item.date || item.date === todayISO)
+      .map((item) => ({ ...item, member })),
+  );
 }
 
 function getScheduleGroups() {
   const groups = new Map();
 
   getScheduleItems().forEach((item) => {
-    const key = [item.day, item.time, item.className || "수업", getScheduleLessonType(item), getScheduleStatus(item)].join("|");
+    const key = [item.day, item.time, item.className || "수업", getScheduleLessonType(item), getScheduleStatus(item), item.date || ""].join("|");
     if (!groups.has(key)) {
       groups.set(key, {
         day: item.day,
@@ -1695,6 +1764,7 @@ function getScheduleGroups() {
         className: item.className || "수업",
         lessonType: getScheduleLessonType(item),
         status: getScheduleStatus(item),
+        date: item.date || "",
         members: [],
       });
     }
@@ -1753,6 +1823,21 @@ function compactLessonType(lessonType = "", consecutiveSlots = 1) {
   return parts.length ? parts.join(" ") : lessonType;
 }
 
+function prepareScheduleModal(mode) {
+  const isMakeup = mode === "makeup";
+  elements.scheduleForm.dataset.mode = mode;
+  elements.scheduleMemberSearch.value = "";
+  elements.scheduleModalTitle.textContent = isMakeup ? "보강 수업 추가" : "시간표 추가";
+  elements.scheduleDayField.hidden = isMakeup;
+  elements.makeupDateField.hidden = !isMakeup;
+  elements.scheduleForm.date.required = isMakeup;
+
+  if (!isMakeup) {
+    elements.scheduleForm.date.value = "";
+    elements.scheduleForm.querySelector('[name="scheduleStatus"]').value = "";
+  }
+}
+
 function renderScheduleMemberOptions(selectedIds = []) {
   const selected = new Set(selectedIds);
   elements.scheduleMemberOptions.innerHTML = "";
@@ -1760,6 +1845,7 @@ function renderScheduleMemberOptions(selectedIds = []) {
   state.members.forEach((member) => {
     const label = document.createElement("label");
     label.className = "member-option";
+    label.dataset.search = `${member.name} ${member.phone || ""}`.toLowerCase();
     label.innerHTML = `
       <input name="memberIds" type="checkbox" value="${escapeHTML(member.id)}" ${selected.has(member.id) ? "checked" : ""} />
       <span>
@@ -1768,6 +1854,13 @@ function renderScheduleMemberOptions(selectedIds = []) {
       </span>
     `;
     elements.scheduleMemberOptions.append(label);
+  });
+}
+
+function filterScheduleMemberOptions() {
+  const query = elements.scheduleMemberSearch.value.trim().toLowerCase();
+  elements.scheduleMemberOptions.querySelectorAll(".member-option").forEach((option) => {
+    option.hidden = Boolean(query) && !option.dataset.search.includes(query);
   });
 }
 
