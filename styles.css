@@ -303,6 +303,7 @@ h4 {
 .mini-balance {
   display: grid;
   place-items: center;
+  flex: 0 0 auto;
   min-width: 64px;
   height: 30px;
   border-radius: 8px;
@@ -684,6 +685,32 @@ h4 {
 
 .lesson-check {
   width: 38px;
+}
+
+.lesson-attendance-state {
+  align-self: center;
+  min-width: 44px;
+  border-radius: 6px;
+  padding: 6px 5px;
+  text-align: center;
+  font-size: 10px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.lesson-attendance-state.present {
+  background: var(--success-soft);
+  color: var(--success);
+}
+
+.lesson-attendance-state.absent {
+  background: var(--danger-soft);
+  color: var(--danger);
+}
+
+.lesson-attendance-state.pending {
+  background: #eef0f1;
+  color: #737b80;
 }
 
 .panel {
@@ -1574,6 +1601,8 @@ body[data-role="member"] .detail-panel[data-panel="payment"] {
   }
 
   body[data-mobile-view="members"] .member-card {
+    grid-template-columns: minmax(0, 1fr) 72px;
+    align-items: center;
     border-bottom: 1px solid #edf0f0;
     border-radius: 0;
     background: transparent;
@@ -1585,6 +1614,13 @@ body[data-role="member"] .detail-panel[data-panel="payment"] {
 
   body[data-mobile-view="members"] .member-card.active {
     background: var(--accent-soft);
+  }
+
+  body[data-mobile-view="members"] .mini-balance {
+    width: 72px;
+    min-width: 72px;
+    padding: 0 5px;
+    white-space: nowrap;
   }
 
   .topbar {
@@ -2416,12 +2452,19 @@ select {
   }
 
   .today-card-copy small {
+    display: block;
     margin: 0;
     color: #7b8388;
     font-size: 11px;
     font-weight: 600;
     white-space: normal;
     line-height: 1.35;
+  }
+
+  .today-card-balance {
+    margin-top: 3px !important;
+    color: var(--accent-dark) !important;
+    font-weight: 800 !important;
   }
 
   .today-card-actions {
@@ -2436,7 +2479,7 @@ select {
     place-items: center;
     min-width: 0;
     width: 100%;
-    min-height: 44px;
+    min-height: 38px;
     border: 1px solid #dfe4e3;
     border-radius: 7px;
     padding: 0 4px;
@@ -2597,6 +2640,32 @@ select {
     text-overflow: clip;
     white-space: normal;
     line-height: 1.3;
+  }
+
+  .focus-table .lesson-attendance-state {
+    align-self: center;
+    min-width: 46px;
+    border-radius: 6px;
+    padding: 6px 5px;
+    text-align: center;
+    font-size: 10px;
+    font-weight: 800;
+    white-space: nowrap;
+  }
+
+  .focus-table .lesson-attendance-state.present {
+    background: var(--success-soft);
+    color: var(--success);
+  }
+
+  .focus-table .lesson-attendance-state.absent {
+    background: var(--danger-soft);
+    color: var(--danger);
+  }
+
+  .focus-table .lesson-attendance-state.pending {
+    background: #eef0f1;
+    color: #737b80;
   }
 
   .focus-table .combined-continuation {

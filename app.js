@@ -922,6 +922,9 @@ function renderTimetable() {
   const groups = getScheduleGroups();
   const visibleDays = getVisibleTimetableDays();
   const isWeekTable = timetableView === "week" && !isMobileLayout();
+  const combinedByDay = new Map(
+    visibleDays.map((day) => [day, combineConsecutiveGroups(groups.filter((group) => Number(group.day) === day))]),
+  );
   elements.timetableGrid.innerHTML = "";
   elements.timetableGrid.classList.toggle("week-view", isWeekTable);
   elements.timetableRangeLabel.textContent = isMobileLayout() || desktopView === "operations" ? "오늘 하루" : "월-일 전체";
@@ -941,9 +944,29 @@ function renderTimetable() {
     visibleDays.forEach((day) => {
       const cell = document.createElement("div");
       cell.className = `schedule-cell ${getTimePeriod(time)}`;
-      const matches = groups.filter((item) => item.time === time && Number(item.day) === day);
+      const combinedEntries = combinedByDay.get(day) || [];
+      const combinedEntry = !isWeekTable
+        ? combinedEntries.find((entry) => entry.startTime === time)
+        : null;
+      const isContinuation = !isWeekTable && combinedEntries.some(
+        (entry) =>
+          entry.groups.length > 1 &&
+          timeToMinutes(time) > timeToMinutes(entry.startTime) &&
+          timeToMinutes(time) <= timeToMinutes(entry.endTime),
+      );
+      const matches = isWeekTable
+        ? groups.filter((item) => item.time === time && Number(item.day) === day)
+        : combinedEntry
+          ? [combinedEntry]
+          : [];
 
-      if (!matches.length) {
+      if (isContinuation) {
+        cell.classList.add("combined-continuation");
+        const continuation = document.createElement("span");
+        continuation.className = "continuation-label";
+        continuation.textContent = "연속 수업";
+        cell.append(continuation);
+      } else if (!matches.length) {
         cell.classList.add("empty");
         const emptyButton = document.createElement("button");
         emptyButton.className = "empty-slot";
@@ -1142,7 +1165,8 @@ function renderTodaySchedule() {
         <span class="today-card-time">${escapeHTML(item.timeLabel)}</span>
         <span class="today-card-copy">
           <strong>${escapeHTML(item.members.map((member) => member.name).join(", "))}</strong>
-          <small>${status ? `${escapeHTML(status)} · ` : ""}${escapeHTML(compactLessonType(item.lessonType, item.groups.length))} · ${escapeHTML(balances)}</small>
+          <small class="today-card-lesson">${status ? `${escapeHTML(status)} · ` : ""}${escapeHTML(compactLessonType(item.lessonType, item.groups.length))}</small>
+          <small class="today-card-balance">${escapeHTML(balances)}</small>
         </span>
       </button>
     `;
@@ -1683,7 +1707,11 @@ function getTodayItems() {
 }
 
 function getTodaySidebarEntries() {
-  const sorted = getTodayItems().sort((a, b) => a.time.localeCompare(b.time) || getGroupKey(a).localeCompare(getGroupKey(b)));
+  return combineConsecutiveGroups(getTodayItems());
+}
+
+function combineConsecutiveGroups(groups) {
+  const sorted = [...groups].sort((a, b) => a.time.localeCompare(b.time) || getGroupKey(a).localeCompare(getGroupKey(b)));
   const combined = [];
 
   sorted.forEach((group) => {
@@ -1697,6 +1725,8 @@ function getTodaySidebarEntries() {
 
     combined.push({
       key: getGroupKey(group),
+      day: group.day,
+      date: group.date || "",
       startTime: group.time,
       endTime: group.time,
       timeLabel: group.time,
@@ -1813,7 +1843,7 @@ function createLessonBlock(group) {
   mainButton.type = "button";
   mainButton.innerHTML = `
     <span class="lesson-member-names">${escapeHTML(group.members.map((member) => member.name).join(", "))}</span>
-    <strong>${getStatusBadge(group.status)}<span class="lesson-badge">${escapeHTML(compactLessonType(group.lessonType))}</span><span class="lesson-class-name">${escapeHTML(group.className || "수업")}</span></strong>
+    <strong>${getStatusBadge(group.status)}<span class="lesson-badge">${escapeHTML(compactLessonType(group.lessonType, group.groups?.length || 1))}</span><span class="lesson-class-name">${escapeHTML(group.className || "수업")}</span></strong>
     <small>${group.members.length}명 · 잔여 ${escapeHTML(group.members.map((member) => `${member.name} ${getBalance(member)}회`).join(" / "))}</small>
   `;
   mainButton.addEventListener("click", () => {
@@ -1823,15 +1853,20 @@ function createLessonBlock(group) {
   block.append(mainButton);
 
   if (Number(group.day) === today.getDay()) {
-    const attendanceButton = document.createElement("button");
-    attendanceButton.className = "lesson-check";
-    attendanceButton.type = "button";
-    attendanceButton.textContent = "출석";
-    attendanceButton.addEventListener("click", () => markGroupAttendance(group));
-    block.append(attendanceButton);
+    const attendanceStatus = getCombinedAttendanceStatus(group.groups?.length ? group.groups : [group]);
+    const statusLabel = document.createElement("span");
+    statusLabel.className = `lesson-attendance-state ${getAttendanceStateClass(attendanceStatus)}`;
+    statusLabel.textContent = attendanceStatus || "미처리";
+    block.append(statusLabel);
   }
 
   return block;
+}
+
+function getAttendanceStateClass(status) {
+  if (status === "출석" || status === "보강완료") return "present";
+  if (status === "결석" || status === "당일취소") return "absent";
+  return "pending";
 }
 
 function compactLessonType(lessonType = "", consecutiveSlots = 1) {
