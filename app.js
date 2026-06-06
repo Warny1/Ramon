@@ -787,7 +787,8 @@ function renderTodaySidebarList(query) {
       const button = document.createElement("button");
       button.className = `mini-action sidebar-attendance ${action.className} ${attendanceStatus === action.status ? "selected" : ""}`;
       button.type = "button";
-      button.textContent = action.label;
+      button.innerHTML = `<span class="action-icon" aria-hidden="true">${action.status === "출석" ? "✓" : "×"}</span><span>${action.label}</span>`;
+      button.setAttribute("aria-label", action.label);
       button.disabled = !canEditSharedData();
       button.addEventListener("click", () => markCombinedAttendance(entry.groups, action.status));
       attendanceActions.append(button);
@@ -1149,7 +1150,8 @@ function renderTodaySchedule() {
       const button = document.createElement("button");
       button.className = `mini-action attendance-big ${action.className} ${attendanceStatus === action.status ? "selected" : ""}`;
       button.type = "button";
-      button.textContent = action.label;
+      button.innerHTML = `<span class="action-icon" aria-hidden="true">${action.status === "출석" ? "✓" : "×"}</span><span class="action-label">${action.label}</span>`;
+      button.setAttribute("aria-label", action.label);
       button.disabled = !canEditSharedData();
       button.addEventListener("click", () => markCombinedAttendance(item.groups, action.status));
       actions.append(button);
