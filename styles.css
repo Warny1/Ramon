@@ -1577,12 +1577,39 @@ body[data-role="member"] .detail-panel[data-panel="payment"] {
   }
 
   body[data-mobile-view="members"] .sidebar-quick-actions {
-    grid-template-columns: 1fr;
+    display: block;
+    grid-column: 2;
+    grid-row: 2;
   }
 
   body[data-mobile-view="members"] #openMakeupSchedule,
   body[data-mobile-view="members"] .sidebar-attendance-actions {
     display: none;
+  }
+
+  body[data-mobile-view="members"] .sidebar {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-rows: auto auto minmax(0, 1fr);
+    gap: 10px 8px;
+  }
+
+  body[data-mobile-view="members"] .brand,
+  body[data-mobile-view="members"] .member-list {
+    grid-column: 1 / -1;
+  }
+
+  body[data-mobile-view="members"] .search-box {
+    grid-column: 1;
+    grid-row: 2;
+  }
+
+  body[data-mobile-view="members"] #openMemberModal {
+    min-width: 96px;
+    min-height: 46px;
+    padding: 0 12px;
+    font-size: 12px;
+    box-shadow: none;
   }
 
   body[data-mobile-view="members"] .member-card {
@@ -1642,10 +1669,6 @@ body[data-role="member"] .detail-panel[data-panel="payment"] {
   .member-card {
     min-height: 64px;
     padding: 12px;
-  }
-
-  body[data-mobile-view="members"] .sidebar-quick-actions {
-    grid-template-columns: 1fr;
   }
 
   body[data-mobile-view="members"] #openMakeupSchedule {
