@@ -1111,7 +1111,7 @@ function saveLessonSettings(event) {
 }
 
 function renderTodaySchedule() {
-  const items = getTodayItems().sort((a, b) => a.time.localeCompare(b.time));
+  const items = getTodaySidebarEntries();
   elements.todaySchedule.innerHTML = "";
   elements.todayCount.textContent = String(items.length);
 
@@ -1123,22 +1123,41 @@ function renderTodaySchedule() {
   items.forEach((item) => {
     const card = document.createElement("div");
     card.className = "today-card";
-    const status = getScheduleStatus(item);
-    const attendance = getGroupAttendanceState(item);
+    const attendanceStatus = getCombinedAttendanceStatus(item.groups);
+    const status = item.status || "";
+    const balanceValues = item.members.map(getBalance);
+    const balances = balanceValues.every((balance) => balance === balanceValues[0])
+      ? `${balanceValues[0]}회 남음`
+      : `${balanceValues.join("/")}회 남음`;
     card.innerHTML = `
-      <span>
-        <strong>${escapeHTML(item.time)} · ${escapeHTML(item.className || "수업")}${status ? ` · ${escapeHTML(status)}` : ""}</strong>
-        <span>${escapeHTML(item.members.map((member) => member.name).join(", "))}</span>
-        <small>${escapeHTML(item.members.map((member) => `${member.name} ${getBalance(member)}회`).join(" / "))}</small>
-      </span>
+      <button class="today-card-main" type="button">
+        <span class="today-card-time">${escapeHTML(item.timeLabel)}</span>
+        <span class="today-card-copy">
+          <strong>${escapeHTML(item.members.map((member) => member.name).join(", "))}</strong>
+          <small>${status ? `${escapeHTML(status)} · ` : ""}${escapeHTML(compactLessonType(item.lessonType, item.groups.length))} · ${escapeHTML(balances)}</small>
+        </span>
+      </button>
     `;
-    const button = document.createElement("button");
-    button.className = `mini-action attendance-big ${attendance.done ? "done" : ""}`;
-    button.type = "button";
-    button.textContent = attendance.done ? "완료" : attendance.partial ? "남은 출석" : "출석";
-    button.disabled = attendance.done;
-    button.addEventListener("click", () => markGroupAttendance(item));
-    card.append(button);
+    const actions = document.createElement("div");
+    actions.className = "today-card-actions";
+    [
+      { status: "출석", label: "출석", className: "present" },
+      { status: "결석", label: "결석", className: "absent" },
+    ].forEach((action) => {
+      const button = document.createElement("button");
+      button.className = `mini-action attendance-big ${action.className} ${attendanceStatus === action.status ? "selected" : ""}`;
+      button.type = "button";
+      button.textContent = action.label;
+      button.disabled = !canEditSharedData();
+      button.addEventListener("click", () => markCombinedAttendance(item.groups, action.status));
+      actions.append(button);
+    });
+    card.querySelector(".today-card-main").addEventListener("click", () => {
+      selectedMemberId = item.members[0]?.id ?? selectedMemberId;
+      setMobileView("detail");
+      render();
+    });
+    card.append(actions);
     elements.todaySchedule.append(card);
   });
 }
