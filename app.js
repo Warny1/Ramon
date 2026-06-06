@@ -790,9 +790,12 @@ function renderTodaySidebarList(query) {
     card.className = "member-card today-attendance-card";
     card.innerHTML = `
       <button class="today-attendance-main" type="button">
-        <span class="today-lesson-time">${escapeHTML(entry.timeLabel)}</span>
+        <span class="today-lesson-time">
+          <span>${escapeHTML(entry.timeLabel)}</span>
+          ${entry.status === "보강" ? '<small class="today-lesson-status">보강</small>' : ""}
+        </span>
         <strong class="today-lesson-names">${escapeHTML(names)}</strong>
-        <span class="today-lesson-type ${entry.status === "보강" ? "today-lesson-status" : ""}">${entry.status === "보강" ? "보강 · " : ""}${escapeHTML(compactLessonType(entry.lessonType, entry.groups.length))}</span>
+        <span class="today-lesson-type">${escapeHTML(compactLessonType(entry.lessonType, entry.groups.length))}</span>
         <span class="today-lesson-balance ${balanceTone}">${escapeHTML(balances)}</span>
       </button>
     `;

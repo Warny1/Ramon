@@ -223,11 +223,26 @@ h4 {
 }
 
 .today-lesson-time {
+  display: grid;
+  justify-items: start;
+  gap: 3px;
   color: var(--ink) !important;
   font-size: 12px !important;
   font-weight: 900;
   overflow: visible !important;
   text-overflow: clip !important;
+}
+
+.today-lesson-status {
+  display: inline-flex;
+  width: max-content;
+  border-radius: 5px;
+  background: #fff0dc;
+  color: #a55b10 !important;
+  padding: 2px 6px;
+  font-size: 10px !important;
+  font-weight: 800;
+  line-height: 1.2 !important;
 }
 
 .today-lesson-names {
