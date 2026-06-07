@@ -1947,6 +1947,7 @@ function importPastedAttendance() {
   let added = 0;
   let updated = 0;
   let skipped = 0;
+  const pastedScheduleCursor = new Map();
 
   dataRows.forEach((row) => {
     const date = normalizePastedDate(row[dateIndex]);
@@ -1965,7 +1966,7 @@ function importPastedAttendance() {
     names.forEach((name) => {
       const member = findOrCreateMemberByName(name);
       const schedule = !time && pastedDay >= 0
-        ? member.schedules.find((item) => Number(item.day) === pastedDay)
+        ? getNextPastedAttendanceSchedule(member, date, pastedDay, pastedScheduleCursor)
         : null;
       const record = {
         id: crypto.randomUUID(),
@@ -2001,6 +2002,18 @@ function importPastedAttendance() {
   closeModal(elements.sheetsModal);
   commit();
   alert(`출석기록 추가 ${added}건, 수정 ${updated}건, 중복/누락 ${skipped}건`);
+}
+
+function getNextPastedAttendanceSchedule(member, date, day, cursor) {
+  const key = `${member.id}|${date}|${day}`;
+  const index = cursor.get(key) || 0;
+  cursor.set(key, index + 1);
+
+  const schedules = member.schedules
+    .filter((item) => Number(item.day) === day)
+    .sort((a, b) => (a.time || "").localeCompare(b.time || ""));
+
+  return schedules[index] || schedules.at(-1) || null;
 }
 
 function importPastedPayments() {
