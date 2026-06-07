@@ -26,6 +26,7 @@ const defaultLessonTypes = [
 const currency = new Intl.NumberFormat("ko-KR");
 const today = new Date();
 const todayISO = toISODate(today);
+let selectedAttendanceDate = todayISO;
 
 const seedData = {
   lessonTypes: defaultLessonTypes,
@@ -221,6 +222,7 @@ const elements = {
   todaySchedule: $("#todaySchedule"),
   todayCount: $("#todayCount"),
   todayScheduleDate: $("#todayScheduleDate"),
+  attendanceDate: $("#attendanceDate"),
   memberModal: $("#memberModal"),
   memberForm: $("#memberForm"),
   paymentModal: $("#paymentModal"),
@@ -244,17 +246,7 @@ const elements = {
 };
 
 document.addEventListener("DOMContentLoaded", async () => {
-  elements.todayLabel.textContent = new Intl.DateTimeFormat("ko-KR", {
-    year: "numeric",
-    month: "long",
-    day: "numeric",
-    weekday: "long",
-  }).format(today);
-  elements.todayScheduleDate.textContent = new Intl.DateTimeFormat("ko-KR", {
-    month: "long",
-    day: "numeric",
-    weekday: "long",
-  }).format(today);
+  elements.attendanceDate.value = selectedAttendanceDate;
 
   $("#openMemberModal").addEventListener("click", () => openModal(elements.memberModal));
   $("#openPaymentModal").addEventListener("click", () => {
@@ -266,7 +258,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   });
   $("#openScheduleModal").addEventListener("click", () => {
     prepareScheduleModal("regular");
-    elements.scheduleForm.day.value = String(today.getDay());
+    elements.scheduleForm.day.value = String(getSelectedAttendanceDate().getDay());
     elements.scheduleForm.time.value = roundToNextHalfHour();
     applyMemberDefaultLessonTypeToSchedule();
     renderScheduleMemberOptions([selectedMemberId].filter(Boolean));
@@ -280,7 +272,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   });
   function openMakeupScheduleModal() {
     prepareScheduleModal("makeup");
-    elements.scheduleForm.date.value = todayISO;
+    elements.scheduleForm.date.value = selectedAttendanceDate;
     elements.scheduleForm.time.value = roundToNextHalfHour();
     elements.scheduleForm.querySelector('[name="className"]').value = "보강";
     elements.scheduleForm.querySelector('[name="scheduleStatus"]').value = "보강";
@@ -310,6 +302,10 @@ document.addEventListener("DOMContentLoaded", async () => {
   });
   $("#exportData").addEventListener("click", exportData);
   $("#importData").addEventListener("change", importData);
+  elements.attendanceDate.addEventListener("change", () => {
+    selectedAttendanceDate = elements.attendanceDate.value || todayISO;
+    render();
+  });
 
   document.querySelectorAll("[data-close]").forEach((button) => {
     button.addEventListener("click", () => closeModal($(`#${button.dataset.close}`)));
@@ -724,6 +720,7 @@ function getAccessibleMembers() {
 }
 
 function render() {
+  renderSelectedAttendanceDate();
   const selected = getSelectedMember();
   if (selected && !getAccessibleMembers().some((member) => member.id === selected.id)) {
     selectedMemberId = getAccessibleMembers()[0]?.id ?? null;
@@ -745,6 +742,30 @@ function render() {
   elements.emptyState.classList.add("hidden");
   elements.detailView.classList.remove("hidden");
   renderDetail(selected);
+}
+
+function getSelectedAttendanceDate() {
+  return new Date(`${selectedAttendanceDate}T12:00:00`);
+}
+
+function renderSelectedAttendanceDate() {
+  const selectedDate = getSelectedAttendanceDate();
+  const fullLabel = new Intl.DateTimeFormat("ko-KR", {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+    weekday: "long",
+  }).format(selectedDate);
+
+  elements.todayLabel.textContent = fullLabel;
+  elements.todayScheduleDate.textContent = new Intl.DateTimeFormat("ko-KR", {
+    month: "long",
+    day: "numeric",
+    weekday: "long",
+  }).format(selectedDate);
+  if (elements.attendanceDate.value !== selectedAttendanceDate) {
+    elements.attendanceDate.value = selectedAttendanceDate;
+  }
 }
 
 function setMobileView(view) {
@@ -1071,7 +1092,7 @@ function renderTimetable() {
 
   table.append(createTableHeader("시간"));
   visibleDays.forEach((day) => {
-    table.append(createTableHeader(dayNames[day], day === today.getDay()));
+    table.append(createTableHeader(dayNames[day], day === getSelectedAttendanceDate().getDay()));
   });
 
   timetableTimes.forEach((time) => {
@@ -1117,9 +1138,9 @@ function scrollTimetableToFirstLesson() {
 }
 
 function getVisibleTimetableDays() {
-  if (isMobileLayout()) return [today.getDay()];
+  if (isMobileLayout()) return [getSelectedAttendanceDate().getDay()];
   if (desktopView === "schedule" || timetableView === "week") return timetableDays;
-  return [today.getDay()];
+  return [getSelectedAttendanceDate().getDay()];
 }
 
 function openScheduleAt(day, time) {
@@ -1488,7 +1509,7 @@ function markAttendance() {
   const member = getSelectedMember();
   if (!member) return;
 
-  const currentClass = member.schedules.find((item) => Number(item.day) === today.getDay());
+  const currentClass = member.schedules.find((item) => Number(item.day) === getSelectedAttendanceDate().getDay());
   recordAttendance(member, currentClass?.className || "출석", currentClass?.time || "", "");
   commit();
 }
@@ -1507,7 +1528,7 @@ function recordAttendance(member, className, time, status = "") {
   const normalizedStatus = normalizeAttendanceStatus(status);
   const existing = member.attendances.find(
     (item) =>
-      item.date === todayISO &&
+      item.date === selectedAttendanceDate &&
       (item.className || "출석") === className &&
       (item.time || "") === (time || ""),
   );
@@ -1519,7 +1540,7 @@ function recordAttendance(member, className, time, status = "") {
 
   member.attendances.push({
     id: crypto.randomUUID(),
-    date: todayISO,
+    date: selectedAttendanceDate,
     className,
     time,
     status: normalizedStatus,
@@ -1539,7 +1560,7 @@ function getGroupAttendanceState(group) {
 function hasAttendanceForGroup(member, group) {
   return member.attendances.some(
     (item) =>
-      item.date === todayISO &&
+      item.date === selectedAttendanceDate &&
       (item.className || "출석") === (group.className || "출석") &&
       (item.time || "") === (group.time || "") &&
       normalizeAttendanceStatus(item.status) === "출석",
@@ -2110,7 +2131,7 @@ function isCountedAttendance(item) {
 }
 
 function getTodayItems() {
-  return getScheduleGroups().filter((item) => Number(item.day) === today.getDay());
+  return getScheduleGroups().filter((item) => Number(item.day) === getSelectedAttendanceDate().getDay());
 }
 
 function getTodaySidebarEntries() {
@@ -2183,7 +2204,7 @@ function getCombinedAttendanceStatus(groups) {
     group.members.map((member) => {
       const record = member.attendances.find(
         (item) =>
-          item.date === todayISO &&
+          item.date === selectedAttendanceDate &&
           (item.className || "출석") === (group.className || "출석") &&
           (item.time || "") === (group.time || ""),
       );
@@ -2210,7 +2231,7 @@ function getTodayEntries() {
 function getScheduleItems() {
   return getAccessibleMembers().flatMap((member) =>
     member.schedules
-      .filter((item) => !item.date || item.date === todayISO)
+      .filter((item) => !item.date || item.date === selectedAttendanceDate)
       .map((item) => ({ ...item, member })),
   );
 }
@@ -2259,7 +2280,7 @@ function createLessonBlock(group) {
   });
   block.append(mainButton);
 
-  if (Number(group.day) === today.getDay()) {
+  if (Number(group.day) === getSelectedAttendanceDate().getDay()) {
     const attendanceStatus = getCombinedAttendanceStatus(group.groups?.length ? group.groups : [group]);
     const statusLabel = document.createElement("span");
     statusLabel.className = `lesson-attendance-state ${getAttendanceStateClass(attendanceStatus)}`;

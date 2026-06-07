@@ -1022,6 +1022,21 @@ h4 {
   cursor: pointer;
 }
 
+.attendance-date-control {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin: -2px 0 10px;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.attendance-date-control input {
+  max-width: 160px;
+}
+
 .row-item p,
 .payment-row p {
   margin-bottom: 2px;
