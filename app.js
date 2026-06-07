@@ -814,12 +814,7 @@ function renderPaymentOverview() {
       () => removePayment(member.id, payment.id),
     );
     row.classList.add("payment-row");
-    row.querySelector("span").addEventListener("click", () => {
-      selectedMemberId = member.id;
-      activeDetailPanel = "payment";
-      if (isMobileLayout()) setMobileView("detail");
-      render();
-    });
+    row.addEventListener("click", () => openPaymentEditor(member.id, payment.id));
     elements.monthlyPaymentList.append(row);
   });
 }
