@@ -229,6 +229,7 @@ const elements = {
   pasteMembersText: $("#pasteMembersText"),
   pasteTimetableText: $("#pasteTimetableText"),
   pasteAttendanceText: $("#pasteAttendanceText"),
+  pastePaymentsText: $("#pastePaymentsText"),
   lessonSettingsModal: $("#lessonSettingsModal"),
   lessonSettingsForm: $("#lessonSettingsForm"),
   lessonSettingsList: $("#lessonSettingsList"),
@@ -257,7 +258,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   $("#openMemberModal").addEventListener("click", () => openModal(elements.memberModal));
   $("#openPaymentModal").addEventListener("click", () => {
     elements.paymentForm.date.value = todayISO;
-    getPaymentDiscountSelect().value = "-5";
+    getPaymentDiscountSelect().value = "0";
     applyMemberDefaultLessonTypeToPayment();
     openModal(elements.paymentModal);
   });
@@ -295,6 +296,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   $("#importPastedMembers").addEventListener("click", importPastedMembers);
   $("#importPastedTimetable").addEventListener("click", importPastedTimetable);
   $("#importPastedAttendance").addEventListener("click", importPastedAttendance);
+  $("#importPastedPayments").addEventListener("click", importPastedPayments);
   $("#clearAttendanceRecords").addEventListener("click", clearAttendanceRecords);
   $("#addLessonType").addEventListener("click", () => addLessonSettingsRow());
   $("#markAttendance").addEventListener("click", markAttendance);
@@ -1940,6 +1942,84 @@ function importPastedAttendance() {
   alert(`출석기록 추가 ${added}건, 수정 ${updated}건, 중복/누락 ${skipped}건`);
 }
 
+function importPastedPayments() {
+  if (!canManagePayments()) return;
+
+  const text = elements.pastePaymentsText.value.trim();
+  if (!text) {
+    alert("붙여넣은 결제기록이 없습니다.");
+    return;
+  }
+
+  const rows = text
+    .split(/\r?\n/)
+    .map((line) => line.split("\t").map((cell) => cell.trim()))
+    .filter((row) => row.some(Boolean));
+
+  const firstRow = rows[0]?.map(normalizeHeader) || [];
+  const hasHeader = firstRow.some((cell) => ["날짜", "date", "결제일", "일자"].includes(cell));
+  const dateIndex = hasHeader ? findHeaderIndex(firstRow, ["날짜", "date", "결제일", "일자"]) : 0;
+  const nameIndex = hasHeader ? findHeaderIndex(firstRow, ["회원", "회원명", "이름", "성명", "name", "membername"]) : 1;
+  const lessonTypeIndex = hasHeader ? findHeaderIndex(firstRow, ["레슨종류", "레슨타입", "수업종류", "lessontype"]) : 2;
+  const sessionsIndex = hasHeader ? findHeaderIndex(firstRow, ["등록횟수", "횟수", "회차", "sessions"]) : 3;
+  const amountIndex = hasHeader ? findHeaderIndex(firstRow, ["실금액", "실결제금액", "결제금액", "입금액", "금액", "amount"]) : 4;
+  const memoIndex = hasHeader ? findHeaderIndex(firstRow, ["메모", "비고", "note", "memo"]) : 5;
+  const dataRows = hasHeader ? rows.slice(1) : rows;
+  let added = 0;
+  let skipped = 0;
+
+  dataRows.forEach((row) => {
+    const date = normalizePastedDate(row[dateIndex]);
+    const names = splitMemberNames(row[nameIndex] || "");
+    const lessonType = row[lessonTypeIndex] || "";
+    const sessions = parsePaymentNumber(row[sessionsIndex]);
+    const amount = parsePaymentNumber(row[amountIndex]);
+    const memo = memoIndex >= 0 ? row[memoIndex] || "" : "";
+
+    if (!date || !names.length || !lessonType || !sessions || !amount) {
+      skipped += 1;
+      return;
+    }
+
+    names.forEach((name) => {
+      const member = findOrCreateMemberByName(name);
+      const payment = {
+        id: crypto.randomUUID(),
+        date,
+        lessonType,
+        sessions,
+        amount,
+        memo,
+        paymentMethod: "",
+        discountRate: 0,
+        taxRate: 0,
+      };
+      const key = getPaymentRecordKey(payment);
+      const exists = member.payments.some((item) => getPaymentRecordKey(item) === key);
+
+      if (exists) {
+        skipped += 1;
+        return;
+      }
+
+      member.payments.push(payment);
+      added += 1;
+    });
+  });
+
+  if (added === 0) {
+    alert(`새로 반영할 결제기록이 없습니다. 중복이거나 날짜/회원명/레슨/횟수/금액 칸이 비어 있을 수 있습니다. 건너뜀 ${skipped}건`);
+    return;
+  }
+
+  deduplicateMemberData(state);
+  selectedMemberId = state.members[0]?.id ?? selectedMemberId;
+  elements.pastePaymentsText.value = "";
+  closeModal(elements.sheetsModal);
+  commit();
+  alert(`결제기록 ${added}건을 추가했고, 중복/누락 ${skipped}건은 건너뛰었습니다.`);
+}
+
 function getSelectedMember() {
   return getAccessibleMembers().find((member) => member.id === selectedMemberId) ?? null;
 }
@@ -2395,6 +2475,20 @@ function normalizePastedDate(value) {
   if (date.getFullYear() !== year || date.getMonth() !== month - 1 || date.getDate() !== day) return "";
 
   return `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+}
+
+function parsePaymentNumber(value) {
+  const normalized = String(value || "").replace(/[^\d.-]/g, "");
+  return Number(normalized || 0);
+}
+
+function getPaymentRecordKey(item) {
+  return [
+    String(item.date || "").trim(),
+    String(item.lessonType || "").trim(),
+    Number(item.sessions || 0),
+    Number(item.amount || 0),
+  ].join("|");
 }
 
 function normalizeScheduleStatus(value) {
