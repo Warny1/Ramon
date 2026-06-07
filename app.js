@@ -212,6 +212,7 @@ const elements = {
   memberMeta: $("#memberMeta"),
   memberBalance: $("#memberBalance"),
   scheduleList: $("#scheduleList"),
+  attendanceCheckList: $("#attendanceCheckList"),
   attendanceList: $("#attendanceList"),
   paymentList: $("#paymentList"),
   detailTabs: document.querySelectorAll(".detail-tab"),
@@ -223,6 +224,7 @@ const elements = {
   todayCount: $("#todayCount"),
   todayScheduleDate: $("#todayScheduleDate"),
   attendanceDate: $("#attendanceDate"),
+  detailAttendanceDate: $("#detailAttendanceDate"),
   memberModal: $("#memberModal"),
   memberForm: $("#memberForm"),
   paymentModal: $("#paymentModal"),
@@ -304,6 +306,10 @@ document.addEventListener("DOMContentLoaded", async () => {
   $("#importData").addEventListener("change", importData);
   elements.attendanceDate.addEventListener("change", () => {
     selectedAttendanceDate = elements.attendanceDate.value || todayISO;
+    render();
+  });
+  elements.detailAttendanceDate.addEventListener("change", () => {
+    selectedAttendanceDate = elements.detailAttendanceDate.value || todayISO;
     render();
   });
 
@@ -766,6 +772,9 @@ function renderSelectedAttendanceDate() {
   if (elements.attendanceDate.value !== selectedAttendanceDate) {
     elements.attendanceDate.value = selectedAttendanceDate;
   }
+  if (elements.detailAttendanceDate.value !== selectedAttendanceDate) {
+    elements.detailAttendanceDate.value = selectedAttendanceDate;
+  }
 }
 
 function setMobileView(view) {
@@ -1038,6 +1047,8 @@ function renderSchedule(member) {
 }
 
 function renderAttendance(member) {
+  renderAttendanceCheckList(member);
+
   elements.attendanceList.innerHTML = "";
   const sorted = [...member.attendances].sort((a, b) => b.date.localeCompare(a.date)).slice(0, 8);
 
@@ -1050,6 +1061,64 @@ function renderAttendance(member) {
     const subtitle = [item.className || "출석", item.time || "", item.status || ""].filter(Boolean).join(" · ");
     elements.attendanceList.append(createRow(formatDate(item.date), subtitle, () => removeAttendance(member.id, item.id)));
   });
+}
+
+function renderAttendanceCheckList(member) {
+  elements.attendanceCheckList.innerHTML = "";
+
+  const selectedDay = getSelectedAttendanceDate().getDay();
+  const schedules = member.schedules
+    .filter((item) => (!item.date && Number(item.day) === selectedDay) || item.date === selectedAttendanceDate)
+    .sort((a, b) => (a.time || "").localeCompare(b.time || ""));
+
+  if (!schedules.length) {
+    elements.attendanceCheckList.append(createEmptyLine("선택한 날짜에 등록된 수업이 없습니다."));
+    return;
+  }
+
+  schedules.forEach((schedule) => {
+    const status = getAttendanceStatusForSchedule(member, schedule);
+    const row = document.createElement("div");
+    row.className = "attendance-check-row";
+    row.innerHTML = `
+      <span>
+        <p>${escapeHTML(schedule.time || "시간 없음")} · ${escapeHTML(schedule.className || "수업")}</p>
+        <span>${escapeHTML([getScheduleLessonType(schedule), getScheduleStatus(schedule), status || "미처리"].filter(Boolean).join(" · "))}</span>
+      </span>
+    `;
+
+    const actions = document.createElement("div");
+    actions.className = "attendance-check-actions";
+    [
+      { status: "출석", label: "출석", className: "present" },
+      { status: "결석", label: "결석", className: "absent" },
+    ].forEach((action) => {
+      const button = document.createElement("button");
+      button.className = `mini-action ${action.className} ${status === action.status ? "selected" : ""}`;
+      button.type = "button";
+      button.textContent = action.label;
+      button.disabled = !canEditSharedData();
+      button.addEventListener("click", () => {
+        recordAttendance(member, schedule.className || "출석", schedule.time || "", action.status);
+        commit();
+      });
+      actions.append(button);
+    });
+
+    row.append(actions);
+    elements.attendanceCheckList.append(row);
+  });
+}
+
+function getAttendanceStatusForSchedule(member, schedule) {
+  const record = member.attendances.find(
+    (item) =>
+      item.date === selectedAttendanceDate &&
+      (item.className || "출석") === (schedule.className || "출석") &&
+      (item.time || "") === (schedule.time || ""),
+  );
+
+  return record ? normalizeAttendanceStatus(record.status) : "";
 }
 
 function renderPayments(member) {

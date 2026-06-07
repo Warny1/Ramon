@@ -1037,6 +1037,43 @@ h4 {
   max-width: 160px;
 }
 
+.compact-title {
+  margin-top: 14px;
+}
+
+.attendance-check-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: center;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #ffffff;
+  padding: 9px 10px;
+}
+
+.attendance-check-row p {
+  margin-bottom: 2px;
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.attendance-check-row span span {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.attendance-check-actions {
+  display: flex;
+  gap: 6px;
+}
+
+.attendance-check-actions .mini-action {
+  min-height: 34px;
+  min-width: 54px;
+}
+
 .row-item p,
 .payment-row p {
   margin-bottom: 2px;
