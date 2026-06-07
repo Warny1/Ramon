@@ -298,6 +298,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   $("#importPastedAttendance").addEventListener("click", importPastedAttendance);
   $("#importPastedPayments").addEventListener("click", importPastedPayments);
   $("#clearAttendanceRecords").addEventListener("click", clearAttendanceRecords);
+  $("#clearPaymentRecords").addEventListener("click", clearPaymentRecords);
   $("#addLessonType").addEventListener("click", () => addLessonSettingsRow());
   $("#markAttendance").addEventListener("click", markAttendance);
   $("#deleteMember").addEventListener("click", deleteSelectedMember);
@@ -1554,6 +1555,26 @@ function clearAttendanceRecords() {
   closeModal(elements.sheetsModal);
   commit();
   alert("출석기록만 초기화했습니다. 이제 구글시트 출석기록을 다시 붙여넣어 주세요.");
+}
+
+function clearPaymentRecords() {
+  if (!canManagePayments()) return;
+
+  const total = state.members.reduce((sum, member) => sum + member.payments.length, 0);
+  if (!total) {
+    alert("초기화할 결제기록이 없습니다.");
+    return;
+  }
+
+  const ok = confirm(`전체 결제기록 ${total}건을 삭제할까요?\n회원, 시간표, 출석기록은 유지됩니다.`);
+  if (!ok) return;
+
+  state.members.forEach((member) => {
+    member.payments = [];
+  });
+  closeModal(elements.sheetsModal);
+  commit();
+  alert("결제기록만 초기화했습니다. 이제 구글시트 결제기록을 다시 붙여넣어 주세요.");
 }
 
 function removePayment(memberId, paymentId) {
