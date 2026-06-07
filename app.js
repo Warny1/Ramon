@@ -224,6 +224,7 @@ const elements = {
   memberModal: $("#memberModal"),
   memberForm: $("#memberForm"),
   paymentModal: $("#paymentModal"),
+  paymentModalTitle: $("#paymentModalTitle"),
   paymentForm: $("#paymentForm"),
   sheetsModal: $("#sheetsModal"),
   pasteMembersText: $("#pasteMembersText"),
@@ -257,6 +258,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   $("#openMemberModal").addEventListener("click", () => openModal(elements.memberModal));
   $("#openPaymentModal").addEventListener("click", () => {
+    preparePaymentModal();
     elements.paymentForm.date.value = todayISO;
     getPaymentDiscountSelect().value = "0";
     applyMemberDefaultLessonTypeToPayment();
@@ -1055,6 +1057,7 @@ function renderPayments(member) {
       () => removePayment(member.id, item.id),
     );
     row.classList.add("payment-row");
+    row.addEventListener("click", () => openPaymentEditor(member.id, item.id));
     elements.paymentList.append(row);
   });
 }
@@ -1374,7 +1377,11 @@ function addPayment(event) {
   event.preventDefault();
   if (!canManagePayments()) return;
 
-  const member = getSelectedMember();
+  const editingMemberId = elements.paymentForm.dataset.editingMemberId || "";
+  const editingPaymentId = elements.paymentForm.dataset.editingPaymentId || "";
+  const member = editingMemberId
+    ? state.members.find((item) => item.id === editingMemberId)
+    : getSelectedMember();
   if (!member) return;
 
   const form = new FormData(elements.paymentForm);
@@ -1383,8 +1390,11 @@ function addPayment(event) {
   const adjustmentMemo = discountOption?.dataset.label || "";
   const memo = String(form.get("memo")).trim();
 
-  member.payments.push({
-    id: crypto.randomUUID(),
+  const payment = editingPaymentId
+    ? member.payments.find((item) => item.id === editingPaymentId)
+    : null;
+  const nextPayment = {
+    id: payment?.id || crypto.randomUUID(),
     date: String(form.get("date")),
     lessonType: String(form.get("lessonType")),
     sessions: Number(form.get("sessions")),
@@ -1393,11 +1403,46 @@ function addPayment(event) {
     paymentMethod: "",
     discountRate: adjustmentRate < 0 ? Math.abs(adjustmentRate) : 0,
     taxRate: adjustmentRate > 0 ? adjustmentRate : 0,
-  });
+  };
 
+  if (payment) {
+    Object.assign(payment, nextPayment);
+  } else {
+    member.payments.push(nextPayment);
+  }
+
+  selectedMemberId = member.id;
   elements.paymentForm.reset();
+  preparePaymentModal();
   closeModal(elements.paymentModal);
   commit();
+}
+
+function preparePaymentModal() {
+  elements.paymentModalTitle.textContent = "결제 추가";
+  delete elements.paymentForm.dataset.editingMemberId;
+  delete elements.paymentForm.dataset.editingPaymentId;
+  elements.paymentForm.reset();
+}
+
+function openPaymentEditor(memberId, paymentId) {
+  if (!canManagePayments()) return;
+
+  const member = state.members.find((item) => item.id === memberId);
+  const payment = member?.payments.find((item) => item.id === paymentId);
+  if (!member || !payment) return;
+
+  selectedMemberId = member.id;
+  elements.paymentModalTitle.textContent = "결제 수정";
+  elements.paymentForm.dataset.editingMemberId = member.id;
+  elements.paymentForm.dataset.editingPaymentId = payment.id;
+  elements.paymentForm.querySelector('[name="lessonType"]').value = payment.lessonType || "";
+  elements.paymentForm.querySelector('[name="date"]').value = payment.date || todayISO;
+  elements.paymentForm.querySelector('[name="sessions"]').value = String(payment.sessions || 0);
+  elements.paymentForm.querySelector('[name="discountOption"]').value = "0";
+  elements.paymentForm.querySelector('[name="amount"]').value = String(Number(payment.amount || 0));
+  elements.paymentForm.querySelector('[name="memo"]').value = payment.memo || "";
+  openModal(elements.paymentModal);
 }
 
 function addSchedule(event) {
@@ -2325,7 +2370,10 @@ function createRow(title, subtitle, onRemove) {
   removeButton.type = "button";
   removeButton.title = "삭제";
   removeButton.textContent = "×";
-  removeButton.addEventListener("click", onRemove);
+  removeButton.addEventListener("click", (event) => {
+    event.stopPropagation();
+    onRemove();
+  });
   row.append(removeButton);
 
   return row;
