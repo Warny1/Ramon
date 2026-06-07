@@ -2651,6 +2651,10 @@ select {
   }
 
   .today-card-status {
+    grid-column: 1;
+    grid-row: 2;
+    align-self: center;
+    justify-self: start;
     display: inline-flex;
     width: max-content;
     border-radius: 5px;
@@ -2660,10 +2664,6 @@ select {
     font-size: 10px;
     font-weight: 800;
     line-height: 1.3;
-  }
-
-  .today-card-status.placeholder {
-    visibility: hidden;
   }
 
   .today-card-copy {

@@ -1290,12 +1290,12 @@ function renderTodaySchedule() {
       <button class="today-card-main" type="button">
         <span class="today-card-time">
           <span>${escapeHTML(item.timeLabel)}</span>
-          <small class="today-card-status${status === "보강" ? "" : " placeholder"}"${status === "보강" ? "" : ' aria-hidden="true"'}>보강</small>
         </span>
         <span class="today-card-copy">
           <strong>${escapeHTML(item.members.map((member) => member.name).join(", "))}</strong>
         </span>
       </button>
+      ${status === "보강" ? '<small class="today-card-status">보강</small>' : ""}
       <span class="today-card-details">
         <small class="today-card-lesson">${escapeHTML(compactLessonType(item.lessonType, item.groups.length))}</small>
         <small class="today-card-balance ${balanceTone}">${escapeHTML(balances)}</small>
