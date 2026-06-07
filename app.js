@@ -1876,8 +1876,10 @@ function importPastedAttendance() {
   const dateIndex = hasHeader ? findHeaderIndex(firstRow, ["날짜", "date", "일자", "수업일"]) : 0;
   const nameIndex = hasHeader ? findHeaderIndex(firstRow, ["회원", "회원명", "이름", "성명", "name", "membername"]) : 1;
   const timeIndex = hasHeader ? findHeaderIndex(firstRow, ["시간", "time", "수업시간"]) : 2;
+  const dayIndex = hasHeader ? findHeaderIndex(firstRow, ["요일", "day"]) : -1;
   const classNameIndex = hasHeader ? findHeaderIndex(firstRow, ["수업", "수업명", "종류", "class", "classname"]) : 3;
   const statusIndex = hasHeader ? findHeaderIndex(firstRow, ["상태", "출석", "출석상태", "비고", "note", "status"]) : 4;
+  const statusHeader = statusIndex >= 0 ? firstRow[statusIndex] : "";
   const dataRows = hasHeader ? rows.slice(1) : rows;
   let added = 0;
   let updated = 0;
@@ -1885,9 +1887,11 @@ function importPastedAttendance() {
 
   dataRows.forEach((row) => {
     const date = normalizePastedDate(row[dateIndex]);
+    const pastedDay = dayIndex >= 0 ? dayNames.indexOf(row[dayIndex]) : -1;
     const time = normalizeTime(row[timeIndex]) || "";
-    const className = row[classNameIndex] || "수업";
-    const status = normalizePastedAttendanceStatus(statusIndex >= 0 ? row[statusIndex] : "", statusIndex < 0);
+    const note = statusIndex >= 0 ? row[statusIndex] : "";
+    const className = row[classNameIndex] || normalizeScheduleStatus(note) || "수업";
+    const status = normalizePastedAttendanceStatus(note, statusIndex < 0 || statusHeader === "비고" || statusHeader === "note");
     const names = splitMemberNames(row[nameIndex] || "");
 
     if (!date || !names.length || !status) {
@@ -1897,11 +1901,14 @@ function importPastedAttendance() {
 
     names.forEach((name) => {
       const member = findOrCreateMemberByName(name);
+      const schedule = !time && pastedDay >= 0
+        ? member.schedules.find((item) => Number(item.day) === pastedDay)
+        : null;
       const record = {
         id: crypto.randomUUID(),
         date,
-        className,
-        time,
+        className: className || schedule?.className || "수업",
+        time: time || schedule?.time || "",
         status,
       };
       const key = getAttendanceRecordKey(record);
@@ -2376,13 +2383,16 @@ function normalizePastedDate(value) {
     return `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
   }
 
-  const match = text.match(/^(?:(\d{4})\D+)?(\d{1,2})\D+(\d{1,2})$/);
+  const match = text.match(/^(?:(\d{4})\D+)?(\d{1,2})\D+(\d{1,2})(?:\D|$)/);
   if (!match) return "";
 
   const year = Number(match[1] || today.getFullYear());
   const month = Number(match[2]);
   const day = Number(match[3]);
   if (month < 1 || month > 12 || day < 1 || day > 31) return "";
+
+  const date = new Date(year, month - 1, day);
+  if (date.getFullYear() !== year || date.getMonth() !== month - 1 || date.getDate() !== day) return "";
 
   return `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
 }
