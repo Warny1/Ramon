@@ -1880,6 +1880,7 @@ function importPastedAttendance() {
   const statusIndex = hasHeader ? findHeaderIndex(firstRow, ["상태", "출석", "출석상태", "비고", "note", "status"]) : 4;
   const dataRows = hasHeader ? rows.slice(1) : rows;
   let added = 0;
+  let updated = 0;
   let skipped = 0;
 
   dataRows.forEach((row) => {
@@ -1896,25 +1897,31 @@ function importPastedAttendance() {
 
     names.forEach((name) => {
       const member = findOrCreateMemberByName(name);
-      const before = member.attendances.length;
-      member.attendances = deduplicateAttendances([
-        ...member.attendances,
-        {
-          id: crypto.randomUUID(),
-          date,
-          className,
-          time,
-          status,
-        },
-      ]);
+      const record = {
+        id: crypto.randomUUID(),
+        date,
+        className,
+        time,
+        status,
+      };
+      const key = getAttendanceRecordKey(record);
+      const existing = member.attendances.find((item) => getAttendanceRecordKey(item) === key);
 
-      if (member.attendances.length > before) added += 1;
-      else skipped += 1;
+      if (existing) {
+        const previousStatus = normalizeAttendanceStatus(existing.status);
+        existing.status = status;
+        if (previousStatus === status) skipped += 1;
+        else updated += 1;
+        return;
+      }
+
+      member.attendances.push(record);
+      added += 1;
     });
   });
 
-  if (added === 0) {
-    alert("새로 추가할 출석기록이 없습니다. 이미 반영된 기록일 수 있습니다.");
+  if (added === 0 && updated === 0) {
+    alert(`새로 반영할 출석기록이 없습니다. 중복이거나 날짜/회원명/상태 칸이 비어 있을 수 있습니다. 건너뜀 ${skipped}건`);
     return;
   }
 
@@ -1923,7 +1930,7 @@ function importPastedAttendance() {
   elements.pasteAttendanceText.value = "";
   closeModal(elements.sheetsModal);
   commit();
-  if (skipped > 0) alert(`출석기록 ${added}건을 추가했고, 중복/누락 ${skipped}건은 건너뛰었습니다.`);
+  alert(`출석기록 추가 ${added}건, 수정 ${updated}건, 중복/누락 ${skipped}건`);
 }
 
 function getSelectedMember() {
