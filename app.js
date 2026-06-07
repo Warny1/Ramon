@@ -256,7 +256,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   $("#openMemberModal").addEventListener("click", () => openModal(elements.memberModal));
   $("#openPaymentModal").addEventListener("click", () => {
     elements.paymentForm.date.value = todayISO;
-    getPaymentDiscountSelect().value = "0";
+    getPaymentDiscountSelect().value = "-5";
     applyMemberDefaultLessonTypeToPayment();
     openModal(elements.paymentModal);
   });
@@ -1103,8 +1103,8 @@ function applyPaymentDiscountToAmount() {
   const selected = state.lessonTypes.find((lesson) => lesson.name === getPaymentLessonTypeSelect().value);
   if (!selected) return;
 
-  const discountRate = Number(getPaymentDiscountSelect().value || 0);
-  const amount = Number(selected.amount || 0) * (1 - discountRate / 100);
+  const adjustmentRate = Number(getPaymentDiscountSelect().value || 0);
+  const amount = Number(selected.amount || 0) * (1 + adjustmentRate / 100);
   elements.paymentForm.querySelector('[name="amount"]').value = String(Math.round(amount));
 }
 
@@ -1254,10 +1254,9 @@ function addPayment(event) {
 
   const form = new FormData(elements.paymentForm);
   const discountOption = getPaymentDiscountSelect().selectedOptions[0];
-  const discountRate = Number(form.get("discountOption") || 0);
-  const paymentMethod = discountOption?.dataset.method || "";
+  const adjustmentRate = Number(form.get("discountOption") || 0);
+  const adjustmentMemo = discountOption?.dataset.label || "";
   const memo = String(form.get("memo")).trim();
-  const discountMemo = discountRate ? `${paymentMethod} ${discountRate}% 할인` : "";
 
   member.payments.push({
     id: crypto.randomUUID(),
@@ -1265,9 +1264,10 @@ function addPayment(event) {
     lessonType: String(form.get("lessonType")),
     sessions: Number(form.get("sessions")),
     amount: Number(form.get("amount")),
-    memo: [discountMemo, memo].filter(Boolean).join(" · "),
-    paymentMethod,
-    discountRate,
+    memo: [adjustmentMemo, memo].filter(Boolean).join(" · "),
+    paymentMethod: "",
+    discountRate: adjustmentRate < 0 ? Math.abs(adjustmentRate) : 0,
+    taxRate: adjustmentRate > 0 ? adjustmentRate : 0,
   });
 
   elements.paymentForm.reset();
