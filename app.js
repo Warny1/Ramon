@@ -228,6 +228,7 @@ const elements = {
   sheetsModal: $("#sheetsModal"),
   pasteMembersText: $("#pasteMembersText"),
   pasteTimetableText: $("#pasteTimetableText"),
+  pasteAttendanceText: $("#pasteAttendanceText"),
   lessonSettingsModal: $("#lessonSettingsModal"),
   lessonSettingsForm: $("#lessonSettingsForm"),
   lessonSettingsList: $("#lessonSettingsList"),
@@ -293,6 +294,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   $("#importSheetCsv").addEventListener("change", importSheetCsv);
   $("#importPastedMembers").addEventListener("click", importPastedMembers);
   $("#importPastedTimetable").addEventListener("click", importPastedTimetable);
+  $("#importPastedAttendance").addEventListener("click", importPastedAttendance);
   $("#addLessonType").addEventListener("click", () => addLessonSettingsRow());
   $("#markAttendance").addEventListener("click", markAttendance);
   $("#deleteMember").addEventListener("click", deleteSelectedMember);
@@ -1834,6 +1836,75 @@ function importPastedTimetable() {
   commit();
 }
 
+function importPastedAttendance() {
+  if (!canManageSettings()) return;
+
+  const text = elements.pasteAttendanceText.value.trim();
+  if (!text) {
+    alert("붙여넣은 출석기록이 없습니다.");
+    return;
+  }
+
+  const rows = text
+    .split(/\r?\n/)
+    .map((line) => line.split("\t").map((cell) => cell.trim()))
+    .filter((row) => row.some(Boolean));
+
+  const firstRow = rows[0]?.map(normalizeHeader) || [];
+  const hasHeader = firstRow.some((cell) => ["날짜", "date", "일자", "수업일"].includes(cell));
+  const dateIndex = hasHeader ? findHeaderIndex(firstRow, ["날짜", "date", "일자", "수업일"]) : 0;
+  const nameIndex = hasHeader ? findHeaderIndex(firstRow, ["회원", "회원명", "이름", "성명", "name", "membername"]) : 1;
+  const timeIndex = hasHeader ? findHeaderIndex(firstRow, ["시간", "time", "수업시간"]) : 2;
+  const classNameIndex = hasHeader ? findHeaderIndex(firstRow, ["수업", "수업명", "종류", "class", "classname"]) : 3;
+  const statusIndex = hasHeader ? findHeaderIndex(firstRow, ["상태", "출석", "출석상태", "비고", "note", "status"]) : 4;
+  const dataRows = hasHeader ? rows.slice(1) : rows;
+  let added = 0;
+  let skipped = 0;
+
+  dataRows.forEach((row) => {
+    const date = normalizePastedDate(row[dateIndex]);
+    const time = normalizeTime(row[timeIndex]) || "";
+    const className = row[classNameIndex] || "수업";
+    const status = normalizeAttendanceStatus(row[statusIndex] || "출석");
+    const names = splitMemberNames(row[nameIndex] || "");
+
+    if (!date || !names.length) {
+      skipped += 1;
+      return;
+    }
+
+    names.forEach((name) => {
+      const member = findOrCreateMemberByName(name);
+      const before = member.attendances.length;
+      member.attendances = deduplicateAttendances([
+        ...member.attendances,
+        {
+          id: crypto.randomUUID(),
+          date,
+          className,
+          time,
+          status,
+        },
+      ]);
+
+      if (member.attendances.length > before) added += 1;
+      else skipped += 1;
+    });
+  });
+
+  if (added === 0) {
+    alert("새로 추가할 출석기록이 없습니다. 이미 반영된 기록일 수 있습니다.");
+    return;
+  }
+
+  deduplicateMemberData(state);
+  selectedMemberId = state.members[0]?.id ?? selectedMemberId;
+  elements.pasteAttendanceText.value = "";
+  closeModal(elements.sheetsModal);
+  commit();
+  if (skipped > 0) alert(`출석기록 ${added}건을 추가했고, 중복/누락 ${skipped}건은 건너뛰었습니다.`);
+}
+
 function getSelectedMember() {
   return getAccessibleMembers().find((member) => member.id === selectedMemberId) ?? null;
 }
@@ -2266,6 +2337,26 @@ function normalizeTime(value) {
   const minutes = Number(match[2] || 0);
   if (hours < 0 || hours > 23 || minutes < 0 || minutes > 59) return "";
   return `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}`;
+}
+
+function normalizePastedDate(value) {
+  const text = String(value || "").trim();
+  if (!text) return "";
+
+  if (/^\d{4}-\d{1,2}-\d{1,2}$/.test(text)) {
+    const [year, month, day] = text.split("-").map(Number);
+    return `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+  }
+
+  const match = text.match(/^(?:(\d{4})\D+)?(\d{1,2})\D+(\d{1,2})$/);
+  if (!match) return "";
+
+  const year = Number(match[1] || today.getFullYear());
+  const month = Number(match[2]);
+  const day = Number(match[3]);
+  if (month < 1 || month > 12 || day < 1 || day > 31) return "";
+
+  return `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
 }
 
 function normalizeScheduleStatus(value) {
