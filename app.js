@@ -1286,16 +1286,22 @@ function renderTodaySchedule() {
       ? `${balanceValues[0]}회 남음`
       : `${balanceValues.join("/")}회 남음`;
     const balanceTone = getBalanceTone(balanceValues);
+    const [startTime, endTime] = item.timeLabel.split("-");
     card.innerHTML = `
       <button class="today-card-main" type="button">
         <span class="today-card-time">
-          <span>${escapeHTML(item.timeLabel)}</span>
+          <span>${escapeHTML(startTime)}</span>
         </span>
         <span class="today-card-copy">
           <strong>${escapeHTML(item.members.map((member) => member.name).join(", "))}</strong>
         </span>
       </button>
-      ${status === "보강" ? '<small class="today-card-status">보강</small>' : ""}
+      ${endTime || status === "보강" ? `
+        <span class="today-card-time-meta">
+          ${endTime ? `<small class="today-card-end-time">${escapeHTML(endTime)}</small>` : ""}
+          ${status === "보강" ? '<small class="today-card-status">보강</small>' : ""}
+        </span>
+      ` : ""}
       <span class="today-card-details">
         <small class="today-card-lesson">${escapeHTML(compactLessonType(item.lessonType, item.groups.length))}</small>
         <small class="today-card-balance ${balanceTone}">${escapeHTML(balances)}</small>
