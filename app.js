@@ -448,7 +448,7 @@ function applyPresetPayments(data) {
 
 function applyPresetAttendance(data) {
   if (!PRESET_ATTENDANCE_VERSION || data.presetAttendanceVersion === PRESET_ATTENDANCE_VERSION) {
-    return deduplicateAttendanceData(data);
+    return deduplicateMemberData(data);
   }
 
   presetAttendanceEntries.forEach((entry) => {
@@ -475,7 +475,7 @@ function applyPresetAttendance(data) {
   });
 
   data.presetAttendanceVersion = PRESET_ATTENDANCE_VERSION;
-  return deduplicateAttendanceData(data);
+  return deduplicateMemberData(data);
 }
 
 function getAttendanceRecordKey(item) {
@@ -515,6 +515,77 @@ function deduplicateAttendanceData(data) {
     member.attendances = deduplicateAttendances(member.attendances);
   });
 
+  return data;
+}
+
+function getMemberRecordKey(member) {
+  return `${String(member.name || "").trim().replace(/\s+/g, " ")}|${normalizePhone(member.phone)}`;
+}
+
+function deduplicateSchedules(schedules = []) {
+  const schedulesByKey = new Map();
+
+  schedules.forEach((item) => {
+    const key = [
+      Number(item.day),
+      normalizeTime(item.time) || String(item.time || "").trim(),
+      String(item.className || "수업").trim(),
+    ].join("|");
+    const existing = schedulesByKey.get(key);
+
+    if (existing) {
+      if (!existing.lessonType && item.lessonType) existing.lessonType = item.lessonType;
+      if (!existing.status && item.status) existing.status = item.status;
+      return;
+    }
+
+    schedulesByKey.set(key, {
+      ...item,
+      id: item.id || crypto.randomUUID(),
+    });
+  });
+
+  return [...schedulesByKey.values()];
+}
+
+function mergeRecordsById(first = [], second = []) {
+  const recordsById = new Map();
+  [...first, ...second].forEach((item) => {
+    const id = item.id || crypto.randomUUID();
+    if (!recordsById.has(id)) recordsById.set(id, { ...item, id });
+  });
+  return [...recordsById.values()];
+}
+
+function deduplicateMemberData(data) {
+  if (!Array.isArray(data.members)) return data;
+
+  const membersByKey = new Map();
+  data.members.forEach((member) => {
+    const key = getMemberRecordKey(member);
+    const existing = membersByKey.get(key);
+
+    if (!existing) {
+      membersByKey.set(key, {
+        ...member,
+        id: member.id || crypto.randomUUID(),
+        schedules: deduplicateSchedules(member.schedules),
+        payments: mergeRecordsById(member.payments),
+        attendances: deduplicateAttendances(member.attendances),
+      });
+      return;
+    }
+
+    if (!existing.phone && member.phone) existing.phone = member.phone;
+    if (!existing.memo && member.memo) existing.memo = member.memo;
+    if (!existing.defaultLessonType && member.defaultLessonType) existing.defaultLessonType = member.defaultLessonType;
+    if (!existing.createdAt && member.createdAt) existing.createdAt = member.createdAt;
+    existing.schedules = deduplicateSchedules([...(existing.schedules || []), ...(member.schedules || [])]);
+    existing.payments = mergeRecordsById(existing.payments, member.payments);
+    existing.attendances = deduplicateAttendances([...(existing.attendances || []), ...(member.attendances || [])]);
+  });
+
+  data.members = [...membersByKey.values()];
   return data;
 }
 
@@ -1535,7 +1606,7 @@ function importSheetCsv(event) {
         const phone = row[index.phone]?.trim();
         if (!name) return;
 
-        const key = `${name}|${phone}`;
+        const key = getMemberRecordKey({ name, phone });
         if (!membersByKey.has(key)) {
           const member = {
             id: crypto.randomUUID(),
@@ -1589,7 +1660,7 @@ function importSheetCsv(event) {
       });
 
       state.members = nextMembers;
-      deduplicateAttendanceData(state);
+      deduplicateMemberData(state);
       selectedMemberId = state.members[0]?.id ?? null;
       closeModal(elements.sheetsModal);
       commit();
@@ -1617,6 +1688,7 @@ function importData(event) {
         ...nextData,
         lessonTypes: Array.isArray(nextData.lessonTypes) ? nextData.lessonTypes : cloneData(defaultLessonTypes),
       };
+      deduplicateMemberData(state);
       selectedMemberId = state.members[0]?.id ?? null;
       fillLessonTypeOptions();
       fillScheduleLessonTypeOptions();
@@ -1663,7 +1735,8 @@ function importPastedMembers() {
     const names = splitMemberNames(rawName);
 
     names.forEach((name) => {
-      const exists = state.members.some((member) => member.name === name && normalizePhone(member.phone) === normalizePhone(phone));
+      const memberKey = getMemberRecordKey({ name, phone });
+      const exists = state.members.some((member) => getMemberRecordKey(member) === memberKey);
       if (exists) return;
 
       state.members.push({
