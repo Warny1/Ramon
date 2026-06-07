@@ -1865,10 +1865,10 @@ function importPastedAttendance() {
     const date = normalizePastedDate(row[dateIndex]);
     const time = normalizeTime(row[timeIndex]) || "";
     const className = row[classNameIndex] || "수업";
-    const status = normalizeAttendanceStatus(row[statusIndex] || "출석");
+    const status = normalizePastedAttendanceStatus(statusIndex >= 0 ? row[statusIndex] : "", statusIndex < 0);
     const names = splitMemberNames(row[nameIndex] || "");
 
-    if (!date || !names.length) {
+    if (!date || !names.length || !status) {
       skipped += 1;
       return;
     }
@@ -1917,7 +1917,7 @@ function getBalance(member) {
 
 function isCountedAttendance(item) {
   const status = normalizeAttendanceStatus(item.status);
-  return status !== "결석" && status !== "당일취소";
+  return ["출석", "보강", "보강완료"].includes(status);
 }
 
 function getTodayItems() {
@@ -2368,8 +2368,17 @@ function normalizeScheduleStatus(value) {
 function normalizeAttendanceStatus(value) {
   const text = String(value || "").trim();
   if (!text) return "출석";
+  const normalized = normalizeHeader(text);
+  if (["true", "checked", "check", "yes", "y", "o", "v", "✓", "✔"].includes(normalized)) return "출석";
+  if (["false", "unchecked", "no", "n", "x", "✕", "✗"].includes(normalized)) return "결석";
   const allowed = ["출석", "결석", "보강", "보강완료", "당일취소"];
   return allowed.includes(text) ? text : text;
+}
+
+function normalizePastedAttendanceStatus(value, defaultToPresent = false) {
+  const text = String(value || "").trim();
+  if (!text) return defaultToPresent ? "출석" : "";
+  return normalizeAttendanceStatus(text);
 }
 
 function findOrCreateMemberByName(name) {
