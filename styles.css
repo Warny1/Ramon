@@ -359,6 +359,10 @@ h4 {
   overflow-x: hidden;
 }
 
+.mobile-app-header {
+  display: none;
+}
+
 .topbar {
   display: flex;
   align-items: center;
@@ -2464,13 +2468,36 @@ select {
     padding-bottom: calc(72px + env(safe-area-inset-bottom));
   }
 
+  .mobile-app-header {
+    position: sticky;
+    top: 0;
+    z-index: 8;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-height: 58px;
+    border-bottom: 1px solid rgba(216, 224, 222, 0.9);
+    background: rgba(247, 248, 248, 0.96);
+    padding: 9px 16px;
+    backdrop-filter: blur(14px);
+  }
+
+  .mobile-app-header .page-logo-placeholder {
+    display: block;
+  }
+
+  .mobile-app-header strong {
+    color: var(--ink);
+    font-size: 22px;
+    line-height: 1;
+  }
+
   .main {
     padding: 18px 16px 10px;
   }
 
   .topbar {
-    min-height: auto;
-    margin-bottom: 18px;
+    display: none !important;
   }
 
   .topbar h2 {
@@ -2633,6 +2660,10 @@ select {
     font-size: 10px;
     font-weight: 800;
     line-height: 1.3;
+  }
+
+  .today-card-status.placeholder {
+    visibility: hidden;
   }
 
   .today-card-copy {

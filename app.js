@@ -447,7 +447,9 @@ function applyPresetPayments(data) {
 }
 
 function applyPresetAttendance(data) {
-  if (!PRESET_ATTENDANCE_VERSION || data.presetAttendanceVersion === PRESET_ATTENDANCE_VERSION) return data;
+  if (!PRESET_ATTENDANCE_VERSION || data.presetAttendanceVersion === PRESET_ATTENDANCE_VERSION) {
+    return deduplicateAttendanceData(data);
+  }
 
   presetAttendanceEntries.forEach((entry) => {
     entry.names.forEach((name) => {
@@ -473,6 +475,46 @@ function applyPresetAttendance(data) {
   });
 
   data.presetAttendanceVersion = PRESET_ATTENDANCE_VERSION;
+  return deduplicateAttendanceData(data);
+}
+
+function getAttendanceRecordKey(item) {
+  return [
+    String(item.date || "").trim(),
+    String(item.className || "출석").trim(),
+    normalizeTime(item.time) || String(item.time || "").trim(),
+  ].join("|");
+}
+
+function deduplicateAttendances(attendances = []) {
+  const recordsByKey = new Map();
+
+  attendances.forEach((item) => {
+    const key = getAttendanceRecordKey(item);
+    const existing = recordsByKey.get(key);
+
+    if (existing) {
+      existing.status = normalizeAttendanceStatus(item.status);
+      return;
+    }
+
+    recordsByKey.set(key, {
+      ...item,
+      id: item.id || crypto.randomUUID(),
+      status: normalizeAttendanceStatus(item.status),
+    });
+  });
+
+  return [...recordsByKey.values()];
+}
+
+function deduplicateAttendanceData(data) {
+  if (!Array.isArray(data.members)) return data;
+
+  data.members.forEach((member) => {
+    member.attendances = deduplicateAttendances(member.attendances);
+  });
+
   return data;
 }
 
@@ -1177,7 +1219,7 @@ function renderTodaySchedule() {
       <button class="today-card-main" type="button">
         <span class="today-card-time">
           <span>${escapeHTML(item.timeLabel)}</span>
-          ${status === "보강" ? '<small class="today-card-status">보강</small>' : ""}
+          <small class="today-card-status${status === "보강" ? "" : " placeholder"}"${status === "보강" ? "" : ' aria-hidden="true"'}>보강</small>
         </span>
         <span class="today-card-copy">
           <strong>${escapeHTML(item.members.map((member) => member.name).join(", "))}</strong>
@@ -1547,6 +1589,7 @@ function importSheetCsv(event) {
       });
 
       state.members = nextMembers;
+      deduplicateAttendanceData(state);
       selectedMemberId = state.members[0]?.id ?? null;
       closeModal(elements.sheetsModal);
       commit();
@@ -1718,7 +1761,7 @@ function getSelectedMember() {
 
 function getBalance(member) {
   const paid = member.payments.reduce((sum, item) => sum + Number(item.sessions || 0), 0);
-  const used = member.attendances.filter(isCountedAttendance).length;
+  const used = deduplicateAttendances(member.attendances).filter(isCountedAttendance).length;
   return paid - used;
 }
 
