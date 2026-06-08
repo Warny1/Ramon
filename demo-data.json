@@ -1,0 +1,825 @@
+{
+  "demoDataVersion": "2026-06-demo-2",
+  "lessonTypes": [
+    {
+      "name": "주1 / 1인 (30분)",
+      "amount": 190000,
+      "sessions": 4
+    },
+    {
+      "name": "주1 / 2인 (30분)",
+      "amount": 150000,
+      "sessions": 2
+    },
+    {
+      "name": "주2 / 1인 (30분)",
+      "amount": 320000,
+      "sessions": 8
+    },
+    {
+      "name": "주2 / 2인 (30분)",
+      "amount": 250000,
+      "sessions": 4
+    },
+    {
+      "name": "쿠폰 (30분)",
+      "amount": 380000,
+      "sessions": 8
+    },
+    {
+      "name": "1회 체험 (1인)",
+      "amount": 45000,
+      "sessions": 1
+    },
+    {
+      "name": "1회 체험 (2인)",
+      "amount": 30000,
+      "sessions": 0.5
+    }
+  ],
+  "members": [
+    {
+      "id": "demo-member-001",
+      "name": "김하준",
+      "phone": "010-0000-1001",
+      "memo": "월/목 오전 개인 레슨",
+      "defaultLessonType": "주2 / 1인 (30분)",
+      "createdAt": "2026-05-01",
+      "schedules": [
+        {
+          "id": "demo-schedule-001-a",
+          "day": 1,
+          "time": "09:00",
+          "className": "수업",
+          "lessonType": "주2 / 1인 (30분)",
+          "status": ""
+        },
+        {
+          "id": "demo-schedule-001-b",
+          "day": 4,
+          "time": "09:00",
+          "className": "수업",
+          "lessonType": "주2 / 1인 (30분)",
+          "status": ""
+        }
+      ],
+      "payments": [
+        {
+          "id": "demo-payment-001-a",
+          "date": "2026-06-01",
+          "lessonType": "주2 / 1인 (30분)",
+          "sessions": 8,
+          "amount": 320000,
+          "memo": "계좌이체"
+        }
+      ],
+      "attendances": [
+        {
+          "id": "demo-attendance-001-a",
+          "date": "2026-06-01",
+          "time": "09:00",
+          "className": "수업",
+          "status": "출석"
+        },
+        {
+          "id": "demo-attendance-001-b",
+          "date": "2026-06-04",
+          "time": "09:00",
+          "className": "수업",
+          "status": "출석"
+        }
+      ]
+    },
+    {
+      "id": "demo-member-002",
+      "name": "박서연",
+      "phone": "010-0000-1002",
+      "memo": "수 저녁 개인 레슨",
+      "defaultLessonType": "주1 / 1인 (30분)",
+      "createdAt": "2026-05-01",
+      "schedules": [
+        {
+          "id": "demo-schedule-002-a",
+          "day": 3,
+          "time": "19:00",
+          "className": "수업",
+          "lessonType": "주1 / 1인 (30분)",
+          "status": ""
+        }
+      ],
+      "payments": [
+        {
+          "id": "demo-payment-002-a",
+          "date": "2026-05-20",
+          "lessonType": "주1 / 1인 (30분)",
+          "sessions": 4,
+          "amount": 190000,
+          "memo": ""
+        },
+        {
+          "id": "demo-payment-002-b",
+          "date": "2026-06-05",
+          "lessonType": "주1 / 1인 (30분)",
+          "sessions": 4,
+          "amount": 171000,
+          "memo": "10% 할인"
+        }
+      ],
+      "attendances": [
+        {
+          "id": "demo-attendance-002-a",
+          "date": "2026-06-03",
+          "time": "19:00",
+          "className": "수업",
+          "status": "출석"
+        }
+      ]
+    },
+    {
+      "id": "demo-member-003",
+      "name": "류도윤",
+      "phone": "010-0000-1003",
+      "memo": "2인 레슨",
+      "defaultLessonType": "주1 / 2인 (30분)",
+      "createdAt": "2026-05-01",
+      "schedules": [
+        {
+          "id": "demo-schedule-003-a",
+          "day": 2,
+          "time": "18:30",
+          "className": "수업",
+          "lessonType": "주1 / 2인 (30분)",
+          "status": ""
+        }
+      ],
+      "payments": [
+        {
+          "id": "demo-payment-003-a",
+          "date": "2026-06-02",
+          "lessonType": "주1 / 2인 (30분)",
+          "sessions": 2,
+          "amount": 150000,
+          "memo": ""
+        }
+      ],
+      "attendances": [
+        {
+          "id": "demo-attendance-003-a",
+          "date": "2026-06-02",
+          "time": "18:30",
+          "className": "수업",
+          "status": "출석"
+        }
+      ]
+    },
+    {
+      "id": "demo-member-004",
+      "name": "최유나",
+      "phone": "010-0000-1004",
+      "memo": "2인 레슨",
+      "defaultLessonType": "주1 / 2인 (30분)",
+      "createdAt": "2026-05-01",
+      "schedules": [
+        {
+          "id": "demo-schedule-004-a",
+          "day": 2,
+          "time": "18:30",
+          "className": "수업",
+          "lessonType": "주1 / 2인 (30분)",
+          "status": ""
+        }
+      ],
+      "payments": [
+        {
+          "id": "demo-payment-004-a",
+          "date": "2026-06-02",
+          "lessonType": "주1 / 2인 (30분)",
+          "sessions": 2,
+          "amount": 150000,
+          "memo": ""
+        }
+      ],
+      "attendances": [
+        {
+          "id": "demo-attendance-004-a",
+          "date": "2026-06-02",
+          "time": "18:30",
+          "className": "수업",
+          "status": "결석"
+        }
+      ]
+    },
+    {
+      "id": "demo-member-005",
+      "name": "오지훈",
+      "phone": "010-0000-1005",
+      "memo": "보강 예정",
+      "defaultLessonType": "주1 / 1인 (30분)",
+      "createdAt": "2026-05-01",
+      "schedules": [
+        {
+          "id": "demo-schedule-005-a",
+          "day": 5,
+          "time": "10:30",
+          "className": "수업",
+          "lessonType": "주1 / 1인 (30분)",
+          "status": ""
+        },
+        {
+          "id": "demo-schedule-005-b",
+          "day": 1,
+          "time": "15:00",
+          "className": "보강",
+          "lessonType": "주1 / 1인 (30분)",
+          "status": "보강",
+          "date": "2026-06-08"
+        }
+      ],
+      "payments": [
+        {
+          "id": "demo-payment-005-a",
+          "date": "2026-06-01",
+          "lessonType": "주1 / 1인 (30분)",
+          "sessions": 4,
+          "amount": 190000,
+          "memo": ""
+        }
+      ],
+      "attendances": [
+        {
+          "id": "demo-attendance-005-a",
+          "date": "2026-06-06",
+          "time": "10:30",
+          "className": "수업",
+          "status": "결석"
+        }
+      ]
+    },
+    {
+      "id": "demo-member-006",
+      "name": "한지민",
+      "phone": "010-0000-1006",
+      "memo": "레슨-시간표 경고 확인용",
+      "defaultLessonType": "주1 / 1인 (30분)",
+      "createdAt": "2026-05-01",
+      "schedules": [
+        {
+          "id": "demo-schedule-006-a",
+          "day": 1,
+          "time": "20:00",
+          "className": "수업",
+          "lessonType": "주2 / 1인 (30분)",
+          "status": ""
+        }
+      ],
+      "payments": [
+        {
+          "id": "demo-payment-006-a",
+          "date": "2026-06-03",
+          "lessonType": "주1 / 1인 (30분)",
+          "sessions": 4,
+          "amount": 190000,
+          "memo": ""
+        }
+      ],
+      "attendances": []
+    },
+    {
+      "id": "demo-member-007",
+      "name": "정민재",
+      "phone": "010-0000-1007",
+      "memo": "쿠폰 회원",
+      "defaultLessonType": "쿠폰 (30분)",
+      "createdAt": "2026-05-01",
+      "schedules": [
+        {
+          "id": "demo-schedule-007-a",
+          "day": 6,
+          "time": "11:00",
+          "className": "수업",
+          "lessonType": "쿠폰 (30분)",
+          "status": ""
+        }
+      ],
+      "payments": [
+        {
+          "id": "demo-payment-007-a",
+          "date": "2026-05-30",
+          "lessonType": "쿠폰 (30분)",
+          "sessions": 8,
+          "amount": 380000,
+          "memo": ""
+        }
+      ],
+      "attendances": [
+        {
+          "id": "demo-attendance-007-a",
+          "date": "2026-06-06",
+          "time": "11:00",
+          "className": "수업",
+          "status": "출석"
+        }
+      ]
+    },
+    {
+      "id": "demo-member-008",
+      "name": "이서준",
+      "phone": "010-0000-1008",
+      "memo": "체험 수업",
+      "defaultLessonType": "1회 체험 (1인)",
+      "createdAt": "2026-06-01",
+      "schedules": [
+        {
+          "id": "demo-schedule-008-a",
+          "day": 1,
+          "time": "16:30",
+          "className": "체험",
+          "lessonType": "1회 체험 (1인)",
+          "status": "오늘만",
+          "date": "2026-06-08"
+        }
+      ],
+      "payments": [
+        {
+          "id": "demo-payment-008-a",
+          "date": "2026-06-08",
+          "lessonType": "1회 체험 (1인)",
+          "sessions": 1,
+          "amount": 45000,
+          "memo": ""
+        }
+      ],
+      "attendances": []
+    },
+    {
+      "id": "demo-member-009",
+      "name": "문소율",
+      "phone": "010-0000-1009",
+      "memo": "화/금 오전 개인 레슨",
+      "defaultLessonType": "주2 / 1인 (30분)",
+      "createdAt": "2026-06-01",
+      "schedules": [
+        {
+          "id": "demo-schedule-009-a",
+          "day": 2,
+          "time": "10:00",
+          "className": "수업",
+          "lessonType": "주2 / 1인 (30분)",
+          "status": ""
+        },
+        {
+          "id": "demo-schedule-009-b",
+          "day": 5,
+          "time": "10:00",
+          "className": "수업",
+          "lessonType": "주2 / 1인 (30분)",
+          "status": ""
+        }
+      ],
+      "payments": [
+        {
+          "id": "demo-payment-009-a",
+          "date": "2026-06-04",
+          "lessonType": "주2 / 1인 (30분)",
+          "sessions": 8,
+          "amount": 320000,
+          "memo": ""
+        }
+      ],
+      "attendances": [
+        {
+          "id": "demo-attendance-009-a",
+          "date": "2026-06-05",
+          "time": "10:00",
+          "className": "수업",
+          "status": "출석"
+        }
+      ]
+    },
+    {
+      "id": "demo-member-010",
+      "name": "강민호",
+      "phone": "010-0000-1010",
+      "memo": "월 저녁 개인 레슨",
+      "defaultLessonType": "주1 / 1인 (30분)",
+      "createdAt": "2026-06-01",
+      "schedules": [
+        {
+          "id": "demo-schedule-010-a",
+          "day": 1,
+          "time": "18:00",
+          "className": "수업",
+          "lessonType": "주1 / 1인 (30분)",
+          "status": ""
+        }
+      ],
+      "payments": [
+        {
+          "id": "demo-payment-010-a",
+          "date": "2026-06-01",
+          "lessonType": "주1 / 1인 (30분)",
+          "sessions": 4,
+          "amount": 190000,
+          "memo": "현금"
+        }
+      ],
+      "attendances": [
+        {
+          "id": "demo-attendance-010-a",
+          "date": "2026-06-01",
+          "time": "18:00",
+          "className": "수업",
+          "status": "출석"
+        }
+      ]
+    },
+    {
+      "id": "demo-member-011",
+      "name": "신아린",
+      "phone": "010-0000-1011",
+      "memo": "토 오전 2인 레슨",
+      "defaultLessonType": "주1 / 2인 (30분)",
+      "createdAt": "2026-06-01",
+      "schedules": [
+        {
+          "id": "demo-schedule-011-a",
+          "day": 6,
+          "time": "09:30",
+          "className": "수업",
+          "lessonType": "주1 / 2인 (30분)",
+          "status": ""
+        }
+      ],
+      "payments": [
+        {
+          "id": "demo-payment-011-a",
+          "date": "2026-06-06",
+          "lessonType": "주1 / 2인 (30분)",
+          "sessions": 2,
+          "amount": 150000,
+          "memo": ""
+        }
+      ],
+      "attendances": [
+        {
+          "id": "demo-attendance-011-a",
+          "date": "2026-06-06",
+          "time": "09:30",
+          "className": "수업",
+          "status": "출석"
+        }
+      ]
+    },
+    {
+      "id": "demo-member-012",
+      "name": "윤태오",
+      "phone": "010-0000-1012",
+      "memo": "토 오전 2인 레슨",
+      "defaultLessonType": "주1 / 2인 (30분)",
+      "createdAt": "2026-06-01",
+      "schedules": [
+        {
+          "id": "demo-schedule-012-a",
+          "day": 6,
+          "time": "09:30",
+          "className": "수업",
+          "lessonType": "주1 / 2인 (30분)",
+          "status": ""
+        }
+      ],
+      "payments": [
+        {
+          "id": "demo-payment-012-a",
+          "date": "2026-06-06",
+          "lessonType": "주1 / 2인 (30분)",
+          "sessions": 2,
+          "amount": 150000,
+          "memo": ""
+        }
+      ],
+      "attendances": [
+        {
+          "id": "demo-attendance-012-a",
+          "date": "2026-06-06",
+          "time": "09:30",
+          "className": "수업",
+          "status": "출석"
+        }
+      ]
+    },
+    {
+      "id": "demo-member-013",
+      "name": "배유진",
+      "phone": "010-0000-1013",
+      "memo": "목 저녁 개인 레슨",
+      "defaultLessonType": "주1 / 1인 (30분)",
+      "createdAt": "2026-06-01",
+      "schedules": [
+        {
+          "id": "demo-schedule-013-a",
+          "day": 4,
+          "time": "19:30",
+          "className": "수업",
+          "lessonType": "주1 / 1인 (30분)",
+          "status": ""
+        }
+      ],
+      "payments": [
+        {
+          "id": "demo-payment-013-a",
+          "date": "2026-05-28",
+          "lessonType": "주1 / 1인 (30분)",
+          "sessions": 4,
+          "amount": 190000,
+          "memo": ""
+        }
+      ],
+      "attendances": [
+        {
+          "id": "demo-attendance-013-a",
+          "date": "2026-06-04",
+          "time": "19:30",
+          "className": "수업",
+          "status": "출석"
+        }
+      ]
+    },
+    {
+      "id": "demo-member-014",
+      "name": "조현우",
+      "phone": "010-0000-1014",
+      "memo": "월/수 오후 개인 레슨",
+      "defaultLessonType": "주2 / 1인 (30분)",
+      "createdAt": "2026-06-01",
+      "schedules": [
+        {
+          "id": "demo-schedule-014-a",
+          "day": 1,
+          "time": "14:00",
+          "className": "수업",
+          "lessonType": "주2 / 1인 (30분)",
+          "status": ""
+        },
+        {
+          "id": "demo-schedule-014-b",
+          "day": 3,
+          "time": "14:00",
+          "className": "수업",
+          "lessonType": "주2 / 1인 (30분)",
+          "status": ""
+        }
+      ],
+      "payments": [
+        {
+          "id": "demo-payment-014-a",
+          "date": "2026-06-02",
+          "lessonType": "주2 / 1인 (30분)",
+          "sessions": 8,
+          "amount": 288000,
+          "memo": "10% 할인"
+        }
+      ],
+      "attendances": [
+        {
+          "id": "demo-attendance-014-a",
+          "date": "2026-06-03",
+          "time": "14:00",
+          "className": "수업",
+          "status": "출석"
+        }
+      ]
+    },
+    {
+      "id": "demo-member-015",
+      "name": "서은채",
+      "phone": "010-0000-1015",
+      "memo": "금 저녁 개인 레슨",
+      "defaultLessonType": "주1 / 1인 (30분)",
+      "createdAt": "2026-06-01",
+      "schedules": [
+        {
+          "id": "demo-schedule-015-a",
+          "day": 5,
+          "time": "20:00",
+          "className": "수업",
+          "lessonType": "주1 / 1인 (30분)",
+          "status": ""
+        }
+      ],
+      "payments": [
+        {
+          "id": "demo-payment-015-a",
+          "date": "2026-06-07",
+          "lessonType": "주1 / 1인 (30분)",
+          "sessions": 4,
+          "amount": 190000,
+          "memo": ""
+        }
+      ],
+      "attendances": []
+    },
+    {
+      "id": "demo-member-016",
+      "name": "임도현",
+      "phone": "010-0000-1016",
+      "memo": "화/목 2인 레슨",
+      "defaultLessonType": "주2 / 2인 (30분)",
+      "createdAt": "2026-06-01",
+      "schedules": [
+        {
+          "id": "demo-schedule-016-a",
+          "day": 2,
+          "time": "20:00",
+          "className": "수업",
+          "lessonType": "주2 / 2인 (30분)",
+          "status": ""
+        },
+        {
+          "id": "demo-schedule-016-b",
+          "day": 4,
+          "time": "20:00",
+          "className": "수업",
+          "lessonType": "주2 / 2인 (30분)",
+          "status": ""
+        }
+      ],
+      "payments": [
+        {
+          "id": "demo-payment-016-a",
+          "date": "2026-06-01",
+          "lessonType": "주2 / 2인 (30분)",
+          "sessions": 4,
+          "amount": 250000,
+          "memo": ""
+        }
+      ],
+      "attendances": [
+        {
+          "id": "demo-attendance-016-a",
+          "date": "2026-06-02",
+          "time": "20:00",
+          "className": "수업",
+          "status": "출석"
+        }
+      ]
+    },
+    {
+      "id": "demo-member-017",
+      "name": "차예린",
+      "phone": "010-0000-1017",
+      "memo": "화/목 2인 레슨",
+      "defaultLessonType": "주2 / 2인 (30분)",
+      "createdAt": "2026-06-01",
+      "schedules": [
+        {
+          "id": "demo-schedule-017-a",
+          "day": 2,
+          "time": "20:00",
+          "className": "수업",
+          "lessonType": "주2 / 2인 (30분)",
+          "status": ""
+        },
+        {
+          "id": "demo-schedule-017-b",
+          "day": 4,
+          "time": "20:00",
+          "className": "수업",
+          "lessonType": "주2 / 2인 (30분)",
+          "status": ""
+        }
+      ],
+      "payments": [
+        {
+          "id": "demo-payment-017-a",
+          "date": "2026-06-01",
+          "lessonType": "주2 / 2인 (30분)",
+          "sessions": 4,
+          "amount": 250000,
+          "memo": ""
+        }
+      ],
+      "attendances": [
+        {
+          "id": "demo-attendance-017-a",
+          "date": "2026-06-02",
+          "time": "20:00",
+          "className": "수업",
+          "status": "출석"
+        }
+      ]
+    },
+    {
+      "id": "demo-member-018",
+      "name": "홍시우",
+      "phone": "010-0000-1018",
+      "memo": "일 오전 개인 레슨",
+      "defaultLessonType": "주1 / 1인 (30분)",
+      "createdAt": "2026-06-01",
+      "schedules": [
+        {
+          "id": "demo-schedule-018-a",
+          "day": 0,
+          "time": "10:00",
+          "className": "수업",
+          "lessonType": "주1 / 1인 (30분)",
+          "status": ""
+        }
+      ],
+      "payments": [
+        {
+          "id": "demo-payment-018-a",
+          "date": "2026-05-31",
+          "lessonType": "주1 / 1인 (30분)",
+          "sessions": 4,
+          "amount": 190000,
+          "memo": ""
+        }
+      ],
+      "attendances": [
+        {
+          "id": "demo-attendance-018-a",
+          "date": "2026-06-07",
+          "time": "10:00",
+          "className": "수업",
+          "status": "결석"
+        }
+      ]
+    },
+    {
+      "id": "demo-member-019",
+      "name": "남지호",
+      "phone": "010-0000-1019",
+      "memo": "보강/결제 확인용",
+      "defaultLessonType": "주2 / 1인 (30분)",
+      "createdAt": "2026-06-01",
+      "schedules": [
+        {
+          "id": "demo-schedule-019-a",
+          "day": 1,
+          "time": "11:00",
+          "className": "수업",
+          "lessonType": "주2 / 1인 (30분)",
+          "status": ""
+        },
+        {
+          "id": "demo-schedule-019-b",
+          "day": 3,
+          "time": "11:00",
+          "className": "수업",
+          "lessonType": "주2 / 1인 (30분)",
+          "status": ""
+        },
+        {
+          "id": "demo-schedule-019-c",
+          "day": 1,
+          "time": "17:00",
+          "className": "보강",
+          "lessonType": "주2 / 1인 (30분)",
+          "status": "보강",
+          "date": "2026-06-08"
+        }
+      ],
+      "payments": [
+        {
+          "id": "demo-payment-019-a",
+          "date": "2026-06-08",
+          "lessonType": "주2 / 1인 (30분)",
+          "sessions": 8,
+          "amount": 320000,
+          "memo": ""
+        }
+      ],
+      "attendances": []
+    },
+    {
+      "id": "demo-member-020",
+      "name": "권다은",
+      "phone": "010-0000-1020",
+      "memo": "체험 2인 수업",
+      "defaultLessonType": "1회 체험 (2인)",
+      "createdAt": "2026-06-01",
+      "schedules": [
+        {
+          "id": "demo-schedule-020-a",
+          "day": 1,
+          "time": "17:30",
+          "className": "체험",
+          "lessonType": "1회 체험 (2인)",
+          "status": "오늘만",
+          "date": "2026-06-08"
+        }
+      ],
+      "payments": [
+        {
+          "id": "demo-payment-020-a",
+          "date": "2026-06-08",
+          "lessonType": "1회 체험 (2인)",
+          "sessions": 0.5,
+          "amount": 30000,
+          "memo": ""
+        }
+      ],
+      "attendances": []
+    }
+  ]
+}

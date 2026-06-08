@@ -34,6 +34,28 @@ SUPABASE_ANON_KEY=your-supabase-anon-key
 
 Supabase SQL Editor에서 [supabase-schema.sql](./supabase-schema.sql)을 먼저 실행해야 저장이 됩니다.
 
+## 데모 사이트 만들기
+
+운영 데이터와 데모 데이터가 섞이지 않도록 Vercel 프로젝트와 Supabase 프로젝트를 각각 새로 만듭니다.
+
+1. Supabase에서 `ramon-demo` 프로젝트를 새로 만듭니다.
+2. 새 프로젝트의 SQL Editor에서 `supabase-schema.sql` 전체를 실행합니다.
+3. Vercel에서 같은 GitHub 저장소를 사용해 새 프로젝트를 만듭니다.
+   - 추천 프로젝트 이름: `ramon-demo`
+   - Build Command: `npm run build`
+   - Output Directory: `dist`
+4. 새 Vercel 프로젝트에 데모 Supabase의 환경변수를 등록합니다.
+
+```bash
+SUPABASE_URL=https://your-demo-project.supabase.co
+SUPABASE_ANON_KEY=your-demo-anon-key
+```
+
+5. 데모 사이트가 배포되면 관리자 화면의 데이터 가져오기에서 `demo-data.json`을 선택합니다.
+6. `저장` 버튼을 눌러 데모 Supabase에 20명의 더미 데이터를 저장합니다.
+
+운영 Vercel 프로젝트에는 운영 Supabase 환경변수를, 데모 Vercel 프로젝트에는 데모 Supabase 환경변수를 사용해야 합니다.
+
 ## 관리자 모드
 
 현재 버전은 별도 로그인 없이 바로 관리자 화면으로 들어가는 단일 관리자 모드입니다.

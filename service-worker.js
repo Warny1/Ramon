@@ -1,4 +1,4 @@
-const CACHE_NAME = "member-desk-app-v66";
+const CACHE_NAME = "member-desk-app-v67";
 const APP_FILES = [
   "/",
   "/index.html",
@@ -8,6 +8,7 @@ const APP_FILES = [
   "/attendance-data.js",
   "/manifest.webmanifest",
   "/icon.svg",
+  "/demo-data.json",
 ];
 
 self.addEventListener("install", (event) => {

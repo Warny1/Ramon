@@ -12,6 +12,7 @@ const requiredFiles = [
   "manifest.webmanifest",
   "service-worker.js",
   "icon.svg",
+  "demo-data.json",
 ];
 
 await rm(dist, { recursive: true, force: true });
