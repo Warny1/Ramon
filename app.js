@@ -403,10 +403,15 @@ async function initializeData() {
 async function loadData() {
   if (hasSupabaseConfig()) {
     const remoteData = await loadSupabaseData();
+    if (remoteData === false) return loadLocalData();
     if (remoteData) return remoteData;
 
     const localData = loadLocalData();
-    await saveSupabaseData(localData);
+    try {
+      await saveSupabaseData(localData);
+    } catch {
+      alert("Supabase 저장에 실패했습니다. 이 브라우저의 백업 데이터로 시작합니다.");
+    }
     return localData;
   }
 
@@ -686,6 +691,7 @@ async function loadSupabaseData() {
   try {
     const response = await fetch(`${getSupabaseRestUrl()}?id=eq.${encodeURIComponent(SUPABASE_RECORD_ID)}&select=data`, {
       headers: getSupabaseHeaders(),
+      cache: "no-store",
     });
     if (!response.ok) throw new Error("Supabase load failed");
 
@@ -699,7 +705,7 @@ async function loadSupabaseData() {
     });
   } catch {
     alert("Supabase 데이터를 불러오지 못해 이 브라우저의 백업 데이터를 사용합니다.");
-    return null;
+    return false;
   }
 }
 
