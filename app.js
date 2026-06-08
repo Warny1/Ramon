@@ -735,7 +735,14 @@ async function getSupabaseErrorMessage(response, action) {
 }
 
 function getSupabaseRestUrl() {
-  return `${window.SUPABASE_CONFIG.url.replace(/\/$/, "")}/rest/v1/${SUPABASE_TABLE}`;
+  return `${getSupabaseBaseUrl()}/rest/v1/${SUPABASE_TABLE}`;
+}
+
+function getSupabaseBaseUrl() {
+  return String(window.SUPABASE_CONFIG.url || "")
+    .trim()
+    .replace(/\/rest\/v1\/?.*$/, "")
+    .replace(/\/$/, "");
 }
 
 function getSupabaseHeaders() {
