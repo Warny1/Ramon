@@ -693,7 +693,7 @@ async function loadSupabaseData() {
       headers: getSupabaseHeaders(),
       cache: "no-store",
     });
-    if (!response.ok) throw new Error("Supabase load failed");
+    if (!response.ok) throw new Error(await getSupabaseErrorMessage(response, "불러오기"));
 
     const rows = await response.json();
     const remote = rows[0]?.data;
@@ -703,8 +703,8 @@ async function loadSupabaseData() {
       ...remote,
       lessonTypes: Array.isArray(remote.lessonTypes) ? remote.lessonTypes : cloneData(defaultLessonTypes),
     });
-  } catch {
-    alert("Supabase 데이터를 불러오지 못해 이 브라우저의 백업 데이터를 사용합니다.");
+  } catch (error) {
+    alert(`Supabase 데이터를 불러오지 못해 이 브라우저의 백업 데이터를 사용합니다.\n\n${error.message || ""}`.trim());
     return false;
   }
 }
@@ -725,7 +725,13 @@ async function saveSupabaseData(data) {
     }),
   });
 
-  if (!response.ok) throw new Error("Supabase save failed");
+  if (!response.ok) throw new Error(await getSupabaseErrorMessage(response, "저장"));
+}
+
+async function getSupabaseErrorMessage(response, action) {
+  const body = await response.text().catch(() => "");
+  const details = body ? `\n${body.slice(0, 300)}` : "";
+  return `Supabase ${action} 실패 (${response.status})${details}`;
 }
 
 function getSupabaseRestUrl() {
