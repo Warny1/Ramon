@@ -1086,6 +1086,32 @@ h4 {
   margin-bottom: 10px;
 }
 
+.day-panel-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.day-nav-button {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border: 1px solid #dce6e3;
+  border-radius: 8px;
+  background: #ffffff;
+  color: var(--accent-dark);
+  font-size: 24px;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.day-nav-button:hover,
+.day-nav-button:focus-visible {
+  border-color: #b9d1cb;
+  background: #edf5f2;
+}
+
 .stack-list,
 .today-schedule,
 .table-like {

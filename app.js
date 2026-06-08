@@ -225,6 +225,8 @@ const elements = {
   todaySchedule: $("#todaySchedule"),
   todayCount: $("#todayCount"),
   todayScheduleDate: $("#todayScheduleDate"),
+  previousDayButton: $("#previousDayButton"),
+  nextDayButton: $("#nextDayButton"),
   attendanceDate: $("#attendanceDate"),
   detailAttendanceDate: $("#detailAttendanceDate"),
   memberModal: $("#memberModal"),
@@ -257,6 +259,8 @@ document.addEventListener("DOMContentLoaded", async () => {
   $("#openMemberModal").addEventListener("click", () => openMemberModalForCreate());
   $("#editMember").addEventListener("click", openMemberModalForEdit);
   $("#goTodayButton").addEventListener("click", goToToday);
+  elements.previousDayButton.addEventListener("click", () => moveSelectedAttendanceDate(-1));
+  elements.nextDayButton.addEventListener("click", () => moveSelectedAttendanceDate(1));
   $("#openPaymentModal").addEventListener("click", () => {
     preparePaymentModal();
     elements.paymentForm.date.value = todayISO;
@@ -823,6 +827,13 @@ function goToToday() {
     setDesktopView("operations");
   }
   elements.memberSearch.value = "";
+  render();
+}
+
+function moveSelectedAttendanceDate(offsetDays) {
+  const date = getSelectedAttendanceDate();
+  date.setDate(date.getDate() + offsetDays);
+  selectedAttendanceDate = toISODate(date);
   render();
 }
 
