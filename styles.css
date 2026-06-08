@@ -1852,6 +1852,19 @@ body[data-role="member"] .detail-panel[data-panel="payment"] {
     min-width: 260px;
   }
 
+  .day-panel .section-title {
+    position: relative;
+  }
+
+  .day-panel .day-panel-actions {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    justify-content: center;
+    margin-left: 0;
+    transform: translate(-50%, -50%);
+  }
+
   .timetable-panel {
     grid-column: 1;
     grid-row: 3;
