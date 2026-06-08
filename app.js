@@ -231,6 +231,7 @@ const elements = {
   todayCount: $("#todayCount"),
   todayScheduleDate: $("#todayScheduleDate"),
   previousDayButton: $("#previousDayButton"),
+  todayDayButton: $("#todayDayButton"),
   nextDayButton: $("#nextDayButton"),
   attendanceDate: $("#attendanceDate"),
   detailAttendanceDate: $("#detailAttendanceDate"),
@@ -265,6 +266,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   $("#editMember").addEventListener("click", openMemberModalForEdit);
   $("#goTodayButton").addEventListener("click", goToToday);
   elements.previousDayButton.addEventListener("click", () => moveSelectedAttendanceDate(-1));
+  elements.todayDayButton.addEventListener("click", goToToday);
   elements.nextDayButton.addEventListener("click", () => moveSelectedAttendanceDate(1));
   elements.previousPaymentMonth.addEventListener("click", () => moveSelectedPaymentMonth(-1));
   elements.nextPaymentMonth.addEventListener("click", () => moveSelectedPaymentMonth(1));
@@ -1077,6 +1079,7 @@ function renderAllMembersOverview() {
 function renderDetail(member) {
   const balance = getBalance(member);
   const paidSessions = member.payments.reduce((sum, item) => sum + Number(item.sessions || 0), 0);
+  const hasScheduleMismatch = hasLessonScheduleMismatch(member);
   const lessonMembers = selectedLessonMemberIds
     .map((id) => state.members.find((item) => item.id === id))
     .filter(Boolean);
@@ -1086,7 +1089,10 @@ function renderDetail(member) {
   elements.memberName.textContent = member.name;
   elements.memberMeta.innerHTML = `
     <span class="member-meta-row"><small>연락처</small><strong>${escapeHTML(member.phone || "연락처 없음")}</strong></span>
-    <span class="member-meta-row"><small>레슨</small><strong>${escapeHTML(member.defaultLessonType || "레슨 미지정")}</strong></span>
+    <span class="member-meta-row">
+      <small>레슨</small>
+      <strong>${escapeHTML(member.defaultLessonType || "레슨 미지정")}${hasScheduleMismatch ? '<span class="lesson-warning" title="레슨-스케쥴 오류">!</span>' : ""}</strong>
+    </span>
     <span class="member-meta-row"><small>이용 기록</small><strong>${canManagePayments() ? `결제 ${paidSessions}회 · ` : ""}출석 ${member.attendances.length}회</strong></span>
     ${lessonMembers.length > 1 ? `
       <span class="member-meta-row lesson-member-row">
@@ -1115,6 +1121,16 @@ function renderDetail(member) {
   renderAttendance(member);
   renderPayments(member);
   renderDetailTabs();
+}
+
+function hasLessonScheduleMismatch(member) {
+  const defaultLesson = String(member.defaultLessonType || "").trim();
+  if (!defaultLesson || !member.schedules.length) return false;
+
+  return member.schedules.some((schedule) => {
+    const scheduleLesson = String(getScheduleLessonType(schedule) || "").trim();
+    return scheduleLesson && scheduleLesson !== defaultLesson;
+  });
 }
 
 function renderSchedule(member) {
@@ -1548,7 +1564,7 @@ function saveLessonSettings(event) {
 function renderTodaySchedule() {
   const items = getTodaySidebarEntries();
   elements.todaySchedule.innerHTML = "";
-  elements.todayCount.textContent = String(items.length);
+  elements.todayCount.textContent = `수업 ${items.length}개`;
 
   if (!items.length) {
     elements.todaySchedule.append(createEmptyLine("오늘 예정된 수업이 없습니다."));
