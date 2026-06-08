@@ -27,6 +27,7 @@ const currency = new Intl.NumberFormat("ko-KR");
 const today = new Date();
 const todayISO = toISODate(today);
 let selectedAttendanceDate = todayISO;
+let selectedPaymentMonth = todayISO.slice(0, 7);
 
 const seedData = {
   lessonTypes: defaultLessonTypes,
@@ -203,6 +204,9 @@ const elements = {
   todayLabel: $("#todayLabel"),
   mobileTodayLabel: $("#mobileTodayLabel"),
   todayClasses: $("#todayClasses"),
+  paymentMonthLabel: $("#paymentMonthLabel"),
+  previousPaymentMonth: $("#previousPaymentMonth"),
+  nextPaymentMonth: $("#nextPaymentMonth"),
   monthlyRevenue: $("#monthlyRevenue"),
   monthlyPaymentList: $("#monthlyPaymentList"),
   allMembersGrid: $("#allMembersGrid"),
@@ -261,6 +265,8 @@ document.addEventListener("DOMContentLoaded", async () => {
   $("#goTodayButton").addEventListener("click", goToToday);
   elements.previousDayButton.addEventListener("click", () => moveSelectedAttendanceDate(-1));
   elements.nextDayButton.addEventListener("click", () => moveSelectedAttendanceDate(1));
+  elements.previousPaymentMonth.addEventListener("click", () => moveSelectedPaymentMonth(-1));
+  elements.nextPaymentMonth.addEventListener("click", () => moveSelectedPaymentMonth(1));
   $("#openPaymentModal").addEventListener("click", () => {
     preparePaymentModal();
     elements.paymentForm.date.value = todayISO;
@@ -837,6 +843,20 @@ function moveSelectedAttendanceDate(offsetDays) {
   render();
 }
 
+function moveSelectedPaymentMonth(offsetMonths) {
+  const date = new Date(`${selectedPaymentMonth}-01T12:00:00`);
+  date.setMonth(date.getMonth() + offsetMonths);
+  selectedPaymentMonth = toISODate(date).slice(0, 7);
+  render();
+}
+
+function formatPaymentMonth(monthKey) {
+  return new Intl.DateTimeFormat("ko-KR", {
+    year: "numeric",
+    month: "long",
+  }).format(new Date(`${monthKey}-01T12:00:00`));
+}
+
 function getDateForScheduleDay(day) {
   const selected = getSelectedAttendanceDate();
   const diff = Number(day) - selected.getDay();
@@ -875,11 +895,12 @@ function renderPaymentOverview() {
 
   const payments = getMonthlyPayments();
   const revenue = payments.reduce((sum, item) => sum + Number(item.payment.amount || 0), 0);
+  elements.paymentMonthLabel.textContent = formatPaymentMonth(selectedPaymentMonth);
   elements.monthlyRevenue.textContent = `${currency.format(revenue)}원`;
   elements.monthlyPaymentList.innerHTML = "";
 
   if (!payments.length) {
-    elements.monthlyPaymentList.append(createEmptyLine("이번 달 결제 기록이 없습니다."));
+    elements.monthlyPaymentList.append(createEmptyLine("선택한 달의 결제 기록이 없습니다."));
     return;
   }
 
@@ -898,10 +919,9 @@ function renderPaymentOverview() {
 function getMonthlyPayments() {
   if (!canManagePayments()) return [];
 
-  const monthKey = todayISO.slice(0, 7);
   return getAccessibleMembers()
     .flatMap((member) => member.payments.map((payment) => ({ member, payment })))
-    .filter(({ payment }) => payment.date?.startsWith(monthKey))
+    .filter(({ payment }) => payment.date?.startsWith(selectedPaymentMonth))
     .sort((a, b) => b.payment.date.localeCompare(a.payment.date) || a.member.name.localeCompare(b.member.name, "ko-KR"));
 }
 
@@ -1537,10 +1557,11 @@ function renderTodaySchedule() {
         </span>
       ` : ""}
       <span class="today-card-details">
-        <small class="today-card-lesson">${getScheduleScopeBadge(item)}${escapeHTML(compactLessonType(item.lessonType, item.groups.length))}</small>
         <small class="today-card-balance ${balanceTone}">${escapeHTML(balances)}</small>
       </span>
     `;
+    const tools = document.createElement("div");
+    tools.className = "today-card-tools";
     const actions = document.createElement("div");
     actions.className = "today-card-actions";
     [
@@ -1563,7 +1584,7 @@ function renderTodaySchedule() {
       editButton.textContent = "수정";
       editButton.setAttribute("aria-label", `${item.members.map((member) => member.name).join(", ")} ${item.timeLabel} 시간표 수정`);
       editButton.addEventListener("click", () => editScheduleGroup(item));
-      actions.append(editButton);
+      tools.append(editButton);
 
       const removeButton = document.createElement("button");
       removeButton.className = "mini-action schedule-remove-action";
@@ -1572,13 +1593,14 @@ function renderTodaySchedule() {
       removeButton.title = "시간표 삭제";
       removeButton.setAttribute("aria-label", `${item.members.map((member) => member.name).join(", ")} ${item.timeLabel} 시간표 삭제`);
       removeButton.addEventListener("click", () => removeScheduleGroup(item));
-      actions.append(removeButton);
+      tools.append(removeButton);
     }
     card.querySelector(".today-card-main").addEventListener("click", () => {
       selectedMemberId = item.members[0]?.id ?? selectedMemberId;
       setMobileView("detail");
       render();
     });
+    if (tools.children.length) card.append(tools);
     card.append(actions);
     elements.todaySchedule.append(card);
   });

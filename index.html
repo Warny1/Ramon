@@ -89,10 +89,14 @@
         <section class="panel payment-overview-panel">
           <div class="section-title">
             <div>
-              <p class="eyebrow">이번 달</p>
+              <p class="eyebrow" id="paymentMonthLabel">이번 달</p>
               <h3>결제 관리</h3>
             </div>
-            <strong id="monthlyRevenue" class="revenue-total">0원</strong>
+            <div class="payment-month-controls">
+              <button id="previousPaymentMonth" class="day-nav-button" type="button" aria-label="이전 달 결제">‹</button>
+              <strong id="monthlyRevenue" class="revenue-total">0원</strong>
+              <button id="nextPaymentMonth" class="day-nav-button" type="button" aria-label="다음 달 결제">›</button>
+            </div>
           </div>
           <div id="monthlyPaymentList" class="table-like"></div>
         </section>
