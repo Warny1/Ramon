@@ -32,6 +32,10 @@
         </div>
 
         <div class="sidebar-quick-actions">
+          <button class="secondary-button today-jump-button" id="goTodayButton" type="button">
+            <span aria-hidden="true">↺</span>
+            <span>오늘</span>
+          </button>
           <button class="primary-action" id="openMemberModal" type="button">
             <span aria-hidden="true">＋</span>
             <span>회원 추가</span>
@@ -368,6 +372,17 @@
           <h3 id="scheduleModalTitle">시간표 추가</h3>
           <button class="close-button" value="cancel" type="button" data-close="scheduleModal">×</button>
         </div>
+        <fieldset id="scheduleScopeField" class="segmented-field">
+          <legend>적용 범위</legend>
+          <label>
+            <input name="scheduleScope" type="radio" value="weekly" checked />
+            <span>매주</span>
+          </label>
+          <label>
+            <input name="scheduleScope" type="radio" value="once" />
+            <span>오늘만</span>
+          </label>
+        </fieldset>
         <div class="form-row">
           <label id="scheduleDayField">
             요일
@@ -387,7 +402,7 @@
           </label>
         </div>
         <label id="makeupDateField" hidden>
-          보강 날짜
+          <span id="scheduleDateLabel">보강 날짜</span>
           <input name="date" type="date" />
         </label>
         <label>

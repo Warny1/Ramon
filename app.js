@@ -189,6 +189,7 @@ let timetableView = "focus";
 let activeDetailPanel = "schedule";
 let mobileView = "today";
 let desktopView = "operations";
+let editingScheduleGroup = null;
 
 const $ = (selector) => document.querySelector(selector);
 
@@ -243,6 +244,7 @@ const elements = {
   scheduleForm: $("#scheduleForm"),
   scheduleDayField: $("#scheduleDayField"),
   makeupDateField: $("#makeupDateField"),
+  scheduleScopeField: $("#scheduleScopeField"),
   scheduleMemberSearch: $("#scheduleMemberSearch"),
   scheduleMemberOptions: $("#scheduleMemberOptions"),
 };
@@ -251,6 +253,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   elements.attendanceDate.value = selectedAttendanceDate;
 
   $("#openMemberModal").addEventListener("click", () => openModal(elements.memberModal));
+  $("#goTodayButton").addEventListener("click", goToToday);
   $("#openPaymentModal").addEventListener("click", () => {
     preparePaymentModal();
     elements.paymentForm.date.value = todayISO;
@@ -262,8 +265,10 @@ document.addEventListener("DOMContentLoaded", async () => {
     prepareScheduleModal("regular");
     elements.scheduleForm.day.value = String(getSelectedAttendanceDate().getDay());
     elements.scheduleForm.time.value = roundToNextHalfHour();
+    elements.scheduleForm.date.value = selectedAttendanceDate;
+    setScheduleScope("weekly");
     applyMemberDefaultLessonTypeToSchedule();
-    renderScheduleMemberOptions([selectedMemberId].filter(Boolean));
+    renderScheduleMemberOptions([]);
     openModal(elements.scheduleModal);
   });
   $("#openMakeupSchedule").addEventListener("click", () => {
@@ -278,6 +283,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     elements.scheduleForm.time.value = roundToNextHalfHour();
     elements.scheduleForm.querySelector('[name="className"]').value = "보강";
     elements.scheduleForm.querySelector('[name="scheduleStatus"]').value = "보강";
+    setScheduleScope("once");
     renderScheduleMemberOptions([]);
     openModal(elements.scheduleModal);
   }
@@ -319,6 +325,14 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   elements.memberSearch.addEventListener("input", render);
   elements.scheduleMemberSearch.addEventListener("input", filterScheduleMemberOptions);
+  elements.scheduleForm.querySelectorAll('[name="scheduleScope"]').forEach((input) => {
+    input.addEventListener("change", syncScheduleScopeFields);
+  });
+  elements.scheduleForm.day.addEventListener("change", () => {
+    if (getScheduleScope() === "once") {
+      elements.scheduleForm.date.value = getDateForScheduleDay(Number(elements.scheduleForm.day.value));
+    }
+  });
   elements.scheduleMemberOptions.addEventListener("change", (event) => {
     const checkbox = event.target.closest('input[name="memberIds"]');
     if (!checkbox?.checked) return;
@@ -799,6 +813,25 @@ function setDesktopView(view) {
   render();
 }
 
+function goToToday() {
+  selectedAttendanceDate = todayISO;
+  if (isMobileLayout()) {
+    setMobileView("today");
+  } else {
+    setDesktopView("operations");
+  }
+  elements.memberSearch.value = "";
+  render();
+}
+
+function getDateForScheduleDay(day) {
+  const selected = getSelectedAttendanceDate();
+  const diff = Number(day) - selected.getDay();
+  const date = new Date(selected);
+  date.setDate(selected.getDate() + diff);
+  return toISODate(date);
+}
+
 function renderMobileNav() {
   elements.mobileNavButtons.forEach((button) => {
     const allowed = getAllowedMobileViews().includes(button.dataset.mobileView);
@@ -941,7 +974,7 @@ function renderTodaySidebarList(query) {
           ${entry.status === "보강" ? '<small class="today-lesson-status">보강</small>' : ""}
         </span>
         <strong class="today-lesson-names">${escapeHTML(names)}</strong>
-        <span class="today-lesson-type">${escapeHTML(compactLessonType(entry.lessonType, entry.groups.length))}</span>
+        <span class="today-lesson-type">${getScheduleScopeBadge(entry)}${escapeHTML(compactLessonType(entry.lessonType, entry.groups.length))}</span>
         <span class="today-lesson-balance ${balanceTone}">${escapeHTML(balances)}</span>
       </button>
     `;
@@ -1222,6 +1255,7 @@ function openScheduleAt(day, time) {
   prepareScheduleModal("regular");
   elements.scheduleForm.day.value = String(day);
   elements.scheduleForm.time.value = time;
+  elements.scheduleForm.date.value = getDateForScheduleDay(day);
   const classNameInput = elements.scheduleForm.querySelector('[name="className"]');
   if (classNameInput && !classNameInput.value) {
     classNameInput.value = "수업";
@@ -1231,7 +1265,8 @@ function openScheduleAt(day, time) {
     lessonTypeSelect.value = state.lessonTypes[0]?.name || "";
   }
   elements.scheduleForm.querySelector('[name="scheduleStatus"]').value = "";
-  renderScheduleMemberOptions([member.id]);
+  setScheduleScope("weekly");
+  renderScheduleMemberOptions([]);
   openModal(elements.scheduleModal);
 }
 
@@ -1397,7 +1432,7 @@ function renderTodaySchedule() {
         </span>
       ` : ""}
       <span class="today-card-details">
-        <small class="today-card-lesson">${escapeHTML(compactLessonType(item.lessonType, item.groups.length))}</small>
+        <small class="today-card-lesson">${getScheduleScopeBadge(item)}${escapeHTML(compactLessonType(item.lessonType, item.groups.length))}</small>
         <small class="today-card-balance ${balanceTone}">${escapeHTML(balances)}</small>
       </span>
     `;
@@ -1416,6 +1451,24 @@ function renderTodaySchedule() {
       button.addEventListener("click", () => markCombinedAttendance(item.groups, action.status));
       actions.append(button);
     });
+    if (canManageSettings()) {
+      const editButton = document.createElement("button");
+      editButton.className = "mini-action schedule-edit-action";
+      editButton.type = "button";
+      editButton.textContent = "수정";
+      editButton.setAttribute("aria-label", `${item.members.map((member) => member.name).join(", ")} ${item.timeLabel} 시간표 수정`);
+      editButton.addEventListener("click", () => editScheduleGroup(item));
+      actions.append(editButton);
+
+      const removeButton = document.createElement("button");
+      removeButton.className = "mini-action schedule-remove-action";
+      removeButton.type = "button";
+      removeButton.textContent = "×";
+      removeButton.title = "시간표 삭제";
+      removeButton.setAttribute("aria-label", `${item.members.map((member) => member.name).join(", ")} ${item.timeLabel} 시간표 삭제`);
+      removeButton.addEventListener("click", () => removeScheduleGroup(item));
+      actions.append(removeButton);
+    }
     card.querySelector(".today-card-main").addEventListener("click", () => {
       selectedMemberId = item.members[0]?.id ?? selectedMemberId;
       setMobileView("detail");
@@ -1537,37 +1590,61 @@ function addSchedule(event) {
   const form = new FormData(elements.scheduleForm);
   const memberIds = form.getAll("memberIds");
   const isMakeup = elements.scheduleForm.dataset.mode === "makeup";
-  const scheduleDate = isMakeup ? String(form.get("date")) : "";
+  const isEdit = elements.scheduleForm.dataset.mode === "edit";
+  const scheduleScope = getScheduleScope();
+  const scheduleDate = isMakeup || scheduleScope === "once" ? String(form.get("date")) : "";
+  const formTime = String(form.get("time"));
 
   if (!memberIds.length) {
     alert("참여 회원을 선택해주세요.");
     return;
   }
 
-  if (isMakeup && !scheduleDate) {
-    alert("보강 날짜를 선택해주세요.");
+  if ((isMakeup || scheduleScope === "once") && !scheduleDate) {
+    alert("날짜를 선택해주세요.");
     return;
   }
 
   const scheduleDay = isMakeup ? new Date(`${scheduleDate}T12:00:00`).getDay() : Number(form.get("day"));
+  const editGroups = isEdit && editingScheduleGroup
+    ? editingScheduleGroup.groups?.length
+      ? editingScheduleGroup.groups
+      : [editingScheduleGroup]
+    : [];
+  const editStartMinutes = editGroups.length ? timeToMinutes(editGroups[0].time) : timeToMinutes(formTime);
+  const scheduleTimes = editGroups.length
+    ? editGroups.map((group) => minutesToTime(timeToMinutes(formTime) + timeToMinutes(group.time) - editStartMinutes))
+    : [formTime];
+
+  if (isEdit && editingScheduleGroup) {
+    getScheduleGroupEntries(editingScheduleGroup).forEach(({ memberId, scheduleId }) => {
+      const member = state.members.find((item) => item.id === memberId);
+      if (!member) return;
+
+      member.schedules = member.schedules.filter((item) => item.id !== scheduleId);
+    });
+  }
 
   memberIds.forEach((memberId) => {
     const member = state.members.find((item) => item.id === memberId);
     if (!member) return;
 
-    member.schedules.push({
-      id: crypto.randomUUID(),
-      day: scheduleDay,
-      time: String(form.get("time")),
-      className: String(form.get("className")).trim() || "수업",
-      lessonType: String(form.get("scheduleLessonType")),
-      status: String(form.get("scheduleStatus")),
-      date: scheduleDate,
+    scheduleTimes.forEach((time) => {
+      member.schedules.push({
+        id: crypto.randomUUID(),
+        day: scheduleDay,
+        time,
+        className: String(form.get("className")).trim() || "수업",
+        lessonType: String(form.get("scheduleLessonType")),
+        status: String(form.get("scheduleStatus")),
+        date: scheduleDate,
+      });
     });
   });
 
   elements.scheduleForm.reset();
   prepareScheduleModal("regular");
+  editingScheduleGroup = null;
   closeModal(elements.scheduleModal);
   commit();
 }
@@ -1656,6 +1733,50 @@ function removeSchedule(memberId, scheduleId) {
 
   const member = state.members.find((item) => item.id === memberId);
   member.schedules = member.schedules.filter((item) => item.id !== scheduleId);
+  commit();
+}
+
+function getScheduleGroupEntries(group) {
+  return (group.groups?.length ? group.groups : [group]).flatMap((item) => item.entries || []);
+}
+
+function editScheduleGroup(group) {
+  if (!canManageSettings()) return;
+
+  const groups = group.groups?.length ? group.groups : [group];
+  const firstGroup = groups[0] || group;
+  const selectedIds = [...new Set(group.members.map((member) => member.id))];
+  const isOneDay = Boolean(firstGroup.date);
+
+  prepareScheduleModal("edit");
+  editingScheduleGroup = group;
+  elements.scheduleForm.day.value = String(firstGroup.day);
+  elements.scheduleForm.time.value = firstGroup.time || group.startTime || group.time || roundToNextHalfHour();
+  elements.scheduleForm.date.value = firstGroup.date || getDateForScheduleDay(Number(firstGroup.day));
+  elements.scheduleForm.querySelector('[name="className"]').value = firstGroup.className || "수업";
+  elements.scheduleForm.querySelector('[name="scheduleLessonType"]').value = firstGroup.lessonType || state.lessonTypes[0]?.name || "";
+  elements.scheduleForm.querySelector('[name="scheduleStatus"]').value = firstGroup.status || "";
+  setScheduleScope(isOneDay ? "once" : "weekly");
+  renderScheduleMemberOptions(selectedIds);
+  openModal(elements.scheduleModal);
+}
+
+function removeScheduleGroup(group) {
+  if (!canManageSettings()) return;
+
+  const entries = getScheduleGroupEntries(group);
+  if (!entries.length) return;
+
+  const memberNames = group.members.map((member) => member.name).join(", ");
+  const ok = confirm(`${memberNames} ${group.time} 시간표를 삭제할까요?`);
+  if (!ok) return;
+
+  entries.forEach(({ memberId, scheduleId }) => {
+    const member = state.members.find((item) => item.id === memberId);
+    if (!member) return;
+
+    member.schedules = member.schedules.filter((item) => item.id !== scheduleId);
+  });
   commit();
 }
 
@@ -2319,10 +2440,12 @@ function getScheduleGroups() {
         status: getScheduleStatus(item),
         date: item.date || "",
         members: [],
+        entries: [],
       });
     }
 
     groups.get(key).members.push(item.member);
+    groups.get(key).entries.push({ memberId: item.member.id, scheduleId: item.id });
   });
 
   return [...groups.values()].map((group) => ({
@@ -2340,7 +2463,7 @@ function createLessonBlock(group) {
   mainButton.type = "button";
   mainButton.innerHTML = `
     <span class="lesson-member-names">${escapeHTML(group.members.map((member) => member.name).join(", "))}</span>
-    <strong>${getStatusBadge(group.status)}<span class="lesson-badge">${escapeHTML(compactLessonType(group.lessonType, group.groups?.length || 1))}</span><span class="lesson-class-name">${escapeHTML(group.className || "수업")}</span></strong>
+    <strong>${getStatusBadge(group.status)}${getScheduleScopeBadge(group)}<span class="lesson-badge">${escapeHTML(compactLessonType(group.lessonType, group.groups?.length || 1))}</span><span class="lesson-class-name">${escapeHTML(group.className || "수업")}</span></strong>
     <small>${group.members.length}명 · 잔여 ${escapeHTML(group.members.map((member) => `${member.name} ${getBalance(member)}회`).join(" / "))}</small>
   `;
   mainButton.addEventListener("click", () => {
@@ -2349,12 +2472,39 @@ function createLessonBlock(group) {
   });
   block.append(mainButton);
 
+  const actions = document.createElement("div");
+  actions.className = "lesson-actions";
+
   if (Number(group.day) === getSelectedAttendanceDate().getDay()) {
     const attendanceStatus = getCombinedAttendanceStatus(group.groups?.length ? group.groups : [group]);
     const statusLabel = document.createElement("span");
     statusLabel.className = `lesson-attendance-state ${getAttendanceStateClass(attendanceStatus)}`;
     statusLabel.textContent = attendanceStatus || "미처리";
-    block.append(statusLabel);
+    actions.append(statusLabel);
+  }
+
+  if (canManageSettings()) {
+    const editButton = document.createElement("button");
+    editButton.className = "lesson-edit";
+    editButton.type = "button";
+    editButton.title = "시간표 수정";
+    editButton.setAttribute("aria-label", `${group.members.map((member) => member.name).join(", ")} ${group.time} 시간표 수정`);
+    editButton.textContent = "수정";
+    editButton.addEventListener("click", () => editScheduleGroup(group));
+    actions.append(editButton);
+
+    const removeButton = document.createElement("button");
+    removeButton.className = "lesson-remove";
+    removeButton.type = "button";
+    removeButton.title = "시간표 삭제";
+    removeButton.setAttribute("aria-label", `${group.members.map((member) => member.name).join(", ")} ${group.time} 시간표 삭제`);
+    removeButton.textContent = "×";
+    removeButton.addEventListener("click", () => removeScheduleGroup(group));
+    actions.append(removeButton);
+  }
+
+  if (actions.children.length) {
+    block.append(actions);
   }
 
   return block;
@@ -2382,16 +2532,45 @@ function compactLessonType(lessonType = "", consecutiveSlots = 1) {
 
 function prepareScheduleModal(mode) {
   const isMakeup = mode === "makeup";
+  const isEdit = mode === "edit";
+  editingScheduleGroup = null;
   elements.scheduleForm.dataset.mode = mode;
   elements.scheduleMemberSearch.value = "";
-  elements.scheduleModalTitle.textContent = isMakeup ? "보강 수업 추가" : "시간표 추가";
+  elements.scheduleMemberOptions.innerHTML = "";
+  elements.scheduleModalTitle.textContent = isEdit ? "시간표 수정" : isMakeup ? "보강 수업 추가" : "시간표 추가";
   elements.scheduleDayField.hidden = isMakeup;
-  elements.makeupDateField.hidden = !isMakeup;
+  elements.scheduleScopeField.hidden = false;
   elements.scheduleForm.date.required = isMakeup;
 
   if (!isMakeup) {
     elements.scheduleForm.date.value = "";
     elements.scheduleForm.querySelector('[name="scheduleStatus"]').value = "";
+  }
+  syncScheduleScopeFields();
+}
+
+function setScheduleScope(scope) {
+  const target = elements.scheduleForm.querySelector(`[name="scheduleScope"][value="${scope}"]`);
+  if (target) target.checked = true;
+  syncScheduleScopeFields();
+}
+
+function getScheduleScope() {
+  return elements.scheduleForm.querySelector('[name="scheduleScope"]:checked')?.value || "weekly";
+}
+
+function syncScheduleScopeFields() {
+  const scope = getScheduleScope();
+  const isMakeup = elements.scheduleForm.dataset.mode === "makeup";
+  const dateLabel = $("#scheduleDateLabel");
+  const showDate = isMakeup || scope === "once";
+
+  elements.makeupDateField.hidden = !showDate;
+  elements.scheduleForm.date.required = showDate;
+  if (dateLabel) dateLabel.textContent = isMakeup ? "보강 날짜" : "적용 날짜";
+
+  if (scope === "once" && !elements.scheduleForm.date.value) {
+    elements.scheduleForm.date.value = getDateForScheduleDay(Number(elements.scheduleForm.day.value || getSelectedAttendanceDate().getDay()));
   }
 }
 
@@ -2441,6 +2620,11 @@ function getScheduleStatus(item) {
 function getStatusBadge(status) {
   if (!status) return "";
   return `<span class="status-badge ${getStatusClass(status)}">${escapeHTML(status)}</span>`;
+}
+
+function getScheduleScopeBadge(item) {
+  const isOneDay = Boolean(item.date || item.groups?.some((group) => group.date));
+  return `<span class="scope-badge ${isOneDay ? "once" : "weekly"}">${isOneDay ? "오늘만" : "매주"}</span>`;
 }
 
 function getStatusClass(status) {

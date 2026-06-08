@@ -161,8 +161,16 @@ h4 {
 
 .sidebar-quick-actions {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 8px;
+}
+
+.today-jump-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border: 1px solid var(--line);
 }
 
 .makeup-add-button {
@@ -756,6 +764,31 @@ h4 {
   width: 38px;
 }
 
+.lesson-actions {
+  display: grid;
+  gap: 4px;
+  align-content: center;
+  justify-items: stretch;
+}
+
+.lesson-edit {
+  min-width: 44px;
+  border: 0;
+  border-radius: 6px;
+  background: white;
+  color: var(--accent-dark);
+  padding: 5px;
+  font-size: 11px;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.lesson-edit:hover,
+.lesson-edit:focus-visible {
+  background: var(--accent);
+  color: white;
+}
+
 .lesson-attendance-state {
   align-self: center;
   min-width: 44px;
@@ -780,6 +813,43 @@ h4 {
 .lesson-attendance-state.pending {
   background: #eef0f1;
   color: #737b80;
+}
+
+.lesson-remove {
+  min-width: 44px;
+  border: 0;
+  border-radius: 6px;
+  background: var(--danger-soft);
+  color: var(--danger);
+  padding: 5px;
+  font-size: 14px;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.lesson-remove:hover,
+.lesson-remove:focus-visible {
+  background: var(--danger);
+  color: white;
+}
+
+.scope-badge {
+  flex: 0 0 auto;
+  display: inline-block !important;
+  max-width: none !important;
+  border-radius: 999px;
+  margin-right: 4px;
+  background: #e0f2fe;
+  color: #0369a1;
+  padding: 2px 6px;
+  font-size: 10px !important;
+  font-weight: 900 !important;
+  vertical-align: middle;
+}
+
+.scope-badge.once {
+  background: var(--warn-soft);
+  color: var(--warn);
 }
 
 .panel {
@@ -1163,9 +1233,41 @@ h4 {
   font-size: 13px;
 }
 
+.today-card-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(42px, 1fr));
+  gap: 6px;
+}
+
 .attendance-big.done {
   background: var(--success-soft);
   color: var(--success);
+}
+
+.schedule-edit-action {
+  min-width: 72px;
+  background: #e0f2fe;
+  color: #0369a1;
+}
+
+.schedule-remove-action {
+  min-width: 42px;
+  background: var(--danger-soft);
+  color: var(--danger);
+  font-size: 18px;
+  line-height: 1;
+}
+
+.schedule-edit-action:hover,
+.schedule-edit-action:focus-visible {
+  background: var(--accent);
+  color: white;
+}
+
+.schedule-remove-action:hover,
+.schedule-remove-action:focus-visible {
+  background: var(--danger);
+  color: white;
 }
 
 .attendance-big:disabled {
@@ -1204,6 +1306,52 @@ h4 {
   display: grid;
   gap: 14px;
   padding: 20px;
+}
+
+.segmented-field {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+  border: 0;
+  padding: 0;
+  margin: 0;
+}
+
+.segmented-field legend {
+  grid-column: 1 / -1;
+  margin-bottom: 2px;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.segmented-field label {
+  position: relative;
+}
+
+.segmented-field input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.segmented-field span {
+  display: flex;
+  min-height: 38px;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: white;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.segmented-field input:checked + span {
+  border-color: rgba(37, 99, 235, 0.38);
+  background: #e0f2fe;
+  color: var(--accent-dark);
 }
 
 .modal-head {
@@ -2789,7 +2937,7 @@ select {
     display: grid;
     grid-column: 3;
     grid-row: 2;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: repeat(2, minmax(42px, 1fr));
     gap: 6px;
     padding-left: 0;
   }
