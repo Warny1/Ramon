@@ -2604,6 +2604,7 @@ function createLessonBlock(group) {
   const mainButton = document.createElement("button");
   mainButton.className = "lesson-main";
   mainButton.type = "button";
+  mainButton.title = `${group.members.map((member) => member.name).join(", ")} · ${group.lessonType || "레슨 미지정"} · ${group.className || "수업"}`;
   mainButton.innerHTML = `
     <span class="lesson-member-names">${escapeHTML(group.members.map((member) => member.name).join(", "))}</span>
     <strong>${getStatusBadge(group.status)}${getScheduleScopeBadge(group)}<span class="lesson-badge">${escapeHTML(compactLessonType(group.lessonType, group.groups?.length || 1))}</span><span class="lesson-class-name">${escapeHTML(group.className || "수업")}</span></strong>

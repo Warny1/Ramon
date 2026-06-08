@@ -563,8 +563,8 @@ h4 {
 }
 
 .week-table {
-  grid-template-columns: 62px repeat(var(--day-count), minmax(158px, 1fr));
-  min-width: 1168px;
+  grid-template-columns: 54px repeat(var(--day-count), minmax(124px, 1fr));
+  min-width: 930px;
 }
 
 .schedule-head,
@@ -1759,35 +1759,47 @@ body[data-role="member"] .detail-panel[data-panel="payment"] {
 
   .week-table .lesson-block {
     grid-template-columns: minmax(0, 1fr);
-    padding: 3px 5px;
+    padding: 2px 4px;
+    border-left-width: 3px;
   }
 
   .week-table .lesson-main {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-columns: minmax(0, 1fr);
     align-items: center;
-    gap: 6px;
-    padding: 2px 3px;
+    min-height: 28px;
+    padding: 3px 4px;
   }
 
   .week-table .lesson-member-names {
     grid-column: 1;
     grid-row: 1;
+    white-space: normal;
+    line-height: 1.25;
   }
 
   .week-table .lesson-main strong {
-    grid-column: 2;
+    grid-column: 1;
     grid-row: 1;
+    justify-self: end;
     margin: 0;
   }
 
   .week-table .lesson-main small,
+  .week-table .scope-badge.weekly,
+  .week-table .lesson-badge,
   .week-table .lesson-class-name {
     display: none;
   }
 
-  .week-table .lesson-badge {
-    max-width: 70px;
+  .week-table .scope-badge.once,
+  .week-table .status-badge {
+    padding: 2px 5px;
+    font-size: 9px;
+  }
+
+  .week-table .lesson-actions {
+    display: none;
   }
 
   .week-table .lesson-check {
