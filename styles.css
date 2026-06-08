@@ -1767,37 +1767,31 @@ body[data-role="member"] .detail-panel[data-panel="payment"] {
     display: grid;
     grid-template-columns: minmax(0, 1fr);
     align-items: center;
-    min-height: 28px;
+    min-height: 30px;
     padding: 3px 4px;
   }
 
   .week-table .lesson-member-names {
     grid-column: 1;
     grid-row: 1;
+    display: block;
+    overflow: visible;
+    text-overflow: clip;
     white-space: normal;
+    word-break: keep-all;
     line-height: 1.25;
   }
 
   .week-table .lesson-main strong {
-    grid-column: 1;
-    grid-row: 1;
-    justify-self: end;
-    margin: 0;
-  }
-
-  .week-table .lesson-main small,
-  .week-table .scope-badge.weekly,
-  .week-table .lesson-badge,
-  .week-table .lesson-class-name {
     display: none;
   }
 
-  .week-table .scope-badge.once,
-  .week-table .status-badge {
-    padding: 2px 5px;
-    font-size: 9px;
-  }
-
+  .week-table .lesson-main strong,
+  .week-table .lesson-main small,
+  .week-table .scope-badge,
+  .week-table .status-badge,
+  .week-table .lesson-badge,
+  .week-table .lesson-class-name,
   .week-table .lesson-actions {
     display: none;
   }
