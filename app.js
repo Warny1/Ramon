@@ -973,6 +973,7 @@ function renderTodaySidebarList(query) {
       <button class="today-attendance-main" type="button">
         <span class="today-lesson-time">
           <span>${escapeHTML(entry.timeLabel)}</span>
+          ${getScheduleScopeBadge(entry)}
           ${entry.status === "보강" ? '<small class="today-lesson-status">보강</small>' : ""}
         </span>
         <strong class="today-lesson-names">${escapeHTML(names)}</strong>
