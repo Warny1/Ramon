@@ -1589,10 +1589,12 @@ function addMember(event) {
   const existing = editingMemberId ? state.members.find((item) => item.id === editingMemberId) : null;
 
   if (existing) {
+    const nextLessonType = String(form.get("defaultLessonType") || "");
     existing.name = String(form.get("name")).trim();
     existing.phone = String(form.get("phone")).trim();
     existing.memo = String(form.get("memo")).trim();
-    existing.defaultLessonType = String(form.get("defaultLessonType") || "");
+    existing.defaultLessonType = nextLessonType;
+    syncMemberSchedulesToLessonType(existing, nextLessonType);
     selectedMemberId = existing.id;
     elements.memberForm.reset();
     prepareMemberModal();
@@ -1623,6 +1625,14 @@ function addMember(event) {
   prepareMemberModal();
   closeModal(elements.memberModal);
   commit();
+}
+
+function syncMemberSchedulesToLessonType(member, lessonType) {
+  if (!member || !lessonType) return;
+
+  member.schedules.forEach((schedule) => {
+    schedule.lessonType = lessonType;
+  });
 }
 
 function prepareMemberModal() {
