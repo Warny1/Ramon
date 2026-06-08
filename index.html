@@ -81,7 +81,6 @@
 
         <section class="stats-grid ops-strip" aria-label="요약">
           <article class="stat">
-            <span>수업</span>
             <strong id="todayClasses">0</strong>
           </article>
         </section>
@@ -196,13 +195,14 @@
           <aside class="panel day-panel">
             <div class="section-title">
               <div>
-                <h3 id="todayScheduleDate">오늘 시간표</h3>
-                <div class="day-panel-actions">
-                  <button id="previousDayButton" class="day-nav-button" type="button" aria-label="전날 시간표">‹</button>
-                  <button id="todayDayButton" class="day-today-button" type="button">오늘</button>
-                  <button id="nextDayButton" class="day-nav-button" type="button" aria-label="다음날 시간표">›</button>
-                  <span id="todayCount" class="count-pill lesson-count-pill">수업 0개</span>
-                </div>
+                <p class="eyebrow">오늘 하루</p>
+                <h3>시간표</h3>
+              </div>
+              <div class="day-panel-actions">
+                <button id="previousDayButton" class="day-nav-button" type="button" aria-label="전날 시간표">‹</button>
+                <button id="todayDayButton" class="day-today-button" type="button">오늘</button>
+                <button id="nextDayButton" class="day-nav-button" type="button" aria-label="다음날 시간표">›</button>
+                <span id="todayScheduleDate" class="day-date-pill">날짜</span>
               </div>
             </div>
             <label class="attendance-date-control">

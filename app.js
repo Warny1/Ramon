@@ -1564,7 +1564,7 @@ function saveLessonSettings(event) {
 function renderTodaySchedule() {
   const items = getTodaySidebarEntries();
   elements.todaySchedule.innerHTML = "";
-  elements.todayCount.textContent = `수업 ${items.length}개`;
+  if (elements.todayCount) elements.todayCount.textContent = `수업 ${items.length}개`;
 
   if (!items.length) {
     elements.todaySchedule.append(createEmptyLine("오늘 예정된 수업이 없습니다."));
