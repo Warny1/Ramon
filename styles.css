@@ -3159,9 +3159,7 @@ select {
   }
 
   .today-card-tools {
-    grid-column: 3;
-    grid-row: 1;
-    align-self: center;
+    display: none;
   }
 
   .today-card-tools .schedule-edit-action,
@@ -3304,37 +3302,77 @@ select {
   }
 
   .focus-table .schedule-cell {
-    min-height: 62px;
-    padding: 5px;
+    min-height: 58px;
+    padding: 4px;
   }
 
   .focus-table .lesson-block {
-    grid-template-columns: minmax(0, 1fr) 48px;
-    min-height: 52px;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 3px;
+    min-height: 0;
+    padding: 5px 6px;
     overflow: hidden;
   }
 
   .focus-table .lesson-main {
     display: grid;
-    gap: 3px;
-    padding: 3px 5px;
+    gap: 2px;
+    padding: 0;
   }
 
-  .focus-table .lesson-member-names {
+  .focus-table .lesson-title-line {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    min-width: 0;
     overflow: visible;
     text-overflow: clip;
     white-space: normal;
-    font-size: 14px !important;
-    line-height: 1.25;
+  }
+
+  .focus-table .lesson-member-names {
+    display: block;
+    overflow: visible;
+    text-overflow: clip;
+    white-space: normal;
+    font-size: 13px !important;
+    line-height: 1.2;
+  }
+
+  .focus-table .mobile-lesson-state {
+    display: inline-flex;
+    flex: 0 0 auto;
+    border-radius: 5px;
+    padding: 2px 5px;
+    font-size: 10px;
+    font-weight: 800;
+    line-height: 1.2;
+  }
+
+  .focus-table .mobile-lesson-state.present {
+    background: var(--success-soft);
+    color: var(--success);
+  }
+
+  .focus-table .mobile-lesson-state.absent {
+    background: var(--danger-soft);
+    color: var(--danger);
+  }
+
+  .focus-table .mobile-lesson-state.pending {
+    background: #eef0f1;
+    color: #737b80;
   }
 
   .focus-table .lesson-main strong {
     display: flex;
     flex-wrap: wrap;
-    gap: 4px;
+    gap: 3px;
     margin: 0;
     overflow: visible;
     white-space: normal;
+    font-size: 11px;
+    line-height: 1.2;
   }
 
   .focus-table .lesson-badge {
@@ -3342,8 +3380,8 @@ select {
     overflow: visible;
     text-overflow: clip;
     white-space: nowrap;
-    font-size: 11px;
-    padding: 3px 7px;
+    font-size: 10px;
+    padding: 2px 5px;
   }
 
   .focus-table .lesson-class-name {
@@ -3352,37 +3390,44 @@ select {
   }
 
   .focus-table .lesson-main small {
-    overflow: visible;
-    text-overflow: clip;
-    white-space: normal;
-    line-height: 1.3;
+    display: none;
   }
 
-  .focus-table .lesson-attendance-state {
-    align-self: center;
-    width: 46px;
-    min-width: 46px;
+  .focus-table .lesson-actions {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    justify-content: flex-start;
+  }
+
+  .focus-table .lesson-actions .lesson-attendance-state {
+    display: none;
+  }
+
+  .focus-table .lesson-edit,
+  .focus-table .lesson-remove {
+    display: grid;
+    place-items: center;
+    min-width: 36px;
+    min-height: 24px;
+    border: 1px solid #dfe4e3;
     border-radius: 6px;
-    padding: 6px 5px;
+    background: #ffffff;
+    padding: 0 7px;
     text-align: center;
     font-size: 10px;
     font-weight: 800;
+    color: var(--accent-dark);
     white-space: nowrap;
   }
 
-  .focus-table .lesson-attendance-state.present {
-    background: var(--success-soft);
-    color: var(--success);
-  }
-
-  .focus-table .lesson-attendance-state.absent {
+  .focus-table .lesson-remove {
+    min-width: 26px;
+    padding: 0;
+    border-color: #eadada;
     background: var(--danger-soft);
     color: var(--danger);
-  }
-
-  .focus-table .lesson-attendance-state.pending {
-    background: #eef0f1;
-    color: #737b80;
+    font-size: 14px;
   }
 
   .modal {

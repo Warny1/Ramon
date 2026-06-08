@@ -2686,13 +2686,18 @@ function getScheduleGroups() {
 function createLessonBlock(group) {
   const block = document.createElement("div");
   block.className = "lesson-block";
+  const showAttendanceState = Number(group.day) === getSelectedAttendanceDate().getDay();
+  const attendanceStatus = showAttendanceState ? getCombinedAttendanceStatus(group.groups?.length ? group.groups : [group]) : "";
 
   const mainButton = document.createElement("button");
   mainButton.className = "lesson-main";
   mainButton.type = "button";
   mainButton.title = `${group.members.map((member) => member.name).join(", ")} · ${group.lessonType || "레슨 미지정"} · ${group.className || "수업"}`;
   mainButton.innerHTML = `
-    <span class="lesson-member-names">${escapeHTML(group.members.map((member) => member.name).join(", "))}</span>
+    <span class="lesson-title-line">
+      <span class="lesson-member-names">${escapeHTML(group.members.map((member) => member.name).join(", "))}</span>
+      ${attendanceStatus ? `<span class="mobile-lesson-state ${getAttendanceStateClass(attendanceStatus)}">${escapeHTML(attendanceStatus)}</span>` : ""}
+    </span>
     <strong>${getStatusBadge(group.status)}${getScheduleScopeBadge(group)}<span class="lesson-badge">${escapeHTML(compactLessonType(group.lessonType, group.groups?.length || 1))}</span><span class="lesson-class-name">${escapeHTML(group.className || "수업")}</span></strong>
     <small>${group.members.length}명 · 잔여 ${escapeHTML(group.members.map((member) => `${member.name} ${getBalance(member)}회`).join(" / "))}</small>
   `;
@@ -2706,8 +2711,7 @@ function createLessonBlock(group) {
   const actions = document.createElement("div");
   actions.className = "lesson-actions";
 
-  if (Number(group.day) === getSelectedAttendanceDate().getDay()) {
-    const attendanceStatus = getCombinedAttendanceStatus(group.groups?.length ? group.groups : [group]);
+  if (showAttendanceState) {
     const statusLabel = document.createElement("span");
     statusLabel.className = `lesson-attendance-state ${getAttendanceStateClass(attendanceStatus)}`;
     statusLabel.textContent = attendanceStatus || "미처리";
