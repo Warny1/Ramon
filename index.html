@@ -140,6 +140,7 @@
               </div>
 
               <div class="quick-actions">
+                <button id="editMember" class="action-button" type="button">회원 수정</button>
                 <button id="markAttendance" class="action-button" type="button">출석 기록</button>
                 <button id="openPaymentModal" class="action-button" type="button">결제 추가</button>
                 <button id="openScheduleModal" class="action-button" type="button">시간표 추가</button>
@@ -230,7 +231,7 @@
     <dialog id="memberModal" class="modal">
       <form id="memberForm" method="dialog">
         <div class="modal-head">
-          <h3>회원 추가</h3>
+          <h3 id="memberModalTitle">회원 추가</h3>
           <button class="close-button" value="cancel" type="button" data-close="memberModal">×</button>
         </div>
         <label>
@@ -244,6 +245,12 @@
         <label>
           메모
           <textarea name="memo" rows="3"></textarea>
+        </label>
+        <label>
+          기본 레슨
+          <select name="defaultLessonType">
+            <option value="">레슨 미지정</option>
+          </select>
         </label>
         <div class="modal-actions">
           <button class="secondary-button" value="cancel" type="button" data-close="memberModal">취소</button>

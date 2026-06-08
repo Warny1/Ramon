@@ -227,6 +227,7 @@ const elements = {
   attendanceDate: $("#attendanceDate"),
   detailAttendanceDate: $("#detailAttendanceDate"),
   memberModal: $("#memberModal"),
+  memberModalTitle: $("#memberModalTitle"),
   memberForm: $("#memberForm"),
   paymentModal: $("#paymentModal"),
   paymentModalTitle: $("#paymentModalTitle"),
@@ -252,7 +253,8 @@ const elements = {
 document.addEventListener("DOMContentLoaded", async () => {
   elements.attendanceDate.value = selectedAttendanceDate;
 
-  $("#openMemberModal").addEventListener("click", () => openModal(elements.memberModal));
+  $("#openMemberModal").addEventListener("click", () => openMemberModalForCreate());
+  $("#editMember").addEventListener("click", openMemberModalForEdit);
   $("#goTodayButton").addEventListener("click", goToToday);
   $("#openPaymentModal").addEventListener("click", () => {
     preparePaymentModal();
@@ -1285,6 +1287,26 @@ function fillLessonTypeOptions() {
   if (state.lessonTypes.some((lesson) => lesson.name === selectedValue)) {
     select.value = selectedValue;
   }
+
+  fillMemberLessonTypeOptions();
+}
+
+function fillMemberLessonTypeOptions() {
+  const select = elements.memberForm.querySelector('[name="defaultLessonType"]');
+  if (!select) return;
+
+  const selectedValue = select.value;
+  select.innerHTML = '<option value="">레슨 미지정</option>';
+  state.lessonTypes.forEach((lesson) => {
+    const option = document.createElement("option");
+    option.value = lesson.name;
+    option.textContent = lesson.name;
+    select.append(option);
+  });
+
+  if (state.lessonTypes.some((lesson) => lesson.name === selectedValue)) {
+    select.value = selectedValue;
+  }
 }
 
 function fillScheduleLessonTypeOptions() {
@@ -1491,12 +1513,28 @@ function addMember(event) {
   if (!canManageSettings()) return;
 
   const form = new FormData(elements.memberForm);
+  const editingMemberId = elements.memberForm.dataset.editingMemberId || "";
+  const existing = editingMemberId ? state.members.find((item) => item.id === editingMemberId) : null;
+
+  if (existing) {
+    existing.name = String(form.get("name")).trim();
+    existing.phone = String(form.get("phone")).trim();
+    existing.memo = String(form.get("memo")).trim();
+    existing.defaultLessonType = String(form.get("defaultLessonType") || "");
+    selectedMemberId = existing.id;
+    elements.memberForm.reset();
+    prepareMemberModal();
+    closeModal(elements.memberModal);
+    commit();
+    return;
+  }
+
   const member = {
     id: crypto.randomUUID(),
     name: String(form.get("name")).trim(),
     phone: String(form.get("phone")).trim(),
     memo: String(form.get("memo")).trim(),
-    defaultLessonType: "",
+    defaultLessonType: String(form.get("defaultLessonType") || ""),
     createdAt: todayISO,
     schedules: [],
     payments: [],
@@ -1507,8 +1545,37 @@ function addMember(event) {
   selectedMemberId = member.id;
   if (isMobileLayout()) setMobileView("detail");
   elements.memberForm.reset();
+  prepareMemberModal();
   closeModal(elements.memberModal);
   commit();
+}
+
+function prepareMemberModal() {
+  elements.memberModalTitle.textContent = "회원 추가";
+  delete elements.memberForm.dataset.editingMemberId;
+  elements.memberForm.reset();
+  fillMemberLessonTypeOptions();
+}
+
+function openMemberModalForCreate() {
+  prepareMemberModal();
+  openModal(elements.memberModal);
+}
+
+function openMemberModalForEdit() {
+  if (!canManageSettings()) return;
+
+  const member = getSelectedMember();
+  if (!member) return;
+
+  prepareMemberModal();
+  elements.memberModalTitle.textContent = "회원 수정";
+  elements.memberForm.dataset.editingMemberId = member.id;
+  elements.memberForm.querySelector('[name="name"]').value = member.name || "";
+  elements.memberForm.querySelector('[name="phone"]').value = member.phone || "";
+  elements.memberForm.querySelector('[name="memo"]').value = member.memo || "";
+  elements.memberForm.querySelector('[name="defaultLessonType"]').value = member.defaultLessonType || "";
+  openModal(elements.memberModal);
 }
 
 function addPayment(event) {
