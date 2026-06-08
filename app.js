@@ -890,7 +890,7 @@ function isMobileLayout() {
 function renderStats() {
   const todayItems = getTodayItems();
 
-  elements.todayClasses.textContent = String(todayItems.length);
+  elements.todayClasses.textContent = `수업 ${todayItems.length}개`;
 }
 
 function renderPaymentOverview() {

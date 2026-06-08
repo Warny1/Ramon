@@ -506,6 +506,7 @@ h4 {
 
 .stat strong {
   font-size: 22px;
+  white-space: nowrap;
 }
 
 .workspace {
@@ -1142,7 +1143,9 @@ h4 {
 .day-panel-actions {
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: 4px;
+  margin-top: 8px;
 }
 
 .payment-month-controls {
