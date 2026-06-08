@@ -1227,7 +1227,7 @@ function renderTimetable() {
 
   table.append(createTableHeader("시간"));
   visibleDays.forEach((day) => {
-    table.append(createTableHeader(dayNames[day], day === getSelectedAttendanceDate().getDay()));
+    table.append(createTableHeader(dayNames[day], day === getSelectedAttendanceDate().getDay(), day));
   });
 
   timetableTimes.forEach((time) => {
@@ -2856,11 +2856,27 @@ function createEmptyLine(text) {
   return line;
 }
 
-function createTableHeader(text, isToday = false) {
+function createTableHeader(text, isToday = false, day = null) {
   const cell = document.createElement("div");
   cell.className = `schedule-head ${isToday ? "today-head" : ""}`;
-  cell.textContent = text;
+  if (day === null || isMobileLayout()) {
+    cell.textContent = text;
+    return cell;
+  }
+
+  const button = document.createElement("button");
+  button.className = "schedule-head-button";
+  button.type = "button";
+  button.textContent = text;
+  button.title = `${text}요일 운영 화면으로 이동`;
+  button.addEventListener("click", () => goToScheduleDay(day));
+  cell.append(button);
   return cell;
+}
+
+function goToScheduleDay(day) {
+  selectedAttendanceDate = getDateForScheduleDay(day);
+  setDesktopView("operations");
 }
 
 function createTimeCell(time) {

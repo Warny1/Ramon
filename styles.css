@@ -600,6 +600,21 @@ h4 {
   color: var(--accent-dark);
 }
 
+.schedule-head-button {
+  width: 100%;
+  height: 100%;
+  min-height: 42px;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font-weight: 900;
+}
+
+.schedule-head-button:hover,
+.schedule-head-button:focus-visible {
+  background: rgba(31, 111, 104, 0.08);
+}
+
 .schedule-time {
   display: grid;
   place-items: center;
@@ -1809,6 +1824,7 @@ body[data-role="member"] .detail-panel[data-panel="payment"] {
   }
 
   .week-table .lesson-block {
+    position: relative;
     grid-template-columns: minmax(0, 1fr);
     padding: 2px 4px;
     border-left-width: 3px;
@@ -1842,9 +1858,45 @@ body[data-role="member"] .detail-panel[data-panel="payment"] {
   .week-table .scope-badge,
   .week-table .status-badge,
   .week-table .lesson-badge,
-  .week-table .lesson-class-name,
-  .week-table .lesson-actions {
+  .week-table .lesson-class-name {
     display: none;
+  }
+
+  .week-table .lesson-actions {
+    position: absolute;
+    top: 3px;
+    right: 3px;
+    display: flex;
+    gap: 2px;
+    transform: none;
+  }
+
+  .week-table .lesson-attendance-state {
+    display: none;
+  }
+
+  .week-table .lesson-edit,
+  .week-table .lesson-remove {
+    display: grid;
+    place-items: center;
+    min-width: 22px;
+    width: 22px;
+    min-height: 20px;
+    height: 20px;
+    border: 1px solid #d8e7e3;
+    border-radius: 5px;
+    padding: 0;
+    background: rgba(255, 255, 255, 0.92);
+    color: var(--accent-dark);
+    font-size: 9px;
+    box-shadow: 0 1px 3px rgba(15, 23, 42, 0.08);
+  }
+
+  .week-table .lesson-remove {
+    border-color: #edd5d5;
+    color: var(--danger);
+    font-size: 14px;
+    line-height: 1;
   }
 
   .week-table .lesson-check {
