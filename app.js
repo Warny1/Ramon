@@ -201,6 +201,7 @@ const elements = {
   desktopNavButtons: document.querySelectorAll("[data-desktop-view]"),
   pageTitle: $("#pageTitle"),
   todayLabel: $("#todayLabel"),
+  mobileTodayLabel: $("#mobileTodayLabel"),
   todayClasses: $("#todayClasses"),
   monthlyRevenue: $("#monthlyRevenue"),
   monthlyPaymentList: $("#monthlyPaymentList"),
@@ -326,6 +327,9 @@ document.addEventListener("DOMContentLoaded", async () => {
   });
 
   elements.memberSearch.addEventListener("input", render);
+  elements.memberForm.querySelector('[name="defaultLessonType"]').addEventListener("change", applyMemberLessonTypeToInlinePayment);
+  elements.memberForm.querySelector('[name="paymentDiscountOption"]').addEventListener("change", applyMemberLessonTypeToInlinePayment);
+  elements.memberForm.querySelector('[name="withPayment"]').addEventListener("change", syncMemberPaymentFields);
   elements.scheduleMemberSearch.addEventListener("input", filterScheduleMemberOptions);
   elements.scheduleForm.querySelectorAll('[name="scheduleScope"]').forEach((input) => {
     input.addEventListener("change", syncScheduleScopeFields);
@@ -780,6 +784,7 @@ function renderSelectedAttendanceDate() {
   }).format(selectedDate);
 
   elements.todayLabel.textContent = fullLabel;
+  elements.mobileTodayLabel.textContent = fullLabel;
   elements.todayScheduleDate.textContent = new Intl.DateTimeFormat("ko-KR", {
     month: "long",
     day: "numeric",
@@ -804,12 +809,7 @@ function setDesktopView(view) {
   desktopView = ["operations", "schedule", "members", "payments"].includes(view) ? view : "operations";
   document.body.dataset.desktopView = desktopView;
   timetableView = desktopView === "schedule" ? "week" : "focus";
-  elements.pageTitle.textContent = {
-    operations: "RAMON",
-    schedule: "전체 시간표",
-    members: "회원 관리",
-    payments: "결제 관리",
-  }[desktopView];
+  elements.pageTitle.textContent = "RAMON";
 
   elements.desktopNavButtons.forEach((button) => button.classList.toggle("active", button.dataset.desktopView === desktopView));
   render();
@@ -898,8 +898,8 @@ function renderMemberList() {
   const query = elements.memberSearch.value.trim().toLowerCase();
   const showAllMembers = isMobileLayout() && mobileView === "members";
   const searchAllMembers = !isMobileLayout() && Boolean(query);
-  elements.sidebarTitle.textContent = showAllMembers ? "회원관리" : "오늘 수업";
-  elements.memberSearch.placeholder = showAllMembers || !isMobileLayout() ? "전체 회원 검색" : "오늘 수업 검색";
+  elements.sidebarTitle.textContent = showAllMembers ? "회원관리" : "Today";
+  elements.memberSearch.placeholder = showAllMembers || !isMobileLayout() ? "전체 회원 검색" : "Today 검색";
   elements.memberList.innerHTML = "";
 
   if (!showAllMembers && !searchAllMembers) {
@@ -1307,6 +1307,78 @@ function fillMemberLessonTypeOptions() {
   if (state.lessonTypes.some((lesson) => lesson.name === selectedValue)) {
     select.value = selectedValue;
   }
+
+  applyMemberLessonTypeToInlinePayment();
+}
+
+function getMemberPaymentFields() {
+  return elements.memberForm.querySelector(".member-payment-fields");
+}
+
+function getMemberPaymentDiscountSelect() {
+  return elements.memberForm.querySelector('[name="paymentDiscountOption"]');
+}
+
+function syncMemberPaymentFields() {
+  const isEditing = Boolean(elements.memberForm.dataset.editingMemberId);
+  const checkbox = elements.memberForm.querySelector('[name="withPayment"]');
+  const fields = getMemberPaymentFields();
+  if (!checkbox || !fields) return;
+
+  const enabled = checkbox.checked && !isEditing;
+  const lessonSelect = elements.memberForm.querySelector('[name="defaultLessonType"]');
+  fields.hidden = !enabled;
+  fields.querySelectorAll("input, select").forEach((field) => {
+    field.disabled = !enabled;
+  });
+  fields.querySelectorAll('[name="paymentDate"], [name="paymentSessions"], [name="paymentAmount"]').forEach((field) => {
+    field.required = enabled;
+  });
+  if (lessonSelect) lessonSelect.required = enabled;
+
+  if (!enabled) return;
+
+  const dateInput = elements.memberForm.querySelector('[name="paymentDate"]');
+  if (dateInput && !dateInput.value) dateInput.value = selectedAttendanceDate || todayISO;
+  applyMemberLessonTypeToInlinePayment();
+}
+
+function applyMemberLessonTypeToInlinePayment() {
+  const fields = getMemberPaymentFields();
+  if (!fields || fields.hidden) return;
+
+  const lessonType = elements.memberForm.querySelector('[name="defaultLessonType"]').value;
+  const selected = state.lessonTypes.find((lesson) => lesson.name === lessonType);
+  if (!selected) return;
+
+  elements.memberForm.querySelector('[name="paymentSessions"]').value = String(selected.sessions);
+  const adjustmentRate = Number(getMemberPaymentDiscountSelect().value || 0);
+  const amount = Number(selected.amount || 0) * (1 + adjustmentRate / 100);
+  elements.memberForm.querySelector('[name="paymentAmount"]').value = String(Math.round(amount));
+}
+
+function createInlineMemberPayment(form) {
+  if (elements.memberForm.dataset.editingMemberId || form.get("withPayment") !== "on") return null;
+
+  const lessonType = String(form.get("defaultLessonType") || "");
+  const selected = state.lessonTypes.find((lesson) => lesson.name === lessonType);
+  if (!selected) return null;
+
+  const discountSelect = getMemberPaymentDiscountSelect();
+  const adjustmentRate = Number(form.get("paymentDiscountOption") || 0);
+  const adjustmentMemo = discountSelect.selectedOptions[0]?.dataset.label || "";
+  const memo = String(form.get("paymentMemo") || "").trim();
+  return {
+    id: crypto.randomUUID(),
+    date: String(form.get("paymentDate") || selectedAttendanceDate || todayISO),
+    lessonType,
+    sessions: Number(form.get("paymentSessions") || selected.sessions),
+    amount: Number(form.get("paymentAmount") || selected.amount),
+    memo: [adjustmentMemo, memo].filter(Boolean).join(" · "),
+    paymentMethod: "",
+    discountRate: adjustmentRate < 0 ? Math.abs(adjustmentRate) : 0,
+    taxRate: adjustmentRate > 0 ? adjustmentRate : 0,
+  };
 }
 
 function fillScheduleLessonTypeOptions() {
@@ -1541,6 +1613,9 @@ function addMember(event) {
     attendances: [],
   };
 
+  const initialPayment = createInlineMemberPayment(form);
+  if (initialPayment) member.payments.push(initialPayment);
+
   state.members.unshift(member);
   selectedMemberId = member.id;
   if (isMobileLayout()) setMobileView("detail");
@@ -1555,6 +1630,7 @@ function prepareMemberModal() {
   delete elements.memberForm.dataset.editingMemberId;
   elements.memberForm.reset();
   fillMemberLessonTypeOptions();
+  syncMemberPaymentFields();
 }
 
 function openMemberModalForCreate() {
@@ -1575,6 +1651,7 @@ function openMemberModalForEdit() {
   elements.memberForm.querySelector('[name="phone"]').value = member.phone || "";
   elements.memberForm.querySelector('[name="memo"]').value = member.memo || "";
   elements.memberForm.querySelector('[name="defaultLessonType"]').value = member.defaultLessonType || "";
+  syncMemberPaymentFields();
   openModal(elements.memberModal);
 }
 

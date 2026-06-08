@@ -13,7 +13,10 @@
   <body>
     <header class="mobile-app-header">
       <span class="page-logo-placeholder" aria-label="로고 자리"></span>
-      <strong>RAMON</strong>
+      <span>
+        <strong>RAMON</strong>
+        <small id="mobileTodayLabel"></small>
+      </span>
     </header>
 
     <div class="app-shell">
@@ -22,7 +25,7 @@
           <div class="brand-mark">R</div>
           <div>
             <p class="eyebrow">Ramon Tennis</p>
-            <h1 id="sidebarTitle">오늘 수업</h1>
+            <h1 id="sidebarTitle">Today</h1>
           </div>
         </div>
 
@@ -54,8 +57,8 @@
           <div class="page-brand-lockup">
             <span class="page-logo-placeholder" aria-label="로고 자리"></span>
             <div>
-            <p class="eyebrow" id="todayLabel"></p>
-            <h2 id="pageTitle">RAMON</h2>
+              <p class="eyebrow" id="todayLabel"></p>
+              <h2 id="pageTitle">RAMON</h2>
             </div>
           </div>
           <div class="desktop-nav" role="tablist" aria-label="관리자 화면">
@@ -252,6 +255,42 @@
             <option value="">레슨 미지정</option>
           </select>
         </label>
+        <label class="inline-check">
+          <input name="withPayment" type="checkbox" />
+          <span>회원 추가와 동시에 결제도 등록</span>
+        </label>
+        <section class="member-payment-fields" hidden>
+          <div class="form-row">
+            <label>
+              결제 날짜
+              <input name="paymentDate" type="date" />
+            </label>
+            <label>
+              횟수
+              <input name="paymentSessions" type="number" min="0.5" step="0.5" />
+            </label>
+          </div>
+          <div class="form-row">
+            <label>
+              금액 조정
+              <select name="paymentDiscountOption">
+                <option value="0" data-label="">할인없음</option>
+                <option value="-5" data-label="5% 할인">5% 할인</option>
+                <option value="-10" data-label="10% 할인">10% 할인</option>
+                <option value="-20" data-label="20% 할인">20% 할인</option>
+                <option value="10" data-label="부가세 10% 추가">부가세 10% 추가</option>
+              </select>
+            </label>
+            <label>
+              결제 금액
+              <input name="paymentAmount" type="number" min="0" step="1000" />
+            </label>
+          </div>
+          <label>
+            결제 메모
+            <input name="paymentMemo" autocomplete="off" />
+          </label>
+        </section>
         <div class="modal-actions">
           <button class="secondary-button" value="cancel" type="button" data-close="memberModal">취소</button>
           <button class="primary-action" type="submit">저장</button>
