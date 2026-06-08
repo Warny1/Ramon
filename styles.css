@@ -488,7 +488,7 @@ h4 {
 .stat {
   display: flex;
   align-items: center;
-  justify-content: flex-start;
+  justify-content: center;
   gap: 12px;
   border: 1px solid var(--line);
   border-radius: 8px;
@@ -507,6 +507,11 @@ h4 {
 .stat strong {
   font-size: 22px;
   white-space: nowrap;
+}
+
+.ops-strip .stat {
+  justify-content: center;
+  min-height: 44px;
 }
 
 .workspace {
@@ -1143,9 +1148,10 @@ h4 {
 .day-panel-actions {
   display: flex;
   align-items: center;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   gap: 4px;
   justify-content: flex-end;
+  margin-left: auto;
 }
 
 .payment-month-controls {
