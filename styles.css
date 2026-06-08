@@ -1009,6 +1009,30 @@ h4 {
   font-weight: 700;
 }
 
+.lesson-member-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  min-width: 0;
+}
+
+.lesson-member-link {
+  min-height: 28px;
+  border: 1px solid #dce6e3;
+  border-radius: 999px;
+  background: #ffffff;
+  color: var(--accent-dark);
+  padding: 0 10px;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.lesson-member-link.active {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: #ffffff;
+}
+
 .member-meta-row strong {
   color: var(--ink);
   font-size: 13px;

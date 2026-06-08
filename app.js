@@ -186,6 +186,7 @@ const presetPaymentEntries = [
 
 let state = cloneData(seedData);
 let selectedMemberId = null;
+let selectedLessonMemberIds = [];
 let timetableView = "focus";
 let activeDetailPanel = "schedule";
 let mobileView = "today";
@@ -971,6 +972,7 @@ function renderMemberList() {
     `;
     button.addEventListener("click", () => {
       selectedMemberId = member.id;
+      selectedLessonMemberIds = [];
       if (isMobileLayout()) setMobileView("detail");
       render();
     });
@@ -1030,6 +1032,7 @@ function renderTodaySidebarList(query) {
 
     card.querySelector(".today-attendance-main").addEventListener("click", () => {
       selectedMemberId = primaryMember?.id ?? selectedMemberId;
+      selectedLessonMemberIds = entry.members.map((member) => member.id);
       if (isMobileLayout()) setMobileView("detail");
       render();
     });
@@ -1064,6 +1067,7 @@ function renderAllMembersOverview() {
     `;
     card.addEventListener("click", () => {
       selectedMemberId = member.id;
+      selectedLessonMemberIds = [];
       setDesktopView("operations");
     });
     elements.allMembersGrid.append(card);
@@ -1073,6 +1077,9 @@ function renderAllMembersOverview() {
 function renderDetail(member) {
   const balance = getBalance(member);
   const paidSessions = member.payments.reduce((sum, item) => sum + Number(item.sessions || 0), 0);
+  const lessonMembers = selectedLessonMemberIds
+    .map((id) => state.members.find((item) => item.id === id))
+    .filter(Boolean);
   if (!canManagePayments() && activeDetailPanel === "payment") activeDetailPanel = "schedule";
 
   elements.memberStatus.textContent = balance <= 2 ? "잔여 횟수 확인 필요" : "정상 이용";
@@ -1081,7 +1088,25 @@ function renderDetail(member) {
     <span class="member-meta-row"><small>연락처</small><strong>${escapeHTML(member.phone || "연락처 없음")}</strong></span>
     <span class="member-meta-row"><small>레슨</small><strong>${escapeHTML(member.defaultLessonType || "레슨 미지정")}</strong></span>
     <span class="member-meta-row"><small>이용 기록</small><strong>${canManagePayments() ? `결제 ${paidSessions}회 · ` : ""}출석 ${member.attendances.length}회</strong></span>
+    ${lessonMembers.length > 1 ? `
+      <span class="member-meta-row lesson-member-row">
+        <small>같은 수업</small>
+        <span class="lesson-member-links">
+          ${lessonMembers.map((item) => `
+            <button class="lesson-member-link ${item.id === member.id ? "active" : ""}" type="button" data-member-id="${item.id}">
+              ${escapeHTML(item.name)}
+            </button>
+          `).join("")}
+        </span>
+      </span>
+    ` : ""}
   `;
+  elements.memberMeta.querySelectorAll(".lesson-member-link").forEach((button) => {
+    button.addEventListener("click", () => {
+      selectedMemberId = button.dataset.memberId;
+      render();
+    });
+  });
   elements.memberBalance.textContent = String(balance);
   elements.memberBalance.parentElement.classList.remove("balance-good", "balance-mid", "balance-low");
   elements.memberBalance.parentElement.classList.add(getBalanceTone([balance]));
@@ -1597,6 +1622,7 @@ function renderTodaySchedule() {
     }
     card.querySelector(".today-card-main").addEventListener("click", () => {
       selectedMemberId = item.members[0]?.id ?? selectedMemberId;
+      selectedLessonMemberIds = item.members.map((member) => member.id);
       setMobileView("detail");
       render();
     });
@@ -2656,6 +2682,7 @@ function createLessonBlock(group) {
   `;
   mainButton.addEventListener("click", () => {
     selectedMemberId = group.members[0]?.id ?? selectedMemberId;
+    selectedLessonMemberIds = group.members.map((member) => member.id);
     render();
   });
   block.append(mainButton);
