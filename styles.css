@@ -215,7 +215,7 @@ h4 {
 
 .today-attendance-main {
   display: grid;
-  grid-template-columns: 92px minmax(100px, 1fr) 78px 42px;
+  grid-template-columns: 92px minmax(100px, 1fr) 52px;
   align-items: center;
   gap: 6px;
   min-width: 0;
@@ -258,7 +258,6 @@ h4 {
   color: var(--ink) !important;
 }
 
-.today-lesson-type,
 .today-lesson-balance {
   font-size: 11px !important;
 }
@@ -1806,11 +1805,7 @@ body[data-role="member"] .detail-panel[data-panel="payment"] {
   }
 
   .today-attendance-main {
-    grid-template-columns: 92px minmax(90px, 1fr) 42px;
-  }
-
-  .today-lesson-type {
-    display: none;
+    grid-template-columns: 92px minmax(90px, 1fr) 46px;
   }
 
   .stats-grid {
