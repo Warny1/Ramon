@@ -234,6 +234,11 @@ const elements = {
   todayDayButton: $("#todayDayButton"),
   nextDayButton: $("#nextDayButton"),
   attendanceDate: $("#attendanceDate"),
+  desktopScheduleDate: $("#desktopScheduleDate"),
+  desktopPreviousDayButton: $("#desktopPreviousDayButton"),
+  desktopTodayDayButton: $("#desktopTodayDayButton"),
+  desktopNextDayButton: $("#desktopNextDayButton"),
+  desktopAttendanceDate: $("#desktopAttendanceDate"),
   detailAttendanceDate: $("#detailAttendanceDate"),
   memberModal: $("#memberModal"),
   memberModalTitle: $("#memberModalTitle"),
@@ -268,6 +273,9 @@ document.addEventListener("DOMContentLoaded", async () => {
   elements.previousDayButton.addEventListener("click", () => moveSelectedAttendanceDate(-1));
   elements.todayDayButton.addEventListener("click", goToToday);
   elements.nextDayButton.addEventListener("click", () => moveSelectedAttendanceDate(1));
+  elements.desktopPreviousDayButton.addEventListener("click", () => moveSelectedAttendanceDate(-1));
+  elements.desktopTodayDayButton.addEventListener("click", goToToday);
+  elements.desktopNextDayButton.addEventListener("click", () => moveSelectedAttendanceDate(1));
   elements.previousPaymentMonth.addEventListener("click", () => moveSelectedPaymentMonth(-1));
   elements.nextPaymentMonth.addEventListener("click", () => moveSelectedPaymentMonth(1));
   $("#openPaymentModal").addEventListener("click", () => {
@@ -328,6 +336,10 @@ document.addEventListener("DOMContentLoaded", async () => {
   $("#importData").addEventListener("change", importData);
   elements.attendanceDate.addEventListener("change", () => {
     selectedAttendanceDate = elements.attendanceDate.value || todayISO;
+    render();
+  });
+  elements.desktopAttendanceDate.addEventListener("change", () => {
+    selectedAttendanceDate = elements.desktopAttendanceDate.value || todayISO;
     render();
   });
   elements.detailAttendanceDate.addEventListener("change", () => {
@@ -817,13 +829,18 @@ function renderSelectedAttendanceDate() {
 
   elements.todayLabel.textContent = fullLabel;
   elements.mobileTodayLabel.textContent = fullLabel;
-  elements.todayScheduleDate.textContent = new Intl.DateTimeFormat("ko-KR", {
+  const compactLabel = new Intl.DateTimeFormat("ko-KR", {
     month: "long",
     day: "numeric",
     weekday: "long",
   }).format(selectedDate);
+  elements.todayScheduleDate.textContent = compactLabel;
+  elements.desktopScheduleDate.textContent = compactLabel;
   if (elements.attendanceDate.value !== selectedAttendanceDate) {
     elements.attendanceDate.value = selectedAttendanceDate;
+  }
+  if (elements.desktopAttendanceDate.value !== selectedAttendanceDate) {
+    elements.desktopAttendanceDate.value = selectedAttendanceDate;
   }
   if (elements.detailAttendanceDate.value !== selectedAttendanceDate) {
     elements.detailAttendanceDate.value = selectedAttendanceDate;

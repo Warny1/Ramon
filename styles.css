@@ -535,6 +535,25 @@ h4 {
   margin-bottom: 12px;
 }
 
+.desktop-day-controls {
+  display: none;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+  min-width: 0;
+}
+
+.desktop-day-navigation {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.desktop-attendance-date-control {
+  margin: 0;
+  white-space: nowrap;
+}
+
 .view-toggle {
   display: grid;
   grid-template-columns: repeat(2, minmax(86px, 1fr));
@@ -1790,6 +1809,10 @@ body[data-role="member"] .detail-panel[data-panel="payment"] {
   body[data-desktop-view="operations"] .payment-overview-panel,
   body[data-desktop-view="operations"] .member-overview-panel {
     display: none;
+  }
+
+  body[data-desktop-view="operations"] .desktop-day-controls {
+    display: flex;
   }
 
   body[data-desktop-view="schedule"] .stats-grid,
