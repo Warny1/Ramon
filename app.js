@@ -253,6 +253,9 @@ const elements = {
   lessonSettingsModal: $("#lessonSettingsModal"),
   lessonSettingsForm: $("#lessonSettingsForm"),
   lessonSettingsList: $("#lessonSettingsList"),
+  availableTimeModal: $("#availableTimeModal"),
+  availableTimeModalTitle: $("#availableTimeModalTitle"),
+  availableTimeModalList: $("#availableTimeModalList"),
   scheduleModal: $("#scheduleModal"),
   scheduleModalTitle: $("#scheduleModalTitle"),
   scheduleForm: $("#scheduleForm"),
@@ -1102,7 +1105,7 @@ function renderTodaySidebarList(query) {
     card.innerHTML = `
       <button class="today-attendance-main" type="button">
         <span class="today-lesson-time">
-          <span>${escapeHTML(entry.timeLabel)}</span>
+          ${getSidebarTimeMarkup(entry.timeLabel)}
           ${getScheduleScopeBadge(entry)}
           ${entry.status === "보강" ? '<small class="today-lesson-status">보강</small>' : ""}
         </span>
@@ -1136,6 +1139,16 @@ function renderTodaySidebarList(query) {
     card.append(attendanceActions);
     elements.memberList.append(card);
   });
+}
+
+function getSidebarTimeMarkup(timeLabel) {
+  const [startTime, endTime] = String(timeLabel || "").split("-");
+  return `
+    <span class="today-time-range">
+      <span>${escapeHTML(startTime)}</span>
+      ${endTime ? `<span>${escapeHTML(endTime)}</span>` : ""}
+    </span>
+  `;
 }
 
 function renderAllMembersOverview() {
@@ -1421,25 +1434,47 @@ function createAvailableTimeStrip(times, day) {
   const strip = document.createElement("div");
   strip.className = "available-time-strip";
 
-  const label = document.createElement("span");
-  label.className = "available-time-label";
-  label.textContent = "빈 시간";
-  strip.append(label);
+  const button = document.createElement("button");
+  button.className = "available-time-trigger";
+  button.type = "button";
+  button.innerHTML = `
+    <span>＋ 빈 시간</span>
+    <small>${times.length}개</small>
+  `;
+  button.addEventListener("click", () => openAvailableTimeModal(times, day));
+  strip.append(button);
 
-  const list = document.createElement("div");
-  list.className = "available-time-list";
-  times.forEach((time) => {
-    const button = document.createElement("button");
-    button.className = "available-time-button";
-    button.type = "button";
-    button.textContent = time;
-    button.title = `${dayNames[day]}요일 ${time} 시간표 추가`;
-    button.addEventListener("click", () => openScheduleAt(day, time));
-    list.append(button);
-  });
-  strip.append(list);
+  const preview = document.createElement("span");
+  preview.className = "available-time-preview";
+  preview.textContent = times.length
+    ? `${times.slice(0, 4).join(" · ")}${times.length > 4 ? " 외" : ""}`
+    : "추가 가능한 시간이 없습니다.";
+  strip.append(preview);
 
   return strip;
+}
+
+function openAvailableTimeModal(times, day) {
+  elements.availableTimeModalTitle.textContent = `${dayNames[day]}요일 빈 시간`;
+  elements.availableTimeModalList.innerHTML = "";
+
+  if (!times.length) {
+    elements.availableTimeModalList.append(createEmptyLine("추가 가능한 시간이 없습니다."));
+  } else {
+    times.forEach((time) => {
+      const button = document.createElement("button");
+      button.className = "available-time-modal-button";
+      button.type = "button";
+      button.innerHTML = `<strong>${escapeHTML(time)}</strong><span>시간표 추가</span>`;
+      button.addEventListener("click", () => {
+        closeModal(elements.availableTimeModal);
+        openScheduleAt(day, time);
+      });
+      elements.availableTimeModalList.append(button);
+    });
+  }
+
+  openModal(elements.availableTimeModal);
 }
 
 function scrollTimetableToFirstLesson() {

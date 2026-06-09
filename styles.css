@@ -241,6 +241,23 @@ h4 {
   text-overflow: clip !important;
 }
 
+.today-time-range {
+  display: grid;
+  gap: 1px;
+  max-width: 100%;
+  white-space: normal;
+  line-height: 1.15;
+  font-variant-numeric: tabular-nums;
+}
+
+.today-time-range > span {
+  color: inherit !important;
+  font-size: inherit !important;
+  font-weight: inherit;
+  line-height: inherit;
+  white-space: nowrap;
+}
+
 .today-lesson-status {
   display: inline-flex;
   width: max-content;
@@ -580,7 +597,7 @@ h4 {
   align-items: center;
   gap: 4px;
   border-radius: 8px;
-  background: #f2f5fa;
+  background: transparent;
   padding: 4px;
 }
 
@@ -1242,9 +1259,9 @@ h4 {
   flex: 0 0 auto;
   min-width: 52px;
   height: 40px;
-  border: 1px solid #d7e0ec;
+  border: 1px solid transparent;
   border-radius: 8px;
-  background: #ffffff;
+  background: transparent;
   color: #315f9c;
   padding: 0 12px;
   font-size: 13px;
@@ -1272,6 +1289,11 @@ h4 {
   background: #dde9f7;
 }
 
+.day-today-button:not(:hover):not(:focus-visible) {
+  border-color: transparent;
+  background: transparent;
+}
+
 .timetable-title-copy .eyebrow:empty {
   display: none;
 }
@@ -1283,6 +1305,90 @@ h4 {
   border-bottom: 1px solid #e7ebef;
   background: #fafbfd;
   padding: 8px 10px;
+}
+
+.available-time-trigger {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 8px;
+  min-height: 34px;
+  border: 1px solid #d3deeb;
+  border-radius: 7px;
+  background: #edf3fa;
+  color: #315f9c;
+  padding: 0 10px;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.available-time-trigger small {
+  display: inline-grid;
+  place-items: center;
+  min-width: 27px;
+  height: 21px;
+  border-radius: 5px;
+  background: #ffffff;
+  color: #64758b;
+  padding: 0 5px;
+  font-size: 10px;
+  font-weight: 900;
+}
+
+.available-time-trigger:hover,
+.available-time-trigger:focus-visible {
+  border-color: #9eb7d3;
+  background: #e1ebf7;
+}
+
+.available-time-preview {
+  min-width: 0;
+  overflow: hidden;
+  color: #79838b;
+  font-size: 11px;
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.available-time-modal-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(92px, 1fr));
+  gap: 8px;
+  max-height: min(54vh, 430px);
+  overflow: auto;
+  padding: 2px;
+}
+
+.available-time-modal-button {
+  display: grid;
+  place-items: center;
+  gap: 3px;
+  min-height: 58px;
+  border: 1px solid #dce4ec;
+  border-radius: 8px;
+  background: #f8fafc;
+  color: var(--ink);
+  padding: 8px;
+}
+
+.available-time-modal-button strong {
+  font-size: 15px;
+  font-variant-numeric: tabular-nums;
+}
+
+.available-time-modal-button span {
+  flex: 0 0 auto;
+  color: #71808a;
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.available-time-modal-button:hover,
+.available-time-modal-button:focus-visible {
+  border-color: #9eb7d3;
+  background: #edf3fa;
+  color: #315f9c;
 }
 
 .available-time-label {
@@ -2091,16 +2197,19 @@ body[data-role="member"] .detail-panel[data-panel="payment"] {
   body[data-desktop-view="operations"] .focus-table .lesson-attendance-state {
     min-width: 42px;
     padding: 5px 6px;
-    background: #e9f0fb;
-    color: #315f9c;
+    border: 1px solid #efd48c;
+    background: #fff2c9;
+    color: #8a5b00;
   }
 
   body[data-desktop-view="operations"] .focus-table .lesson-attendance-state.present {
-    background: #315f9c;
+    border-color: #23715f;
+    background: #237b67;
     color: #ffffff;
   }
 
   body[data-desktop-view="operations"] .focus-table .lesson-attendance-state.absent {
+    border-color: #e8caca;
     background: #f8e7e7;
     color: #a23f3f;
   }
@@ -2529,11 +2638,10 @@ body[data-role="member"] .detail-panel[data-panel="payment"] {
     padding: 7px 8px;
   }
 
-  .available-time-button {
-    min-width: 50px;
+  .available-time-trigger {
     min-height: 32px;
-    padding: 0 6px;
-    font-size: 10px;
+    padding: 0 8px;
+    font-size: 11px;
   }
 
   .focus-table .schedule-cell {
@@ -3642,8 +3750,8 @@ select {
   }
 
   .focus-table .mobile-lesson-state.present {
-    background: var(--success-soft);
-    color: var(--success);
+    background: #237b67;
+    color: #ffffff;
   }
 
   .focus-table .mobile-lesson-state.absent {
@@ -3652,8 +3760,8 @@ select {
   }
 
   .focus-table .mobile-lesson-state.pending {
-    background: #eef0f1;
-    color: #737b80;
+    background: #fff2c9;
+    color: #8a5b00;
   }
 
   .focus-table .lesson-main strong {
@@ -3728,5 +3836,14 @@ select {
     border-radius: 14px 14px 0 0;
     max-height: calc(100dvh - 12px);
     overscroll-behavior: contain;
+  }
+
+  .available-time-modal-list {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    max-height: 58vh;
+  }
+
+  .available-time-modal-button {
+    min-height: 52px;
   }
 }

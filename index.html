@@ -430,6 +430,22 @@
       </form>
     </dialog>
 
+    <dialog id="availableTimeModal" class="modal">
+      <form method="dialog">
+        <div class="modal-head">
+          <div>
+            <p class="eyebrow">시간표 추가</p>
+            <h3 id="availableTimeModalTitle">빈 시간 선택</h3>
+          </div>
+          <button class="close-button" value="cancel" type="button" data-close="availableTimeModal">×</button>
+        </div>
+        <div id="availableTimeModalList" class="available-time-modal-list"></div>
+        <div class="modal-actions">
+          <button class="secondary-button" value="cancel" type="button" data-close="availableTimeModal">닫기</button>
+        </div>
+      </form>
+    </dialog>
+
     <dialog id="scheduleModal" class="modal">
       <form id="scheduleForm" method="dialog">
         <div class="modal-head">
