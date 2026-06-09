@@ -79,12 +79,6 @@
           </div>
         </header>
 
-        <section class="stats-grid ops-strip" aria-label="요약">
-          <article class="stat">
-            <strong id="todayClasses">0</strong>
-          </article>
-        </section>
-
         <section class="panel payment-overview-panel">
           <div class="section-title">
             <div>
@@ -113,16 +107,21 @@
 
         <section class="panel timetable-panel">
           <div class="timetable-head">
-            <div>
-              <p class="eyebrow" id="timetableRangeLabel"></p>
-              <h3>시간표</h3>
-            </div>
-            <div class="desktop-day-controls" aria-label="날짜별 시간표 이동">
+            <div class="timetable-title-cluster">
+              <article class="today-count-card" aria-label="오늘 회원 수">
+                <strong id="todayClasses">오늘 : 0명</strong>
+              </article>
+              <div class="timetable-title-copy">
+                <p class="eyebrow" id="timetableRangeLabel"></p>
+                <h3>시간표</h3>
+              </div>
               <div class="desktop-day-navigation">
                 <button id="desktopPreviousDayButton" class="day-nav-button" type="button" aria-label="전날 시간표">‹</button>
                 <button id="desktopTodayDayButton" class="day-today-button" type="button">오늘</button>
                 <button id="desktopNextDayButton" class="day-nav-button" type="button" aria-label="다음날 시간표">›</button>
               </div>
+            </div>
+            <div class="desktop-day-controls" aria-label="출석 날짜 선택">
               <label class="attendance-date-control desktop-attendance-date-control">
                 <span>출석 날짜</span>
                 <input id="desktopAttendanceDate" type="date" />

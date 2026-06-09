@@ -2811,7 +2811,7 @@ function createLessonBlock(group) {
     <span class="lesson-title-line">
       <span class="lesson-member-names">${escapeHTML(group.members.map((member) => member.name).join(", "))}</span>
     </span>
-    <strong>${getStatusBadge(group.status)}${getScheduleScopeBadge(group)}<span class="lesson-badge">${escapeHTML(compactLessonType(group.lessonType, group.groups?.length || 1))}</span><span class="lesson-class-name">${escapeHTML(group.className || "수업")}</span></strong>
+    <strong>${getStatusBadge(group.status)}${getScheduleScopeBadge(group)}<span class="lesson-badge">${escapeHTML(compactLessonType(group.lessonType, group.groups?.length || 1))}</span></strong>
   `;
   mainButton.addEventListener("click", () => {
     selectedMemberId = group.members[0]?.id ?? selectedMemberId;
