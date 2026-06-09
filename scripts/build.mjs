@@ -7,6 +7,7 @@ const requiredFiles = [
   "index.html",
   "styles.css",
   "supabase-config.js",
+  "sync-engine.js",
   "app.js",
   "attendance-data.js",
   "manifest.webmanifest",

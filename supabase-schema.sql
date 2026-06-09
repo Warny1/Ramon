@@ -28,3 +28,80 @@ on public.app_state
 for update
 using (true)
 with check (true);
+
+create table if not exists public.app_settings (
+  id text primary key,
+  data jsonb not null default '{}'::jsonb,
+  updated_at timestamptz not null default now()
+);
+
+create table if not exists public.members (
+  id text primary key,
+  data jsonb not null,
+  updated_at timestamptz not null default now()
+);
+
+create table if not exists public.schedules (
+  id text primary key,
+  member_id text not null,
+  data jsonb not null,
+  updated_at timestamptz not null default now()
+);
+
+create table if not exists public.payments (
+  id text primary key,
+  member_id text not null,
+  data jsonb not null,
+  updated_at timestamptz not null default now()
+);
+
+create table if not exists public.attendances (
+  id text primary key,
+  member_id text not null,
+  record_key text not null,
+  data jsonb not null,
+  updated_at timestamptz not null default now(),
+  unique (member_id, record_key)
+);
+
+create index if not exists schedules_member_id_idx on public.schedules (member_id);
+create index if not exists payments_member_id_idx on public.payments (member_id);
+create index if not exists attendances_member_id_idx on public.attendances (member_id);
+create index if not exists attendances_updated_at_idx on public.attendances (updated_at);
+
+alter table public.app_settings enable row level security;
+alter table public.members enable row level security;
+alter table public.schedules enable row level security;
+alter table public.payments enable row level security;
+alter table public.attendances enable row level security;
+
+do $$
+declare
+  table_name text;
+begin
+  foreach table_name in array array['app_settings', 'members', 'schedules', 'payments', 'attendances']
+  loop
+    execute format('drop policy if exists "Allow public read" on public.%I', table_name);
+    execute format('drop policy if exists "Allow public insert" on public.%I', table_name);
+    execute format('drop policy if exists "Allow public update" on public.%I', table_name);
+    execute format('drop policy if exists "Allow public delete" on public.%I', table_name);
+
+    execute format(
+      'create policy "Allow public read" on public.%I for select using (true)',
+      table_name
+    );
+    execute format(
+      'create policy "Allow public insert" on public.%I for insert with check (true)',
+      table_name
+    );
+    execute format(
+      'create policy "Allow public update" on public.%I for update using (true) with check (true)',
+      table_name
+    );
+    execute format(
+      'create policy "Allow public delete" on public.%I for delete using (true)',
+      table_name
+    );
+  end loop;
+end
+$$;

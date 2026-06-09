@@ -405,6 +405,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   document.body.dataset.desktopView = desktopView;
 
   render();
+  startSharedDataSync();
 });
 
 async function initializeData() {
@@ -414,6 +415,31 @@ async function initializeData() {
 
 async function loadData() {
   if (hasSupabaseConfig()) {
+    if (window.RamonSync) {
+      const normalized = await window.RamonSync.load();
+      if (normalized.status === "ready") {
+        return applyPresetTimetable({
+          ...normalized.data,
+          lessonTypes: Array.isArray(normalized.data.lessonTypes)
+            ? normalized.data.lessonTypes
+            : cloneData(defaultLessonTypes),
+        });
+      }
+
+      if (normalized.status === "empty") {
+        const legacyData = await loadSupabaseData();
+        const initialData = legacyData || loadLocalData();
+        await window.RamonSync.replaceAll(initialData);
+        return initialData;
+      }
+
+      if (normalized.status === "unavailable") {
+        alert("다중 기기 동기화 테이블이 아직 없습니다. Supabase에서 최신 supabase-schema.sql을 실행해 주세요.");
+      } else if (normalized.status === "failed") {
+        alert(`새 동기화 데이터를 불러오지 못했습니다.\n\n${normalized.error?.message || ""}`.trim());
+      }
+    }
+
     const remoteData = await loadSupabaseData();
     if (remoteData === false) return loadLocalData();
     if (remoteData) return remoteData;
@@ -688,11 +714,43 @@ function loadLegacySettings() {
 
 function saveData() {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-  if (hasSupabaseConfig() && canEditSharedData()) {
+  if (window.RamonSync?.isConfigured() && canEditSharedData()) {
+    window.RamonSync.queue(state);
+  } else if (hasSupabaseConfig() && canEditSharedData()) {
     saveSupabaseData(state).catch(() => {
       alert("Supabase 저장에 실패했습니다. 현재 브라우저 백업은 유지됩니다.");
     });
   }
+}
+
+function startSharedDataSync() {
+  if (!window.RamonSync?.isConfigured()) return;
+
+  let lastSyncAlertAt = 0;
+  window.addEventListener("ramon-sync-error", (event) => {
+    const now = Date.now();
+    if (now - lastSyncAlertAt < 10000) return;
+    lastSyncAlertAt = now;
+    alert(`다른 기기와 동기화하지 못했습니다. 이 기기의 변경 내용은 임시 저장되어 있습니다.\n\n${event.detail?.message || ""}`.trim());
+  });
+
+  window.RamonSync.start((remoteData) => {
+    const selectedId = selectedMemberId;
+    state = applyPresetTimetable({
+      ...remoteData,
+      lessonTypes: Array.isArray(remoteData.lessonTypes)
+        ? remoteData.lessonTypes
+        : cloneData(defaultLessonTypes),
+    });
+    deduplicateMemberData(state);
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    selectedMemberId = state.members.some((member) => member.id === selectedId)
+      ? selectedId
+      : state.members[0]?.id ?? null;
+    fillLessonTypeOptions();
+    fillScheduleLessonTypeOptions();
+    render();
+  });
 }
 
 function hasSupabaseConfig() {
@@ -1950,7 +2008,11 @@ function recordAttendance(member, className, time, status = "") {
   }
 
   member.attendances.push({
-    id: crypto.randomUUID(),
+    id: createAttendanceId(member.id, {
+      date: selectedAttendanceDate,
+      className,
+      time,
+    }),
     date: selectedAttendanceDate,
     className,
     time,
@@ -2115,7 +2177,14 @@ function exportData() {
 
 async function saveNow() {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-  if (hasSupabaseConfig()) {
+  if (window.RamonSync?.isConfigured()) {
+    try {
+      await window.RamonSync.flush(state);
+    } catch (error) {
+      alert(`Supabase 저장에 실패했습니다.\n\n${error.message || ""}`.trim());
+      return;
+    }
+  } else if (hasSupabaseConfig()) {
     try {
       await saveSupabaseData(state);
     } catch {
@@ -2248,7 +2317,7 @@ function importData(event) {
   if (!file) return;
 
   const reader = new FileReader();
-  reader.addEventListener("load", () => {
+  reader.addEventListener("load", async () => {
     try {
       const nextData = JSON.parse(String(reader.result));
       if (!Array.isArray(nextData.members)) throw new Error("Invalid data");
@@ -2261,8 +2330,12 @@ function importData(event) {
       fillLessonTypeOptions();
       fillScheduleLessonTypeOptions();
       commit();
+      if (window.RamonSync?.isConfigured()) {
+        await window.RamonSync.flush(state);
+      }
+      alert(`백업 데이터 이전이 완료되었습니다. 회원 ${state.members.length}명이 여러 기기에 공유됩니다.`);
     } catch {
-      alert("가져올 수 없는 파일입니다.");
+      alert("백업 데이터를 가져오거나 Supabase에 저장하지 못했습니다.");
     } finally {
       event.target.value = "";
     }
@@ -2445,7 +2518,11 @@ function importPastedAttendance() {
         ? getNextPastedAttendanceSchedule(member, date, pastedDay, pastedScheduleCursor)
         : null;
       const record = {
-        id: crypto.randomUUID(),
+        id: createAttendanceId(member.id, {
+          date,
+          className: className || schedule?.className || "수업",
+          time: time || schedule?.time || "",
+        }),
         date,
         className: className || schedule?.className || "수업",
         time: time || schedule?.time || "",
@@ -3031,6 +3108,16 @@ function cloneData(value) {
 
 function normalizePhone(value) {
   return String(value || "").replace(/\D/g, "");
+}
+
+function createAttendanceId(memberId, item) {
+  const source = `${memberId}|${getAttendanceRecordKey(item)}`;
+  let hash = 2166136261;
+  for (let index = 0; index < source.length; index += 1) {
+    hash ^= source.charCodeAt(index);
+    hash = Math.imul(hash, 16777619);
+  }
+  return `attendance-${(hash >>> 0).toString(16).padStart(8, "0")}`;
 }
 
 function normalizeHeader(value) {

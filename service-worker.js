@@ -1,9 +1,10 @@
-const CACHE_NAME = "member-desk-app-v71";
+const CACHE_NAME = "member-desk-app-v72";
 const APP_FILES = [
   "/",
   "/index.html",
   "/styles.css",
   "/supabase-config.js",
+  "/sync-engine.js",
   "/app.js",
   "/attendance-data.js",
   "/manifest.webmanifest",

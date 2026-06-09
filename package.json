@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "build": "node scripts/build.mjs",
+    "test": "node tests/sync-engine-conflict.test.mjs",
     "preview": "npm run build && serve dist -l 4173"
   },
   "devDependencies": {
