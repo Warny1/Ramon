@@ -1355,7 +1355,20 @@ function renderTimetable() {
   const isWeekTable = timetableView === "week" && !isMobileLayout();
   elements.timetableGrid.innerHTML = "";
   elements.timetableGrid.classList.toggle("week-view", isWeekTable);
-  elements.timetableRangeLabel.textContent = isMobileLayout() || desktopView === "operations" ? "오늘 하루" : "월-일 전체";
+  elements.timetableRangeLabel.textContent = isWeekTable ? "월-일 전체" : "";
+
+  if (!isWeekTable) {
+    const selectedDay = visibleDays[0];
+    const occupiedTimes = new Set(
+      groups
+        .filter((item) => Number(item.day) === selectedDay)
+        .map((item) => item.time),
+    );
+    elements.timetableGrid.append(createAvailableTimeStrip(
+      timetableTimes.filter((time) => !occupiedTimes.has(time)),
+      selectedDay,
+    ));
+  }
 
   const table = document.createElement("div");
   table.className = `schedule-table ${isWeekTable ? "week-table" : "focus-table"}`;
@@ -1366,7 +1379,13 @@ function renderTimetable() {
     table.append(createTableHeader(dayNames[day], day === getSelectedAttendanceDate().getDay(), day));
   });
 
-  timetableTimes.forEach((time) => {
+  const renderedTimes = isWeekTable
+    ? timetableTimes
+    : timetableTimes.filter((time) =>
+        groups.some((item) => item.time === time && Number(item.day) === visibleDays[0]),
+      );
+
+  renderedTimes.forEach((time) => {
     table.append(createTimeCell(time));
 
     visibleDays.forEach((day) => {
@@ -1398,13 +1417,35 @@ function renderTimetable() {
   scrollTimetableToFirstLesson();
 }
 
+function createAvailableTimeStrip(times, day) {
+  const strip = document.createElement("div");
+  strip.className = "available-time-strip";
+
+  const label = document.createElement("span");
+  label.className = "available-time-label";
+  label.textContent = "빈 시간";
+  strip.append(label);
+
+  const list = document.createElement("div");
+  list.className = "available-time-list";
+  times.forEach((time) => {
+    const button = document.createElement("button");
+    button.className = "available-time-button";
+    button.type = "button";
+    button.textContent = time;
+    button.title = `${dayNames[day]}요일 ${time} 시간표 추가`;
+    button.addEventListener("click", () => openScheduleAt(day, time));
+    list.append(button);
+  });
+  strip.append(list);
+
+  return strip;
+}
+
 function scrollTimetableToFirstLesson() {
   if (!isMobileLayout() || mobileView !== "timetable") return;
-  const firstLesson = elements.timetableGrid.querySelector('[data-has-lesson="true"]');
-  if (!firstLesson) return;
-
   requestAnimationFrame(() => {
-    elements.timetableGrid.scrollTop = Math.max(0, firstLesson.offsetTop - 150);
+    elements.timetableGrid.scrollTop = 0;
   });
 }
 

@@ -552,9 +552,9 @@ h4 {
   place-items: center;
   min-width: 116px;
   min-height: 52px;
-  border: 1px solid #dce7e4;
+  border: 1px solid #dbe6f2;
   border-radius: 8px;
-  background: #ffffff;
+  background: #eef5fb;
   padding: 8px 12px;
   box-shadow: 0 5px 16px rgba(26, 48, 43, 0.06);
 }
@@ -579,6 +579,9 @@ h4 {
   flex: 0 0 auto;
   align-items: center;
   gap: 4px;
+  border-radius: 8px;
+  background: #f2f5fa;
+  padding: 4px;
 }
 
 .desktop-attendance-date-control {
@@ -1226,10 +1229,10 @@ h4 {
   place-items: center;
   width: 34px;
   height: 40px;
-  border: 1px solid #dce6e3;
+  border: 1px solid #d7e0ec;
   border-radius: 8px;
-  background: #ffffff;
-  color: var(--accent-dark);
+  background: #eaf1fa;
+  color: #315f9c;
   font-size: 24px;
   font-weight: 900;
   line-height: 1;
@@ -1239,10 +1242,10 @@ h4 {
   flex: 0 0 auto;
   min-width: 52px;
   height: 40px;
-  border: 1px solid #dce6e3;
+  border: 1px solid #d7e0ec;
   border-radius: 8px;
   background: #ffffff;
-  color: var(--accent-dark);
+  color: #315f9c;
   padding: 0 12px;
   font-size: 13px;
   font-weight: 900;
@@ -1265,8 +1268,58 @@ h4 {
 .day-nav-button:focus-visible,
 .day-today-button:hover,
 .day-today-button:focus-visible {
-  border-color: #b9d1cb;
-  background: #edf5f2;
+  border-color: #b9cce4;
+  background: #dde9f7;
+}
+
+.timetable-title-copy .eyebrow:empty {
+  display: none;
+}
+
+.available-time-strip {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border-bottom: 1px solid #e7ebef;
+  background: #fafbfd;
+  padding: 8px 10px;
+}
+
+.available-time-label {
+  flex: 0 0 auto;
+  color: #79838b;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.available-time-list {
+  display: flex;
+  gap: 5px;
+  min-width: 0;
+  overflow-x: auto;
+  padding: 1px 0 3px;
+  scrollbar-width: thin;
+}
+
+.available-time-button {
+  flex: 0 0 auto;
+  min-width: 54px;
+  min-height: 30px;
+  border: 1px solid #dce4ec;
+  border-radius: 6px;
+  background: #ffffff;
+  color: #596871;
+  padding: 0 8px;
+  font-size: 11px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+.available-time-button:hover,
+.available-time-button:focus-visible {
+  border-color: #9eb7d3;
+  background: #eaf1fa;
+  color: #315f9c;
 }
 
 .stack-list,
@@ -1973,6 +2026,42 @@ body[data-role="member"] .detail-panel[data-panel="payment"] {
     padding: 3px;
   }
 
+  .today-attendance-card {
+    grid-template-columns: minmax(0, 1fr) 82px;
+    gap: 5px;
+    min-height: 50px;
+    padding: 4px;
+  }
+
+  .today-attendance-main {
+    grid-template-columns: 66px minmax(0, 1fr) 38px;
+    gap: 4px;
+    padding: 0 2px;
+  }
+
+  .today-lesson-time {
+    font-size: 11px !important;
+  }
+
+  .today-lesson-names {
+    font-size: 13px !important;
+  }
+
+  .today-lesson-balance {
+    font-size: 10px !important;
+  }
+
+  .sidebar-attendance-actions {
+    grid-template-columns: repeat(2, 39px);
+    gap: 4px;
+  }
+
+  .sidebar-attendance-actions .sidebar-attendance {
+    min-height: 36px;
+    padding: 0 3px;
+    font-size: 10px;
+  }
+
   body[data-desktop-view="operations"] .focus-table .lesson-block {
     grid-template-columns: minmax(0, 1fr) auto;
     gap: 5px;
@@ -2414,6 +2503,41 @@ body[data-role="member"] .detail-panel[data-panel="payment"] {
   .timetable-head {
     gap: 10px;
     margin-bottom: 10px;
+  }
+
+  .timetable-title-cluster {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .today-count-card {
+    min-width: 104px;
+    min-height: 44px;
+    padding: 6px 10px;
+  }
+
+  .today-count-card strong {
+    font-size: 15px;
+  }
+
+  .desktop-day-navigation {
+    padding: 3px;
+  }
+
+  .available-time-strip {
+    gap: 6px;
+    padding: 7px 8px;
+  }
+
+  .available-time-button {
+    min-width: 50px;
+    min-height: 32px;
+    padding: 0 6px;
+    font-size: 10px;
+  }
+
+  .focus-table .schedule-cell {
+    min-height: 46px;
   }
 
   .timetable-panel .view-toggle {
@@ -3475,10 +3599,10 @@ select {
   }
 
   .focus-table .lesson-block {
-    grid-template-columns: minmax(0, 1fr);
-    gap: 3px;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 4px;
     min-height: 0;
-    padding: 5px 6px;
+    padding: 4px 5px;
     overflow: hidden;
   }
 
@@ -3564,8 +3688,9 @@ select {
   .focus-table .lesson-actions {
     display: flex;
     align-items: center;
-    gap: 4px;
-    justify-content: flex-start;
+    align-self: center;
+    gap: 3px;
+    justify-content: flex-end;
   }
 
   .focus-table .lesson-actions .lesson-attendance-state {
@@ -3576,12 +3701,12 @@ select {
   .focus-table .lesson-remove {
     display: grid;
     place-items: center;
-    min-width: 36px;
-    min-height: 24px;
+    min-width: 32px;
+    min-height: 26px;
     border: 1px solid #dfe4e3;
     border-radius: 6px;
     background: #ffffff;
-    padding: 0 7px;
+    padding: 0 5px;
     text-align: center;
     font-size: 10px;
     font-weight: 800;
