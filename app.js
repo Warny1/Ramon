@@ -234,7 +234,6 @@ const elements = {
   todayDayButton: $("#todayDayButton"),
   nextDayButton: $("#nextDayButton"),
   attendanceDate: $("#attendanceDate"),
-  desktopScheduleDate: $("#desktopScheduleDate"),
   desktopPreviousDayButton: $("#desktopPreviousDayButton"),
   desktopTodayDayButton: $("#desktopTodayDayButton"),
   desktopNextDayButton: $("#desktopNextDayButton"),
@@ -893,7 +892,6 @@ function renderSelectedAttendanceDate() {
     weekday: "long",
   }).format(selectedDate);
   elements.todayScheduleDate.textContent = compactLabel;
-  elements.desktopScheduleDate.textContent = compactLabel;
   if (elements.attendanceDate.value !== selectedAttendanceDate) {
     elements.attendanceDate.value = selectedAttendanceDate;
   }
@@ -983,8 +981,11 @@ function isMobileLayout() {
 
 function renderStats() {
   const todayItems = getTodayItems();
+  const todayMemberCount = new Set(
+    todayItems.flatMap((item) => item.members.map((member) => member.id)),
+  ).size;
 
-  elements.todayClasses.textContent = `수업 : ${todayItems.length}개`;
+  elements.todayClasses.textContent = `오늘 : ${todayMemberCount}명`;
 }
 
 function renderPaymentOverview() {
@@ -2809,10 +2810,8 @@ function createLessonBlock(group) {
   mainButton.innerHTML = `
     <span class="lesson-title-line">
       <span class="lesson-member-names">${escapeHTML(group.members.map((member) => member.name).join(", "))}</span>
-      ${attendanceStatus ? `<span class="mobile-lesson-state ${getAttendanceStateClass(attendanceStatus)}">${escapeHTML(attendanceStatus)}</span>` : ""}
     </span>
     <strong>${getStatusBadge(group.status)}${getScheduleScopeBadge(group)}<span class="lesson-badge">${escapeHTML(compactLessonType(group.lessonType, group.groups?.length || 1))}</span><span class="lesson-class-name">${escapeHTML(group.className || "수업")}</span></strong>
-    <small>${group.members.length}명 · 잔여 ${escapeHTML(group.members.map((member) => `${member.name} ${getBalance(member)}회`).join(" / "))}</small>
   `;
   mainButton.addEventListener("click", () => {
     selectedMemberId = group.members[0]?.id ?? selectedMemberId;

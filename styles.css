@@ -2747,9 +2747,9 @@ select {
 }
 
 .sidebar-attendance.present {
-  background: #eef5f3;
-  border-color: #c7ddd7;
-  color: var(--accent-dark);
+  background: #eef4ff;
+  border-color: #c9d8f5;
+  color: #315f9c;
 }
 
 .sidebar-attendance.absent {
@@ -2759,8 +2759,8 @@ select {
 }
 
 .sidebar-attendance.selected {
-  background: var(--accent);
-  border-color: var(--accent);
+  background: #315f9c;
+  border-color: #315f9c;
   color: #ffffff;
   box-shadow: none;
 }
@@ -3263,9 +3263,9 @@ select {
   }
 
   .attendance-big.present {
-    border-color: #c7ddd7;
-    background: #eef5f3;
-    color: var(--accent-dark);
+    border-color: #c9d8f5;
+    background: #eef4ff;
+    color: #315f9c;
   }
 
   .attendance-big.absent {
@@ -3275,8 +3275,8 @@ select {
   }
 
   .attendance-big.selected {
-    border-color: var(--accent);
-    background: var(--accent);
+    border-color: #315f9c;
+    background: #315f9c;
     color: #ffffff;
     box-shadow: none;
     transform: none;
