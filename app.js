@@ -1019,13 +1019,14 @@ function renderStats() {
 
   const selectedDate = getSelectedAttendanceDate();
   const weekday = `${dayNames[selectedDate.getDay()]}요일`;
+  if (selectedAttendanceDate === todayISO) {
+    elements.todayClasses.textContent = `오늘 : ${todayMemberCount}명`;
+    return;
+  }
+
   const datePrefix = isMobileLayout()
-    ? selectedAttendanceDate === todayISO
-      ? `오늘(${dayNames[selectedDate.getDay()]})`
-      : `${formatShortTimetableDate(selectedDate)}(${dayNames[selectedDate.getDay()]})`
-    : selectedAttendanceDate === todayISO
-      ? `오늘 ${weekday}`
-      : `${formatShortTimetableDate(selectedDate)} ${weekday}`;
+    ? `${formatShortTimetableDate(selectedDate)}(${dayNames[selectedDate.getDay()]})`
+    : `${formatShortTimetableDate(selectedDate)} ${weekday}`;
   elements.todayClasses.textContent = `${datePrefix} · ${todayMemberCount}명`;
 }
 
