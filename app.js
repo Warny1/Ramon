@@ -1017,17 +1017,7 @@ function renderStats() {
     todayItems.flatMap((item) => item.members.map((member) => member.id)),
   ).size;
 
-  const selectedDate = getSelectedAttendanceDate();
-  const weekday = `${dayNames[selectedDate.getDay()]}요일`;
-  if (selectedAttendanceDate === todayISO) {
-    elements.todayClasses.textContent = `오늘 : ${todayMemberCount}명`;
-    return;
-  }
-
-  const datePrefix = isMobileLayout()
-    ? `${formatShortTimetableDate(selectedDate)}(${dayNames[selectedDate.getDay()]})`
-    : `${formatShortTimetableDate(selectedDate)} ${weekday}`;
-  elements.todayClasses.textContent = `${datePrefix} · ${todayMemberCount}명`;
+  elements.todayClasses.textContent = `오늘 : ${todayMemberCount}명`;
 }
 
 function renderPaymentOverview() {
