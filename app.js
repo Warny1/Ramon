@@ -1017,7 +1017,11 @@ function renderStats() {
     todayItems.flatMap((item) => item.members.map((member) => member.id)),
   ).size;
 
-  elements.todayClasses.textContent = `오늘 : ${todayMemberCount}명`;
+  const selectedDate = getSelectedAttendanceDate();
+  const label = selectedAttendanceDate === todayISO
+    ? "오늘"
+    : `${selectedDate.getMonth() + 1}/${selectedDate.getDate()}`;
+  elements.todayClasses.textContent = `${label} : ${todayMemberCount}명`;
 }
 
 function renderPaymentOverview() {
