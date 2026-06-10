@@ -1477,6 +1477,7 @@ function renderTimetable() {
         const groupDate = isWeekTable ? getDateForScheduleDay(day) : selectedAttendanceDate;
         const attendanceStatus = getCombinedAttendanceStatusForDate([group], groupDate);
         if (isWeekTable && attendanceStatus === "결석" && group.status !== "보강") {
+          cell.classList.add("planned-absence-cell");
           cell.append(createMakeupAvailability(day, time, groupDate));
         }
       });

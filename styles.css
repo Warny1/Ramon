@@ -3350,6 +3350,19 @@ select {
   border-color: #eceeef;
 }
 
+.week-table .schedule-cell.planned-absence-cell {
+  background: #fff0f0;
+}
+
+.week-table .schedule-cell.planned-absence-cell .lesson-block.planned-absence {
+  border-left-color: #b94a4a;
+  background: #fbe3e3;
+}
+
+.week-table .schedule-cell.planned-absence-cell .lesson-member-names {
+  color: #7f2929 !important;
+}
+
 .lesson-block {
   border: 0;
   border-left: 3px solid var(--accent);
