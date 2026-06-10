@@ -275,9 +275,9 @@ document.addEventListener("DOMContentLoaded", async () => {
   elements.previousDayButton.addEventListener("click", () => moveSelectedAttendanceDate(-1));
   elements.todayDayButton.addEventListener("click", goToToday);
   elements.nextDayButton.addEventListener("click", () => moveSelectedAttendanceDate(1));
-  elements.desktopPreviousDayButton.addEventListener("click", () => moveSelectedAttendanceDate(-1));
-  elements.desktopTodayDayButton.addEventListener("click", goToToday);
-  elements.desktopNextDayButton.addEventListener("click", () => moveSelectedAttendanceDate(1));
+  elements.desktopPreviousDayButton.addEventListener("click", () => moveDesktopTimetableDate(-1));
+  elements.desktopTodayDayButton.addEventListener("click", goToDesktopToday);
+  elements.desktopNextDayButton.addEventListener("click", () => moveDesktopTimetableDate(1));
   elements.previousPaymentMonth.addEventListener("click", () => moveSelectedPaymentMonth(-1));
   elements.nextPaymentMonth.addEventListener("click", () => moveSelectedPaymentMonth(1));
   $("#openPaymentModal").addEventListener("click", () => {
@@ -303,16 +303,6 @@ document.addEventListener("DOMContentLoaded", async () => {
   $("#mobileOpenMakeupSchedule").addEventListener("click", () => {
     openMakeupScheduleModal();
   });
-  function openMakeupScheduleModal() {
-    prepareScheduleModal("makeup");
-    elements.scheduleForm.date.value = selectedAttendanceDate;
-    elements.scheduleForm.time.value = roundToNextHalfHour();
-    elements.scheduleForm.querySelector('[name="className"]').value = "보강";
-    elements.scheduleForm.querySelector('[name="scheduleStatus"]').value = "보강";
-    setScheduleScope("once");
-    renderScheduleMemberOptions([]);
-    openModal(elements.scheduleModal);
-  }
   $("#openLessonSettings").addEventListener("click", () => {
     renderLessonSettings();
     openModal(elements.lessonSettingsModal);
@@ -941,6 +931,15 @@ function moveSelectedAttendanceDate(offsetDays) {
   render();
 }
 
+function moveDesktopTimetableDate(direction) {
+  moveSelectedAttendanceDate(desktopView === "schedule" ? direction * 7 : direction);
+}
+
+function goToDesktopToday() {
+  selectedAttendanceDate = todayISO;
+  render();
+}
+
 function moveSelectedPaymentMonth(offsetMonths) {
   const date = new Date(`${selectedPaymentMonth}-01T12:00:00`);
   date.setMonth(date.getMonth() + offsetMonths);
@@ -956,11 +955,41 @@ function formatPaymentMonth(monthKey) {
 }
 
 function getDateForScheduleDay(day) {
-  const selected = getSelectedAttendanceDate();
-  const diff = Number(day) - selected.getDay();
-  const date = new Date(selected);
-  date.setDate(selected.getDate() + diff);
+  const date = getWeekStartDate();
+  const dayIndex = timetableDays.indexOf(Number(day));
+  date.setDate(date.getDate() + Math.max(0, dayIndex));
   return toISODate(date);
+}
+
+function getWeekStartDate() {
+  const selected = getSelectedAttendanceDate();
+  const mondayOffset = (selected.getDay() + 6) % 7;
+  const monday = new Date(selected);
+  monday.setDate(selected.getDate() - mondayOffset);
+  return monday;
+}
+
+function getWeekEndDate() {
+  const sunday = getWeekStartDate();
+  sunday.setDate(sunday.getDate() + 6);
+  return sunday;
+}
+
+function isDateInSelectedWeek(dateValue) {
+  if (!dateValue) return false;
+  const date = new Date(`${dateValue}T12:00:00`);
+  return date >= getWeekStartDate() && date <= getWeekEndDate();
+}
+
+function formatShortTimetableDate(date) {
+  return new Intl.DateTimeFormat("ko-KR", {
+    month: "numeric",
+    day: "numeric",
+  }).format(date);
+}
+
+function formatWeekRange() {
+  return `${formatShortTimetableDate(getWeekStartDate())} - ${formatShortTimetableDate(getWeekEndDate())}`;
 }
 
 function renderMobileNav() {
@@ -988,7 +1017,16 @@ function renderStats() {
     todayItems.flatMap((item) => item.members.map((member) => member.id)),
   ).size;
 
-  elements.todayClasses.textContent = `오늘 : ${todayMemberCount}명`;
+  const selectedDate = getSelectedAttendanceDate();
+  const weekday = `${dayNames[selectedDate.getDay()]}요일`;
+  const datePrefix = isMobileLayout()
+    ? selectedAttendanceDate === todayISO
+      ? `오늘(${dayNames[selectedDate.getDay()]})`
+      : `${formatShortTimetableDate(selectedDate)}(${dayNames[selectedDate.getDay()]})`
+    : selectedAttendanceDate === todayISO
+      ? `오늘 ${weekday}`
+      : `${formatShortTimetableDate(selectedDate)} ${weekday}`;
+  elements.todayClasses.textContent = `${datePrefix} · ${todayMemberCount}명`;
 }
 
 function renderPaymentOverview() {
@@ -1368,7 +1406,17 @@ function renderTimetable() {
   const isWeekTable = timetableView === "week" && !isMobileLayout();
   elements.timetableGrid.innerHTML = "";
   elements.timetableGrid.classList.toggle("week-view", isWeekTable);
-  elements.timetableRangeLabel.textContent = isWeekTable ? "월-일 전체" : "";
+  elements.desktopPreviousDayButton.setAttribute("aria-label", isWeekTable ? "이전 주 시간표" : "전날 시간표");
+  elements.desktopNextDayButton.setAttribute("aria-label", isWeekTable ? "다음 주 시간표" : "다음날 시간표");
+  elements.desktopPreviousDayButton.title = isWeekTable ? "이전 주" : "전날";
+  elements.desktopNextDayButton.title = isWeekTable ? "다음 주" : "다음날";
+  elements.timetableRangeLabel.textContent = isWeekTable
+    ? formatWeekRange()
+    : new Intl.DateTimeFormat("ko-KR", {
+        month: "long",
+        day: "numeric",
+        weekday: "long",
+      }).format(getSelectedAttendanceDate());
 
   if (!isWeekTable) {
     const selectedDay = visibleDays[0];
@@ -1389,7 +1437,13 @@ function renderTimetable() {
 
   table.append(createTableHeader("시간"));
   visibleDays.forEach((day) => {
-    table.append(createTableHeader(dayNames[day], day === getSelectedAttendanceDate().getDay(), day));
+    const date = new Date(`${getDateForScheduleDay(day)}T12:00:00`);
+    table.append(createTableHeader(
+      dayNames[day],
+      day === getSelectedAttendanceDate().getDay(),
+      day,
+      isWeekTable ? formatShortTimetableDate(date) : "",
+    ));
   });
 
   const renderedTimes = isWeekTable
@@ -1420,6 +1474,11 @@ function renderTimetable() {
       matches.forEach((group) => {
         cell.dataset.hasLesson = "true";
         cell.append(createLessonBlock(group));
+        const groupDate = isWeekTable ? getDateForScheduleDay(day) : selectedAttendanceDate;
+        const attendanceStatus = getCombinedAttendanceStatusForDate([group], groupDate);
+        if (isWeekTable && attendanceStatus === "결석" && group.status !== "보강") {
+          cell.append(createMakeupAvailability(day, time, groupDate));
+        }
       });
 
       table.append(cell);
@@ -1475,6 +1534,27 @@ function openAvailableTimeModal(times, day) {
   }
 
   openModal(elements.availableTimeModal);
+}
+
+function openMakeupScheduleModal({ date = selectedAttendanceDate, time = roundToNextHalfHour() } = {}) {
+  prepareScheduleModal("makeup");
+  elements.scheduleForm.date.value = date;
+  elements.scheduleForm.time.value = time;
+  elements.scheduleForm.querySelector('[name="className"]').value = "보강";
+  elements.scheduleForm.querySelector('[name="scheduleStatus"]').value = "보강";
+  setScheduleScope("once");
+  renderScheduleMemberOptions([]);
+  openModal(elements.scheduleModal);
+}
+
+function createMakeupAvailability(day, time, date) {
+  const button = document.createElement("button");
+  button.className = "makeup-availability";
+  button.type = "button";
+  button.innerHTML = `<span>빈 자리</span><strong>＋ 보강 추가</strong>`;
+  button.title = `${dayNames[day]}요일 ${time} 보강 수업 추가`;
+  button.addEventListener("click", () => openMakeupScheduleModal({ date, time }));
+  return button;
 }
 
 function scrollTimetableToFirstLesson() {
@@ -2071,10 +2151,14 @@ function markGroupAttendance(group) {
 }
 
 function recordAttendance(member, className, time, status = "") {
+  recordAttendanceForDate(member, className, time, status, selectedAttendanceDate);
+}
+
+function recordAttendanceForDate(member, className, time, status = "", date = selectedAttendanceDate) {
   const normalizedStatus = normalizeAttendanceStatus(status);
   const existing = member.attendances.find(
     (item) =>
-      item.date === selectedAttendanceDate &&
+      item.date === date &&
       (item.className || "출석") === className &&
       (item.time || "") === (time || ""),
   );
@@ -2086,11 +2170,11 @@ function recordAttendance(member, className, time, status = "") {
 
   member.attendances.push({
     id: createAttendanceId(member.id, {
-      date: selectedAttendanceDate,
+      date,
       className,
       time,
     }),
-    date: selectedAttendanceDate,
+    date,
     className,
     time,
     status: normalizedStatus,
@@ -2799,21 +2883,29 @@ function getCombinedAttendanceState(groups) {
 }
 
 function markCombinedAttendance(groups, status = "출석") {
+  markCombinedAttendanceForDate(groups, status, selectedAttendanceDate);
+}
+
+function markCombinedAttendanceForDate(groups, status, date) {
   if (!canEditSharedData()) return;
   groups.forEach((group) => {
     group.members.forEach((member) => {
-      recordAttendance(member, group.className || "출석", group.time, status);
+      recordAttendanceForDate(member, group.className || "출석", group.time, status, date);
     });
   });
   commit();
 }
 
 function getCombinedAttendanceStatus(groups) {
+  return getCombinedAttendanceStatusForDate(groups, selectedAttendanceDate);
+}
+
+function getCombinedAttendanceStatusForDate(groups, date) {
   const statuses = groups.flatMap((group) =>
     group.members.map((member) => {
       const record = member.attendances.find(
         (item) =>
-          item.date === selectedAttendanceDate &&
+          item.date === date &&
           (item.className || "출석") === (group.className || "출석") &&
           (item.time || "") === (group.time || ""),
       );
@@ -2822,6 +2914,23 @@ function getCombinedAttendanceStatus(groups) {
   );
 
   return statuses.length && statuses.every((status) => status && status === statuses[0]) ? statuses[0] : "";
+}
+
+function clearCombinedAttendanceForDate(groups, date) {
+  if (!canEditSharedData()) return;
+  groups.forEach((group) => {
+    group.members.forEach((member) => {
+      member.attendances = member.attendances.filter(
+        (item) =>
+          !(
+            item.date === date &&
+            (item.className || "출석") === (group.className || "출석") &&
+            (item.time || "") === (group.time || "")
+          ),
+      );
+    });
+  });
+  commit();
 }
 
 function getTodayEntries() {
@@ -2840,7 +2949,12 @@ function getTodayEntries() {
 function getScheduleItems() {
   return getAccessibleMembers().flatMap((member) =>
     member.schedules
-      .filter((item) => !item.date || item.date === selectedAttendanceDate)
+      .filter((item) =>
+        !item.date ||
+        (timetableView === "week" && !isMobileLayout()
+          ? isDateInSelectedWeek(item.date)
+          : item.date === selectedAttendanceDate),
+      )
       .map((item) => ({ ...item, member })),
   );
 }
@@ -2876,8 +2990,14 @@ function getScheduleGroups() {
 function createLessonBlock(group) {
   const block = document.createElement("div");
   block.className = "lesson-block";
-  const showAttendanceState = Number(group.day) === getSelectedAttendanceDate().getDay();
-  const attendanceStatus = showAttendanceState ? getCombinedAttendanceStatus(group.groups?.length ? group.groups : [group]) : "";
+  const isWeekTable = timetableView === "week" && !isMobileLayout();
+  const attendanceDate = isWeekTable ? getDateForScheduleDay(group.day) : selectedAttendanceDate;
+  const showAttendanceState = isWeekTable || Number(group.day) === getSelectedAttendanceDate().getDay();
+  const attendanceGroups = group.groups?.length ? group.groups : [group];
+  const attendanceStatus = showAttendanceState
+    ? getCombinedAttendanceStatusForDate(attendanceGroups, attendanceDate)
+    : "";
+  block.classList.toggle("planned-absence", attendanceStatus === "결석");
 
   const mainButton = document.createElement("button");
   mainButton.className = "lesson-main";
@@ -2904,6 +3024,23 @@ function createLessonBlock(group) {
     statusLabel.className = `lesson-attendance-state ${getAttendanceStateClass(attendanceStatus)}`;
     statusLabel.textContent = attendanceStatus || "미처리";
     actions.append(statusLabel);
+  }
+
+  if (isWeekTable && group.status !== "보강" && canEditSharedData()) {
+    const absenceButton = document.createElement("button");
+    const isAbsent = attendanceStatus === "결석";
+    absenceButton.className = `lesson-absence-plan ${isAbsent ? "selected" : ""}`;
+    absenceButton.type = "button";
+    absenceButton.textContent = isAbsent ? "결석 취소" : "결석 예정";
+    absenceButton.title = `${formatDate(attendanceDate)} ${group.time} ${isAbsent ? "결석 예정 취소" : "미리 결석 처리"}`;
+    absenceButton.addEventListener("click", () => {
+      if (isAbsent) {
+        clearCombinedAttendanceForDate(attendanceGroups, attendanceDate);
+      } else {
+        markCombinedAttendanceForDate(attendanceGroups, "결석", attendanceDate);
+      }
+    });
+    actions.append(absenceButton);
   }
 
   if (canManageSettings()) {
@@ -3091,18 +3228,18 @@ function createEmptyLine(text) {
   return line;
 }
 
-function createTableHeader(text, isToday = false, day = null) {
+function createTableHeader(text, isToday = false, day = null, dateText = "") {
   const cell = document.createElement("div");
   cell.className = `schedule-head ${isToday ? "today-head" : ""}`;
   if (day === null || isMobileLayout()) {
-    cell.textContent = text;
+    cell.innerHTML = `<strong>${escapeHTML(text)}</strong>${dateText ? `<small>${escapeHTML(dateText)}</small>` : ""}`;
     return cell;
   }
 
   const button = document.createElement("button");
   button.className = "schedule-head-button";
   button.type = "button";
-  button.textContent = text;
+  button.innerHTML = `<strong>${escapeHTML(text)}</strong>${dateText ? `<small>${escapeHTML(dateText)}</small>` : ""}`;
   button.title = `${text}요일 운영 화면으로 이동`;
   button.addEventListener("click", () => goToScheduleDay(day));
   cell.append(button);

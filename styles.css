@@ -34,6 +34,10 @@ body {
   color: var(--ink);
 }
 
+html {
+  scrollbar-gutter: stable;
+}
+
 button,
 input,
 textarea,
@@ -190,6 +194,7 @@ h4 {
   flex-direction: column;
   gap: 8px;
   overflow: auto;
+  scrollbar-gutter: stable;
   padding-right: 2px;
 }
 
@@ -567,7 +572,7 @@ h4 {
 .today-count-card {
   display: grid;
   place-items: center;
-  min-width: 116px;
+  min-width: 156px;
   min-height: 52px;
   border: 1px solid #dbe6f2;
   border-radius: 8px;
@@ -644,6 +649,7 @@ h4 {
 .timetable-grid {
   max-height: calc(100vh - 270px);
   overflow: auto;
+  scrollbar-gutter: stable;
   border: 1px solid var(--line);
   border-radius: 8px;
   background: white;
@@ -654,11 +660,12 @@ h4 {
   grid-template-columns: 62px repeat(var(--day-count), minmax(210px, 1fr));
   min-width: 760px;
   background: white;
+  padding-bottom: 10px;
 }
 
 .week-table {
-  grid-template-columns: 54px repeat(var(--day-count), minmax(124px, 1fr));
-  min-width: 930px;
+  grid-template-columns: 54px repeat(var(--day-count), minmax(146px, 1fr));
+  min-width: 1080px;
 }
 
 .schedule-head,
@@ -687,6 +694,9 @@ h4 {
 }
 
 .schedule-head-button {
+  display: grid;
+  place-content: center;
+  gap: 1px;
   width: 100%;
   height: 100%;
   min-height: 42px;
@@ -694,6 +704,23 @@ h4 {
   background: transparent;
   color: inherit;
   font-weight: 900;
+}
+
+.schedule-head strong {
+  color: inherit;
+  font-size: inherit;
+  line-height: 1.1;
+}
+
+.schedule-head small {
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 800;
+  line-height: 1.1;
+}
+
+.schedule-head.today-head small {
+  color: var(--accent-dark);
 }
 
 .schedule-head-button:hover,
@@ -934,6 +961,61 @@ h4 {
   color: #737b80;
 }
 
+.lesson-absence-plan {
+  min-height: 24px;
+  border: 1px solid #ead8ab;
+  border-radius: 6px;
+  background: #fff9e9;
+  color: #8a5b00;
+  padding: 0 7px;
+  font-size: 10px;
+  font-weight: 900;
+  white-space: nowrap;
+}
+
+.lesson-absence-plan.selected {
+  border-color: #e2b9b9;
+  background: #fbeaea;
+  color: #a23f3f;
+}
+
+.lesson-block.planned-absence {
+  border-left-color: #c76b6b;
+  background: #fff5f5;
+}
+
+.makeup-availability {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 5px;
+  width: 100%;
+  min-height: 30px;
+  border: 1px dashed #c8a95a;
+  border-radius: 6px;
+  background: #fffaf0;
+  color: #7a5a11;
+  padding: 4px 7px;
+  text-align: left;
+}
+
+.makeup-availability span {
+  font-size: 9px;
+  font-weight: 800;
+}
+
+.makeup-availability strong {
+  font-size: 10px;
+  font-weight: 900;
+  white-space: nowrap;
+}
+
+.makeup-availability:hover,
+.makeup-availability:focus-visible {
+  border-color: #9a7722;
+  background: #fff3cf;
+}
+
 .lesson-remove {
   min-width: 44px;
   border: 0;
@@ -997,6 +1079,7 @@ h4 {
   grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
   gap: 8px;
   overflow: auto;
+  scrollbar-gutter: stable;
 }
 
 .directory-member {
@@ -1072,6 +1155,12 @@ h4 {
   margin-bottom: 14px;
 }
 
+.detail-head > div:first-child,
+.member-meta-row,
+.member-meta-row strong {
+  min-width: 0;
+}
+
 .muted {
   color: var(--muted);
 }
@@ -1124,6 +1213,7 @@ h4 {
   font-size: 13px;
   font-weight: 700;
   line-height: 1.4;
+  overflow-wrap: anywhere;
 }
 
 .lesson-warning {
@@ -1357,6 +1447,7 @@ h4 {
   gap: 8px;
   max-height: min(54vh, 430px);
   overflow: auto;
+  scrollbar-gutter: stable;
   padding: 2px;
 }
 
@@ -1662,6 +1753,7 @@ h4 {
   z-index: 10;
   max-height: calc(100dvh - 24px);
   overflow: auto;
+  scrollbar-gutter: stable;
 }
 
 .wide-modal {
@@ -1806,6 +1898,7 @@ label {
   gap: 8px;
   max-height: 180px;
   overflow: auto;
+  scrollbar-gutter: stable;
 }
 
 .member-option {
@@ -1921,6 +2014,7 @@ select:focus {
   gap: 8px;
   max-height: 440px;
   overflow: auto;
+  scrollbar-gutter: stable;
   padding-right: 2px;
 }
 
@@ -1993,7 +2087,7 @@ body[data-role="member"] .detail-panel[data-panel="payment"] {
 
   .main {
     display: grid;
-    grid-template-columns: minmax(500px, 1fr) minmax(340px, 380px);
+    grid-template-columns: minmax(0, 1fr) minmax(320px, 360px);
     grid-template-rows: auto minmax(0, 1fr);
     gap: 12px;
     height: 100vh;
@@ -2010,6 +2104,10 @@ body[data-role="member"] .detail-panel[data-panel="payment"] {
   }
 
   body[data-desktop-view="operations"] .desktop-day-controls {
+    display: flex;
+  }
+
+  body[data-desktop-view="schedule"] .desktop-day-controls {
     display: flex;
   }
 
@@ -2063,6 +2161,7 @@ body[data-role="member"] .detail-panel[data-panel="payment"] {
     grid-row: 2 / 4;
     max-height: none;
     overflow: auto;
+    scrollbar-gutter: stable;
   }
 
   body[data-desktop-view="payments"] .payment-overview-panel .table-like {
@@ -2104,6 +2203,7 @@ body[data-role="member"] .detail-panel[data-panel="payment"] {
     flex: 1 1 auto;
     min-height: 0;
     overflow: auto;
+    scrollbar-gutter: stable;
   }
 
   .day-panel {
@@ -2113,12 +2213,14 @@ body[data-role="member"] .detail-panel[data-panel="payment"] {
   .today-schedule {
     max-height: 200px;
     overflow: auto;
+    scrollbar-gutter: stable;
     padding-right: 2px;
   }
 
   .payment-overview-panel .table-like {
     max-height: 132px;
     overflow: auto;
+    scrollbar-gutter: stable;
     padding-right: 2px;
   }
 
@@ -2244,13 +2346,14 @@ body[data-role="member"] .detail-panel[data-panel="payment"] {
   }
 
   body[data-desktop-view="schedule"] .timetable-grid {
-    height: calc(100vh - 116px);
+    height: calc(100vh - 132px);
   }
 
   .week-table .lesson-block {
-    position: relative;
     grid-template-columns: minmax(0, 1fr);
-    padding: 2px 4px;
+    gap: 3px;
+    min-height: 54px;
+    padding: 4px;
     border-left-width: 3px;
   }
 
@@ -2258,8 +2361,8 @@ body[data-role="member"] .detail-panel[data-panel="payment"] {
     display: grid;
     grid-template-columns: minmax(0, 1fr);
     align-items: center;
-    min-height: 30px;
-    padding: 3px 4px;
+    min-height: 24px;
+    padding: 2px 3px;
   }
 
   .week-table .lesson-member-names {
@@ -2287,10 +2390,11 @@ body[data-role="member"] .detail-panel[data-panel="payment"] {
   }
 
   .week-table .lesson-actions {
-    position: absolute;
-    top: 3px;
-    right: 3px;
     display: flex;
+    position: static;
+    align-items: center;
+    justify-content: flex-end;
+    flex-wrap: wrap;
     gap: 2px;
     transform: none;
   }
@@ -2303,8 +2407,8 @@ body[data-role="member"] .detail-panel[data-panel="payment"] {
   .week-table .lesson-remove {
     display: grid;
     place-items: center;
-    min-width: 22px;
-    width: 22px;
+    min-width: 34px;
+    width: auto;
     min-height: 20px;
     height: 20px;
     border: 1px solid #d8e7e3;
@@ -2317,6 +2421,8 @@ body[data-role="member"] .detail-panel[data-panel="payment"] {
   }
 
   .week-table .lesson-remove {
+    min-width: 22px;
+    width: 22px;
     border-color: #edd5d5;
     color: var(--danger);
     font-size: 14px;
@@ -2324,6 +2430,22 @@ body[data-role="member"] .detail-panel[data-panel="payment"] {
   }
 
   .week-table .lesson-check {
+    display: none;
+  }
+
+  .week-table .lesson-absence-plan {
+    min-width: 54px;
+    min-height: 20px;
+    padding: 0 5px;
+    font-size: 9px;
+  }
+
+  .week-table .makeup-availability {
+    min-height: 28px;
+    padding: 3px 5px;
+  }
+
+  .week-table .makeup-availability span {
     display: none;
   }
 
