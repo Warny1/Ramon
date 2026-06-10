@@ -2311,9 +2311,9 @@ body[data-role="member"] .detail-panel[data-panel="payment"] {
   }
 
   body[data-desktop-view="operations"] .focus-table .lesson-attendance-state.absent {
-    border-color: #e8caca;
-    background: #f8e7e7;
-    color: #a23f3f;
+    border-color: #a83f3f;
+    background: #b94a4a;
+    color: #ffffff;
   }
 
   body[data-desktop-view="operations"] .focus-table .lesson-edit,
