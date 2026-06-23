@@ -403,7 +403,8 @@ h4 {
 .topbar {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-start;
+  flex-wrap: wrap;
   gap: 16px;
   margin-bottom: 14px;
 }
@@ -440,6 +441,7 @@ h4 {
   flex-wrap: wrap;
   justify-content: flex-end;
   gap: 6px;
+  margin-left: auto;
 }
 
 .desktop-nav {
@@ -610,29 +612,35 @@ h4 {
 .schedule-board-switcher {
   display: flex;
   align-items: center;
-  gap: 3px;
-  border: 1px solid var(--line);
-  border-radius: 8px;
-  background: var(--row-soft);
-  padding: 3px;
+  gap: 4px;
+  border: 1px solid #cddfda;
+  border-radius: 999px;
+  background: #edf5f2;
+  padding: 4px;
+}
+
+.topbar-schedule-board-switcher {
+  flex: 0 0 auto;
 }
 
 .schedule-board-button {
   border: 0;
-  border-radius: 6px;
-  min-height: 34px;
+  border-radius: 999px;
+  min-height: 36px;
   background: transparent;
-  color: var(--muted);
-  padding: 0 12px;
+  color: #5f6c76;
+  padding: 0 14px;
   font-size: 12px;
   font-weight: 900;
   white-space: nowrap;
+  transition: background 0.15s ease, color 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease;
 }
 
 .schedule-board-button.active {
-  background: white;
-  color: var(--accent-dark);
-  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.1);
+  background: #1f6f68;
+  color: white;
+  box-shadow: 0 8px 18px rgba(31, 111, 104, 0.24);
+  transform: translateY(-1px);
 }
 
 .desktop-day-navigation {
