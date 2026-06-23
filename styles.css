@@ -71,6 +71,10 @@ button {
   gap: 12px;
 }
 
+.brand > div:nth-child(2) {
+  flex: 0 0 auto;
+}
+
 .brand-mark {
   display: grid;
   place-items: center;
@@ -620,7 +624,12 @@ h4 {
 }
 
 .topbar-schedule-board-switcher {
+  display: none;
   flex: 0 0 auto;
+}
+
+.sidebar-schedule-board-switcher {
+  margin-left: auto;
 }
 
 .schedule-board-button {
@@ -2190,6 +2199,10 @@ body[data-role="member"] .detail-panel[data-panel="payment"] {
   }
 
   body[data-desktop-view="schedule"] .desktop-day-controls {
+    display: flex;
+  }
+
+  body[data-desktop-view="schedule"] .topbar-schedule-board-switcher {
     display: flex;
   }
 
