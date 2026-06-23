@@ -2034,6 +2034,37 @@ select:focus {
   line-height: 1.5;
 }
 
+.board-settings-section {
+  display: grid;
+  gap: 12px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--row-soft);
+  padding: 14px;
+  margin-bottom: 16px;
+}
+
+.board-settings-section .modal-note {
+  margin: 0;
+}
+
+.board-settings-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.board-settings-grid label {
+  display: grid;
+  gap: 6px;
+}
+
+.board-settings-grid span {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 900;
+}
+
 .split-actions {
   align-items: center;
   justify-content: space-between;
@@ -2640,6 +2671,10 @@ body[data-role="member"] .detail-panel[data-panel="payment"] {
 
   .lesson-settings-head {
     display: none;
+  }
+
+  .board-settings-grid {
+    grid-template-columns: 1fr;
   }
 
   .lesson-settings-row {

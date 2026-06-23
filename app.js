@@ -31,6 +31,11 @@ let selectedPaymentMonth = todayISO.slice(0, 7);
 
 const seedData = {
   lessonTypes: defaultLessonTypes,
+  scheduleBoardLabels: {
+    admin: "관리자",
+    coach1: "코치1",
+    coach2: "코치2",
+  },
   members: [],
 };
 
@@ -261,6 +266,11 @@ const elements = {
   lessonSettingsModal: $("#lessonSettingsModal"),
   lessonSettingsForm: $("#lessonSettingsForm"),
   lessonSettingsList: $("#lessonSettingsList"),
+  scheduleBoardLabelInputs: {
+    admin: document.querySelector('[name="scheduleBoardLabelAdmin"]'),
+    coach1: document.querySelector('[name="scheduleBoardLabelCoach1"]'),
+    coach2: document.querySelector('[name="scheduleBoardLabelCoach2"]'),
+  },
   availableTimeModal: $("#availableTimeModal"),
   availableTimeModalTitle: $("#availableTimeModalTitle"),
   availableTimeModalList: $("#availableTimeModalList"),
@@ -404,6 +414,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   await initializeData();
   fillLessonTypeOptions();
   fillScheduleLessonTypeOptions();
+  renderScheduleBoardLabels();
   setActiveScheduleBoard(activeScheduleBoard, { shouldRender: false });
   setMobileView("today");
   document.body.dataset.desktopView = desktopView;
@@ -414,6 +425,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
 async function initializeData() {
   state = await loadData();
+  normalizeAppSettings();
   selectedMemberId = getAccessibleMembers()[0]?.id ?? null;
 }
 
@@ -481,6 +493,28 @@ function loadLocalData() {
   } catch {
     return applyPresetTimetable(cloneData(seedData));
   }
+}
+
+function normalizeAppSettings() {
+  state.scheduleBoardLabels = normalizeScheduleBoardLabels(state.scheduleBoardLabels);
+}
+
+function normalizeScheduleBoardLabels(labels = {}) {
+  return Object.fromEntries(
+    Object.entries(scheduleBoards).map(([board, fallback]) => [
+      board,
+      String(labels?.[board] || "").trim() || fallback,
+    ]),
+  );
+}
+
+function getScheduleBoardLabels() {
+  state.scheduleBoardLabels = normalizeScheduleBoardLabels(state.scheduleBoardLabels);
+  return state.scheduleBoardLabels;
+}
+
+function getScheduleBoardLabel(board) {
+  return getScheduleBoardLabels()[normalizeScheduleBoard(board)];
 }
 
 function applyPresetTimetable(data) {
@@ -749,6 +783,7 @@ function startSharedDataSync() {
         ? remoteData.lessonTypes
         : cloneData(defaultLessonTypes),
     });
+    normalizeAppSettings();
     deduplicateMemberData(state);
     localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
     selectedMemberId = state.members.some((member) => member.id === selectedId)
@@ -756,6 +791,7 @@ function startSharedDataSync() {
       : state.members[0]?.id ?? null;
     fillLessonTypeOptions();
     fillScheduleLessonTypeOptions();
+    renderScheduleBoardLabels();
     render();
   });
 }
@@ -931,6 +967,7 @@ function setDesktopView(view) {
 function setActiveScheduleBoard(board, { shouldRender = true } = {}) {
   activeScheduleBoard = Object.hasOwn(scheduleBoards, board) ? board : "admin";
   localStorage.setItem("ramon-active-schedule-board", activeScheduleBoard);
+  renderScheduleBoardLabels();
   elements.scheduleBoardButtons.forEach((button) => {
     const isActive = button.dataset.scheduleBoard === activeScheduleBoard;
     button.classList.toggle("active", isActive);
@@ -1313,7 +1350,7 @@ function renderSchedule(member) {
     elements.scheduleList.append(
       createRow(
         `${dayNames[item.day]}요일 ${item.time}`,
-        [scheduleBoards[getScheduleBoard(item)], item.className || "수업", getScheduleLessonType(item), getScheduleStatus(item)].filter(Boolean).join(" · "),
+        [getScheduleBoardLabel(item.scheduleBoard), item.className || "수업", getScheduleLessonType(item), getScheduleStatus(item)].filter(Boolean).join(" · "),
         () => removeSchedule(member.id, item.id),
       ),
     );
@@ -1790,8 +1827,26 @@ function applyPaymentDiscountToAmount() {
 }
 
 function renderLessonSettings() {
+  renderScheduleBoardSettings();
   elements.lessonSettingsList.innerHTML = "";
   state.lessonTypes.forEach((lesson) => addLessonSettingsRow(lesson));
+}
+
+function renderScheduleBoardSettings() {
+  const labels = getScheduleBoardLabels();
+  Object.entries(elements.scheduleBoardLabelInputs).forEach(([board, input]) => {
+    if (input) input.value = labels[board] || scheduleBoards[board];
+  });
+}
+
+function renderScheduleBoardLabels() {
+  const labels = getScheduleBoardLabels();
+  elements.scheduleBoardButtons.forEach((button) => {
+    button.textContent = labels[button.dataset.scheduleBoard] || scheduleBoards[button.dataset.scheduleBoard];
+  });
+  elements.scheduleForm.querySelectorAll('[name="scheduleBoard"] option').forEach((option) => {
+    option.textContent = labels[option.value] || scheduleBoards[option.value];
+  });
 }
 
 function addLessonSettingsRow(lesson = { name: "", amount: 0, sessions: 1 }) {
@@ -1828,8 +1883,14 @@ function saveLessonSettings(event) {
     .filter((lesson) => lesson.name);
 
   state.lessonTypes = nextLessonTypes.length ? nextLessonTypes : cloneData(defaultLessonTypes);
+  state.scheduleBoardLabels = normalizeScheduleBoardLabels({
+    admin: elements.scheduleBoardLabelInputs.admin?.value,
+    coach1: elements.scheduleBoardLabelInputs.coach1?.value,
+    coach2: elements.scheduleBoardLabelInputs.coach2?.value,
+  });
   fillLessonTypeOptions();
   fillScheduleLessonTypeOptions();
+  renderScheduleBoardLabels();
   closeModal(elements.lessonSettingsModal);
   commit();
 }
