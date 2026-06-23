@@ -1844,6 +1844,9 @@ function renderScheduleBoardLabels() {
   elements.scheduleBoardButtons.forEach((button) => {
     button.textContent = labels[button.dataset.scheduleBoard] || scheduleBoards[button.dataset.scheduleBoard];
   });
+  document.querySelectorAll(".schedule-board-switcher").forEach((switcher) => {
+    switcher.dataset.labelsReady = "true";
+  });
   elements.scheduleForm.querySelectorAll('[name="scheduleBoard"] option').forEach((option) => {
     option.textContent = labels[option.value] || scheduleBoards[option.value];
   });
