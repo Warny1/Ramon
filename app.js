@@ -192,6 +192,13 @@ let activeDetailPanel = "schedule";
 let mobileView = "today";
 let desktopView = "operations";
 let editingScheduleGroup = null;
+let activeScheduleBoard = localStorage.getItem("ramon-active-schedule-board") || "admin";
+
+const scheduleBoards = {
+  admin: "관리자",
+  coach1: "코치1",
+  coach2: "코치2",
+};
 
 const $ = (selector) => document.querySelector(selector);
 
@@ -201,6 +208,7 @@ const elements = {
   memberList: $("#memberList"),
   mobileNavButtons: document.querySelectorAll("[data-mobile-view]"),
   desktopNavButtons: document.querySelectorAll("[data-desktop-view]"),
+  scheduleBoardButtons: document.querySelectorAll("[data-schedule-board]"),
   pageTitle: $("#pageTitle"),
   todayLabel: $("#todayLabel"),
   mobileTodayLabel: $("#mobileTodayLabel"),
@@ -369,6 +377,9 @@ document.addEventListener("DOMContentLoaded", async () => {
   elements.desktopNavButtons.forEach((button) => {
     button.addEventListener("click", () => setDesktopView(button.dataset.desktopView));
   });
+  elements.scheduleBoardButtons.forEach((button) => {
+    button.addEventListener("click", () => setActiveScheduleBoard(button.dataset.scheduleBoard));
+  });
   elements.mobileNavButtons.forEach((button) => {
     button.addEventListener("click", () => {
       setMobileView(button.dataset.mobileView);
@@ -393,6 +404,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   await initializeData();
   fillLessonTypeOptions();
   fillScheduleLessonTypeOptions();
+  setActiveScheduleBoard(activeScheduleBoard, { shouldRender: false });
   setMobileView("today");
   document.body.dataset.desktopView = desktopView;
 
@@ -608,12 +620,15 @@ function deduplicateSchedules(schedules = []) {
       Number(item.day),
       normalizeTime(item.time) || String(item.time || "").trim(),
       String(item.className || "수업").trim(),
+      normalizeScheduleBoard(item.scheduleBoard),
+      String(item.date || "").trim(),
     ].join("|");
     const existing = schedulesByKey.get(key);
 
     if (existing) {
       if (!existing.lessonType && item.lessonType) existing.lessonType = item.lessonType;
       if (!existing.status && item.status) existing.status = item.status;
+      if (!existing.scheduleBoard && item.scheduleBoard) existing.scheduleBoard = normalizeScheduleBoard(item.scheduleBoard);
       return;
     }
 
@@ -911,6 +926,17 @@ function setDesktopView(view) {
 
   elements.desktopNavButtons.forEach((button) => button.classList.toggle("active", button.dataset.desktopView === desktopView));
   render();
+}
+
+function setActiveScheduleBoard(board, { shouldRender = true } = {}) {
+  activeScheduleBoard = Object.hasOwn(scheduleBoards, board) ? board : "admin";
+  localStorage.setItem("ramon-active-schedule-board", activeScheduleBoard);
+  elements.scheduleBoardButtons.forEach((button) => {
+    const isActive = button.dataset.scheduleBoard === activeScheduleBoard;
+    button.classList.toggle("active", isActive);
+    button.setAttribute("aria-selected", String(isActive));
+  });
+  if (shouldRender) render();
 }
 
 function goToToday() {
@@ -1287,7 +1313,7 @@ function renderSchedule(member) {
     elements.scheduleList.append(
       createRow(
         `${dayNames[item.day]}요일 ${item.time}`,
-        [item.className || "수업", getScheduleLessonType(item), getScheduleStatus(item)].filter(Boolean).join(" · "),
+        [scheduleBoards[getScheduleBoard(item)], item.className || "수업", getScheduleLessonType(item), getScheduleStatus(item)].filter(Boolean).join(" · "),
         () => removeSchedule(member.id, item.id),
       ),
     );
@@ -2111,6 +2137,7 @@ function addSchedule(event) {
         day: scheduleDay,
         time,
         className: String(form.get("className")).trim() || "수업",
+        scheduleBoard: normalizeScheduleBoard(form.get("scheduleBoard")),
         lessonType: String(form.get("scheduleLessonType")),
         status: String(form.get("scheduleStatus")),
         date: scheduleDate,
@@ -2238,6 +2265,7 @@ function editScheduleGroup(group) {
   elements.scheduleForm.time.value = firstGroup.time || group.startTime || group.time || roundToNextHalfHour();
   elements.scheduleForm.date.value = firstGroup.date || getDateForScheduleDay(Number(firstGroup.day));
   elements.scheduleForm.querySelector('[name="className"]').value = firstGroup.className || "수업";
+  elements.scheduleForm.querySelector('[name="scheduleBoard"]').value = getScheduleBoard(firstGroup);
   elements.scheduleForm.querySelector('[name="scheduleLessonType"]').value = firstGroup.lessonType || state.lessonTypes[0]?.name || "";
   elements.scheduleForm.querySelector('[name="scheduleStatus"]').value = firstGroup.status || "";
   setScheduleScope(isOneDay ? "once" : "weekly");
@@ -2361,19 +2389,19 @@ async function saveNow() {
 function exportSheetCsv() {
   if (!canManageSettings()) return;
 
-  const headers = ["type", "memberName", "phone", "memo", "day", "time", "className", "lessonType", "date", "sessions", "amount", "note"];
+  const headers = ["type", "memberName", "phone", "memo", "day", "time", "className", "lessonType", "date", "sessions", "amount", "note", "scheduleBoard"];
   const rows = [headers];
 
   state.members.forEach((member) => {
-    rows.push(["member", member.name, member.phone, member.memo, "", "", "", member.defaultLessonType || "", member.createdAt, "", "", ""]);
+    rows.push(["member", member.name, member.phone, member.memo, "", "", "", member.defaultLessonType || "", member.createdAt, "", "", "", ""]);
     member.schedules.forEach((item) => {
-      rows.push(["schedule", member.name, member.phone, "", item.day, item.time, item.className || "수업", getScheduleLessonType(item), "", "", "", getScheduleStatus(item)]);
+      rows.push(["schedule", member.name, member.phone, "", item.day, item.time, item.className || "수업", getScheduleLessonType(item), item.date || "", "", "", getScheduleStatus(item), getScheduleBoard(item)]);
     });
     member.payments.forEach((item) => {
-      rows.push(["payment", member.name, member.phone, "", "", "", "", item.lessonType || "", item.date, item.sessions, item.amount, item.memo || ""]);
+      rows.push(["payment", member.name, member.phone, "", "", "", "", item.lessonType || "", item.date, item.sessions, item.amount, item.memo || "", ""]);
     });
     member.attendances.forEach((item) => {
-      rows.push(["attendance", member.name, member.phone, "", "", item.time || "", item.className || "출석", "", item.date, "", "", item.status || ""]);
+      rows.push(["attendance", member.name, member.phone, "", "", item.time || "", item.className || "출석", "", item.date, "", "", item.status || "", ""]);
     });
   });
 
@@ -2428,6 +2456,8 @@ function importSheetCsv(event) {
             className: row[index.className] || "수업",
             lessonType: row[index.lessonType] || "일반",
             status: row[index.note] || "",
+            date: row[index.date] || "",
+            scheduleBoard: normalizeScheduleBoard(index.scheduleBoard === undefined ? "admin" : row[index.scheduleBoard]),
           });
         }
 
@@ -2599,7 +2629,13 @@ function importPastedTimetable() {
       names.forEach((name) => {
         const member = findOrCreateMemberByName(name);
         const lessonType = member.defaultLessonType || inferLessonTypeFromMemberCount(names.length);
-        const exists = member.schedules.some((item) => Number(item.day) === day && item.time === time && (item.className || "수업") === "수업");
+        const exists = member.schedules.some(
+          (item) =>
+            Number(item.day) === day &&
+            item.time === time &&
+            (item.className || "수업") === "수업" &&
+            getScheduleBoard(item) === activeScheduleBoard,
+        );
         if (exists) return;
 
         member.schedules.push({
@@ -2607,6 +2643,7 @@ function importPastedTimetable() {
           day,
           time,
           className: "수업",
+          scheduleBoard: activeScheduleBoard,
           lessonType,
           status,
         });
@@ -2945,6 +2982,7 @@ function getTodayEntries() {
 function getScheduleItems() {
   return getAccessibleMembers().flatMap((member) =>
     member.schedules
+      .filter((item) => getScheduleBoard(item) === activeScheduleBoard)
       .filter((item) =>
         !item.date ||
         (timetableView === "week" && !isMobileLayout()
@@ -2959,7 +2997,7 @@ function getScheduleGroups() {
   const groups = new Map();
 
   getScheduleItems().forEach((item) => {
-    const key = [item.day, item.time, item.className || "수업", getScheduleLessonType(item), getScheduleStatus(item), item.date || ""].join("|");
+    const key = [item.day, item.time, item.className || "수업", getScheduleLessonType(item), getScheduleStatus(item), getScheduleBoard(item), item.date || ""].join("|");
     if (!groups.has(key)) {
       groups.set(key, {
         day: item.day,
@@ -2967,6 +3005,7 @@ function getScheduleGroups() {
         className: item.className || "수업",
         lessonType: getScheduleLessonType(item),
         status: getScheduleStatus(item),
+        scheduleBoard: getScheduleBoard(item),
         date: item.date || "",
         members: [],
         entries: [],
@@ -3094,6 +3133,7 @@ function prepareScheduleModal(mode) {
   elements.scheduleMemberSearch.value = "";
   elements.scheduleMemberOptions.innerHTML = "";
   elements.scheduleModalTitle.textContent = isEdit ? "시간표 수정" : isMakeup ? "보강 수업 추가" : "시간표 추가";
+  elements.scheduleForm.querySelector('[name="scheduleBoard"]').value = activeScheduleBoard;
   elements.scheduleDayField.hidden = isMakeup;
   elements.scheduleScopeField.hidden = false;
   elements.scheduleForm.date.required = isMakeup;
@@ -3167,6 +3207,15 @@ function renderDetailTabs() {
 
 function getScheduleLessonType(item) {
   return item.lessonType || "일반";
+}
+
+function normalizeScheduleBoard(value) {
+  const board = String(value || "");
+  return Object.hasOwn(scheduleBoards, board) ? board : "admin";
+}
+
+function getScheduleBoard(item) {
+  return normalizeScheduleBoard(item?.scheduleBoard);
 }
 
 function getScheduleStatus(item) {

@@ -544,7 +544,10 @@ h4 {
 }
 
 .timetable-panel {
+  display: flex;
+  flex-direction: column;
   min-width: 0;
+  min-height: 0;
   padding: 14px;
   border-color: var(--line);
 }
@@ -594,6 +597,42 @@ h4 {
   justify-content: flex-end;
   gap: 12px;
   min-width: 0;
+}
+
+.timetable-head-controls {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  min-width: 0;
+}
+
+.schedule-board-switcher {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--row-soft);
+  padding: 3px;
+}
+
+.schedule-board-button {
+  border: 0;
+  border-radius: 6px;
+  min-height: 34px;
+  background: transparent;
+  color: var(--muted);
+  padding: 0 12px;
+  font-size: 12px;
+  font-weight: 900;
+  white-space: nowrap;
+}
+
+.schedule-board-button.active {
+  background: white;
+  color: var(--accent-dark);
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.1);
 }
 
 .desktop-day-navigation {
@@ -647,6 +686,8 @@ h4 {
 }
 
 .timetable-grid {
+  flex: 1 1 auto;
+  min-height: 0;
   max-height: calc(100vh - 270px);
   overflow: auto;
   scrollbar-gutter: stable;
@@ -1070,6 +1111,7 @@ h4 {
 
 .member-overview-panel {
   display: none;
+  min-height: 0;
   padding: 16px;
   overflow: hidden;
 }
@@ -1078,6 +1120,7 @@ h4 {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
   gap: 8px;
+  min-height: 0;
   overflow: auto;
   scrollbar-gutter: stable;
 }
@@ -2139,13 +2182,15 @@ body[data-role="member"] .detail-panel[data-panel="payment"] {
   }
 
   body[data-desktop-view="members"] .member-overview-panel {
-    display: block;
+    display: flex;
+    flex-direction: column;
     grid-column: 1 / -1;
     grid-row: 2 / 4;
   }
 
   body[data-desktop-view="members"] .all-members-grid {
-    max-height: calc(100vh - 150px);
+    flex: 1 1 auto;
+    max-height: none;
   }
 
   body[data-desktop-view="payments"] .stats-grid,
@@ -2225,7 +2270,7 @@ body[data-role="member"] .detail-panel[data-panel="payment"] {
   }
 
   .timetable-grid {
-    height: calc(100vh - 132px);
+    height: auto;
     max-height: none;
   }
 
@@ -2346,7 +2391,7 @@ body[data-role="member"] .detail-panel[data-panel="payment"] {
   }
 
   body[data-desktop-view="schedule"] .timetable-grid {
-    height: calc(100vh - 132px);
+    height: auto;
   }
 
   .week-table .lesson-block {
@@ -2550,6 +2595,11 @@ body[data-role="member"] .detail-panel[data-panel="payment"] {
   .timetable-head {
     align-items: stretch;
     flex-direction: column;
+  }
+
+  .timetable-head-controls {
+    justify-content: space-between;
+    flex-wrap: wrap;
   }
 
   .schedule-table {
@@ -2796,6 +2846,21 @@ body[data-role="member"] .detail-panel[data-panel="payment"] {
   .timetable-title-cluster {
     flex-wrap: wrap;
     gap: 8px;
+  }
+
+  .timetable-head-controls {
+    width: 100%;
+  }
+
+  .schedule-board-switcher {
+    width: 100%;
+  }
+
+  .schedule-board-button {
+    flex: 1 1 0;
+    min-width: 0;
+    min-height: 40px;
+    padding: 0 6px;
   }
 
   .today-count-card {
