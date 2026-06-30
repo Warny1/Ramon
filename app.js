@@ -193,6 +193,7 @@ let state = cloneData(seedData);
 let selectedMemberId = null;
 let selectedLessonMemberIds = [];
 let timetableView = "focus";
+let mobileTimetableView = localStorage.getItem("ramon-mobile-timetable-view") || "day";
 let activeDetailPanel = "schedule";
 let mobileView = "today";
 let desktopView = "operations";
@@ -240,6 +241,7 @@ const elements = {
   timetableGrid: $("#timetableGrid"),
   timetableRangeLabel: $("#timetableRangeLabel"),
   viewOptions: document.querySelectorAll(".view-option"),
+  mobileTimetableViewButtons: document.querySelectorAll("[data-mobile-timetable-view]"),
   todaySchedule: $("#todaySchedule"),
   todayCount: $("#todayCount"),
   todayScheduleDate: $("#todayScheduleDate"),
@@ -387,6 +389,9 @@ document.addEventListener("DOMContentLoaded", async () => {
   elements.desktopNavButtons.forEach((button) => {
     button.addEventListener("click", () => setDesktopView(button.dataset.desktopView));
   });
+  elements.mobileTimetableViewButtons.forEach((button) => {
+    button.addEventListener("click", () => setMobileTimetableView(button.dataset.mobileTimetableView));
+  });
   elements.scheduleBoardButtons.forEach((button) => {
     button.addEventListener("click", () => setActiveScheduleBoard(button.dataset.scheduleBoard));
   });
@@ -416,6 +421,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   fillScheduleLessonTypeOptions();
   renderScheduleBoardLabels();
   setActiveScheduleBoard(activeScheduleBoard, { shouldRender: false });
+  setMobileTimetableView(mobileTimetableView, { shouldRender: false });
   setMobileView("today");
   document.body.dataset.desktopView = desktopView;
 
@@ -952,6 +958,7 @@ function setMobileView(view) {
   mobileView = allowedViews.includes(view) ? view : allowedViews[0];
   document.body.dataset.mobileView = mobileView;
   renderMobileNav();
+  renderMobileTimetableViewButtons();
 }
 
 function setDesktopView(view) {
@@ -962,6 +969,22 @@ function setDesktopView(view) {
 
   elements.desktopNavButtons.forEach((button) => button.classList.toggle("active", button.dataset.desktopView === desktopView));
   render();
+}
+
+function setMobileTimetableView(view, { shouldRender = true } = {}) {
+  mobileTimetableView = view === "week" ? "week" : "day";
+  localStorage.setItem("ramon-mobile-timetable-view", mobileTimetableView);
+  document.body.dataset.mobileTimetableView = mobileTimetableView;
+  renderMobileTimetableViewButtons();
+  if (shouldRender) render();
+}
+
+function renderMobileTimetableViewButtons() {
+  elements.mobileTimetableViewButtons.forEach((button) => {
+    const isActive = button.dataset.mobileTimetableView === mobileTimetableView;
+    button.classList.toggle("active", isActive);
+    button.setAttribute("aria-selected", String(isActive));
+  });
 }
 
 function setActiveScheduleBoard(board, { shouldRender = true } = {}) {
@@ -995,7 +1018,7 @@ function moveSelectedAttendanceDate(offsetDays) {
 }
 
 function moveDesktopTimetableDate(direction) {
-  moveSelectedAttendanceDate(desktopView === "schedule" ? direction * 7 : direction);
+  moveSelectedAttendanceDate(isFullTimetableView() ? direction * 7 : direction);
 }
 
 function goToDesktopToday() {
@@ -1053,6 +1076,10 @@ function formatShortTimetableDate(date) {
 
 function formatWeekRange() {
   return `${formatShortTimetableDate(getWeekStartDate())} - ${formatShortTimetableDate(getWeekEndDate())}`;
+}
+
+function isFullTimetableView() {
+  return (!isMobileLayout() && timetableView === "week") || (isMobileLayout() && mobileView === "timetable" && mobileTimetableView === "week");
 }
 
 function renderMobileNav() {
@@ -1461,9 +1488,10 @@ function renderPayments(member) {
 function renderTimetable() {
   const groups = getScheduleGroups();
   const visibleDays = getVisibleTimetableDays();
-  const isWeekTable = timetableView === "week" && !isMobileLayout();
+  const isWeekTable = isFullTimetableView();
   elements.timetableGrid.innerHTML = "";
   elements.timetableGrid.classList.toggle("week-view", isWeekTable);
+  elements.timetableGrid.classList.toggle("mobile-week-view", isMobileLayout() && isWeekTable);
   elements.desktopPreviousDayButton.setAttribute("aria-label", isWeekTable ? "이전 주 시간표" : "전날 시간표");
   elements.desktopNextDayButton.setAttribute("aria-label", isWeekTable ? "다음 주 시간표" : "다음날 시간표");
   elements.desktopPreviousDayButton.title = isWeekTable ? "이전 주" : "전날";
@@ -1624,8 +1652,8 @@ function scrollTimetableToFirstLesson() {
 }
 
 function getVisibleTimetableDays() {
+  if (isFullTimetableView()) return timetableDays;
   if (isMobileLayout()) return [getSelectedAttendanceDate().getDay()];
-  if (desktopView === "schedule" || timetableView === "week") return timetableDays;
   return [getSelectedAttendanceDate().getDay()];
 }
 
@@ -3049,7 +3077,7 @@ function getScheduleItems() {
       .filter((item) => getScheduleBoard(item) === activeScheduleBoard)
       .filter((item) =>
         !item.date ||
-        (timetableView === "week" && !isMobileLayout()
+        (isFullTimetableView()
           ? isDateInSelectedWeek(item.date)
           : item.date === selectedAttendanceDate),
       )
@@ -3089,7 +3117,7 @@ function getScheduleGroups() {
 function createLessonBlock(group) {
   const block = document.createElement("div");
   block.className = "lesson-block";
-  const isWeekTable = timetableView === "week" && !isMobileLayout();
+  const isWeekTable = isFullTimetableView();
   const attendanceDate = isWeekTable ? getDateForScheduleDay(group.day) : selectedAttendanceDate;
   const showAttendanceState = isWeekTable || Number(group.day) === getSelectedAttendanceDate().getDay();
   const attendanceGroups = group.groups?.length ? group.groups : [group];

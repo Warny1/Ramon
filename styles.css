@@ -706,6 +706,27 @@ h4 {
   box-shadow: 0 1px 2px rgba(15, 23, 42, 0.1);
 }
 
+.mobile-timetable-mode {
+  display: none;
+}
+
+.mobile-timetable-mode-button {
+  border: 0;
+  border-radius: 999px;
+  min-height: 38px;
+  background: transparent;
+  color: var(--muted);
+  padding: 0 14px;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.mobile-timetable-mode-button.active {
+  background: var(--ink);
+  color: white;
+  box-shadow: 0 8px 18px rgba(26, 48, 43, 0.18);
+}
+
 .timetable-grid {
   flex: 1 1 auto;
   min-height: 0;
@@ -2910,6 +2931,22 @@ body[data-role="member"] .detail-panel[data-panel="payment"] {
 
   .timetable-head-controls {
     width: 100%;
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .mobile-timetable-mode {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 4px;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    background: var(--row-soft);
+    padding: 4px;
+  }
+
+  body[data-mobile-view="timetable"] .topbar-schedule-board-switcher {
+    display: flex;
   }
 
   .schedule-board-switcher {
@@ -2965,6 +3002,11 @@ body[data-role="member"] .detail-panel[data-panel="payment"] {
     border-radius: 8px;
   }
 
+  .timetable-grid.mobile-week-view {
+    max-height: calc(100vh - 236px);
+    overscroll-behavior-x: contain;
+  }
+
   .schedule-table {
     grid-template-columns: 58px repeat(var(--day-count), minmax(0, 1fr));
     min-width: 0;
@@ -2972,8 +3014,24 @@ body[data-role="member"] .detail-panel[data-panel="payment"] {
   }
 
   .week-table {
-    grid-template-columns: 58px repeat(var(--day-count), minmax(118px, 1fr));
-    min-width: 884px;
+    grid-template-columns: 58px repeat(var(--day-count), minmax(126px, 1fr));
+    min-width: 940px;
+  }
+
+  .mobile-week-view .schedule-table {
+    width: max-content;
+  }
+
+  .mobile-week-view .schedule-table > .schedule-head:first-child {
+    left: 0;
+    z-index: 4;
+  }
+
+  .mobile-week-view .schedule-time {
+    position: sticky;
+    left: 0;
+    z-index: 3;
+    box-shadow: 1px 0 0 var(--line);
   }
 
   .schedule-head {
