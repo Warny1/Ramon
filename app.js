@@ -1504,6 +1504,12 @@ function renderTimetable() {
         weekday: "long",
       }).format(getSelectedAttendanceDate());
 
+  if (isMobileLayout() && isWeekTable) {
+    elements.timetableGrid.append(createMobileWeekSummary(groups));
+    scrollTimetableToFirstLesson();
+    return;
+  }
+
   if (!isWeekTable) {
     const selectedDay = visibleDays[0];
     const occupiedTimes = new Set(
@@ -1600,9 +1606,107 @@ function createAvailableTimeStrip(times, day) {
   return strip;
 }
 
+function createMobileWeekSummary(groups) {
+  const summary = document.createElement("div");
+  summary.className = "mobile-week-summary";
+
+  timetableDays.forEach((day) => {
+    const dayGroups = groups
+      .filter((item) => Number(item.day) === day)
+      .sort((a, b) => a.time.localeCompare(b.time));
+    const occupiedTimes = new Set(dayGroups.map((item) => item.time));
+    const emptyTimes = timetableTimes.filter((time) => !occupiedTimes.has(time));
+    const date = new Date(`${getDateForScheduleDay(day)}T12:00:00`);
+
+    const button = document.createElement("button");
+    button.className = "mobile-week-day-card";
+    button.type = "button";
+    button.innerHTML = `
+      <span class="mobile-week-day-main">
+        <strong>${escapeHTML(dayNames[day])}</strong>
+        <small>${escapeHTML(formatShortTimetableDate(date))}</small>
+      </span>
+      <span class="mobile-week-day-counts">
+        <span>수업 ${dayGroups.length}개</span>
+        <span>빈 시간 ${emptyTimes.length}개</span>
+      </span>
+      <span class="mobile-week-day-preview">${escapeHTML(formatMobileWeekPreview(dayGroups, emptyTimes))}</span>
+    `;
+    button.addEventListener("click", () => openMobileWeekDayModal(day, dayGroups, emptyTimes));
+    summary.append(button);
+  });
+
+  return summary;
+}
+
+function formatMobileWeekPreview(dayGroups, emptyTimes) {
+  if (dayGroups.length) {
+    return dayGroups
+      .slice(0, 2)
+      .map((group) => `${group.time} ${group.members.map((member) => member.name).join(", ")}`)
+      .join(" · ");
+  }
+
+  if (emptyTimes.length) return `첫 빈 시간 ${emptyTimes[0]}`;
+  return "확인할 시간이 없습니다.";
+}
+
+function openMobileWeekDayModal(day, dayGroups, emptyTimes) {
+  elements.availableTimeModalTitle.textContent = `${dayNames[day]}요일 시간표`;
+  elements.availableTimeModalList.innerHTML = "";
+  elements.availableTimeModalList.classList.add("mobile-week-day-modal-list");
+
+  if (dayGroups.length) {
+    const lessonsTitle = document.createElement("p");
+    lessonsTitle.className = "mobile-week-modal-section-title";
+    lessonsTitle.textContent = "수업";
+    elements.availableTimeModalList.append(lessonsTitle);
+
+    dayGroups.forEach((group) => {
+      const button = document.createElement("button");
+      button.className = "mobile-week-lesson-button";
+      button.type = "button";
+      button.innerHTML = `
+        <strong>${escapeHTML(group.time)}</strong>
+        <span>${escapeHTML(group.members.map((member) => member.name).join(", "))}</span>
+        <small>${escapeHTML([group.className || "수업", group.lessonType, group.status].filter(Boolean).join(" · "))}</small>
+      `;
+      button.addEventListener("click", () => {
+        closeModal(elements.availableTimeModal);
+        editScheduleGroup(group);
+      });
+      elements.availableTimeModalList.append(button);
+    });
+  }
+
+  const emptyTitle = document.createElement("p");
+  emptyTitle.className = "mobile-week-modal-section-title";
+  emptyTitle.textContent = "빈 시간";
+  elements.availableTimeModalList.append(emptyTitle);
+
+  if (!emptyTimes.length) {
+    elements.availableTimeModalList.append(createEmptyLine("추가 가능한 시간이 없습니다."));
+  } else {
+    emptyTimes.forEach((time) => {
+      const button = document.createElement("button");
+      button.className = "available-time-modal-button";
+      button.type = "button";
+      button.innerHTML = `<strong>${escapeHTML(time)}</strong><span>시간표 추가</span>`;
+      button.addEventListener("click", () => {
+        closeModal(elements.availableTimeModal);
+        openScheduleAt(day, time);
+      });
+      elements.availableTimeModalList.append(button);
+    });
+  }
+
+  openModal(elements.availableTimeModal);
+}
+
 function openAvailableTimeModal(times, day) {
   elements.availableTimeModalTitle.textContent = `${dayNames[day]}요일 빈 시간`;
   elements.availableTimeModalList.innerHTML = "";
+  elements.availableTimeModalList.classList.remove("mobile-week-day-modal-list");
 
   if (!times.length) {
     elements.availableTimeModalList.append(createEmptyLine("추가 가능한 시간이 없습니다."));
