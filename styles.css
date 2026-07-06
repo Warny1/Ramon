@@ -1653,7 +1653,7 @@ h4 {
   display: grid;
   grid-template-columns: max-content minmax(0, 1fr);
   align-items: center;
-  column-gap: 24px;
+  column-gap: 14px;
   border: 1px solid #dfe7eb;
   border-radius: 8px;
   background: #ffffff;
@@ -1666,7 +1666,7 @@ h4 {
 .mobile-week-lesson-button strong {
   flex: 0 0 auto;
   color: var(--accent-dark);
-  font-size: 12px;
+  font-size: 14px;
   font-weight: 900;
   font-variant-numeric: tabular-nums;
   line-height: 1.1;
@@ -1679,7 +1679,7 @@ h4 {
   min-width: 0;
   overflow: hidden;
   color: var(--ink);
-  font-size: 11px;
+  font-size: 13px;
   font-weight: 900;
   line-height: 1.15;
   text-align: right;
@@ -1688,7 +1688,7 @@ h4 {
 }
 
 .mobile-week-lesson-button span.compact-names {
-  font-size: 10px;
+  font-size: 12px;
 }
 
 .mobile-week-lesson-button span em {
