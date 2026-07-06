@@ -3984,11 +3984,15 @@ select {
   }
 
   .day-panel {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
     padding: 0;
     background: transparent;
   }
 
   .day-panel .section-title {
+    grid-column: 1 / -1;
     margin: 0 2px 8px;
     align-items: center;
   }
@@ -4027,13 +4031,15 @@ select {
 
   .day-panel .attendance-date-control {
     display: grid;
-    grid-template-columns: auto minmax(0, 1fr);
-    gap: 6px;
+    grid-template-columns: 1fr;
+    gap: 4px;
+    min-width: 0;
+    min-height: 58px;
     border: 1px solid #e1e7e5;
     border-radius: 10px;
     background: #ffffff;
-    margin: 0 0 8px;
-    padding: 8px;
+    margin: 0;
+    padding: 7px 8px;
   }
 
   .day-panel .attendance-date-control span {
@@ -4044,8 +4050,9 @@ select {
   .day-panel .attendance-date-control input {
     width: 100%;
     max-width: none;
-    min-height: 36px;
+    min-height: 30px;
     border-radius: 8px;
+    font-size: 12px;
     text-align: center;
   }
 
@@ -4060,7 +4067,8 @@ select {
   .mobile-today-actions {
     display: flex;
     justify-content: stretch;
-    margin: 0 0 10px;
+    min-width: 0;
+    margin: 0;
   }
 
   .mobile-today-actions .secondary-button {
@@ -4069,7 +4077,7 @@ select {
     justify-content: center;
     gap: 5px;
     width: 100%;
-    min-height: 40px;
+    min-height: 58px;
     border: 1px solid #dfe4e3;
     background: #ffffff;
     color: var(--ink);
@@ -4078,6 +4086,8 @@ select {
   }
 
   .today-schedule {
+    grid-column: 1 / -1;
+    margin-top: 2px;
     gap: 0;
     overflow: hidden;
     border: 1px solid #e6e9e9;
