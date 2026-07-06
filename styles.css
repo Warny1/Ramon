@@ -1649,22 +1649,23 @@ h4 {
 }
 
 .mobile-week-lesson-button {
-  display: flex;
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
   align-items: center;
-  justify-content: space-between;
-  gap: 24px;
+  column-gap: 24px;
   border: 1px solid #dfe7eb;
   border-radius: 8px;
   background: #ffffff;
   min-height: 58px;
-  padding: 8px 10px;
+  overflow: hidden;
+  padding: 8px;
   text-align: left;
 }
 
 .mobile-week-lesson-button strong {
   flex: 0 0 auto;
   color: var(--accent-dark);
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 900;
   font-variant-numeric: tabular-nums;
   line-height: 1.1;
@@ -1675,22 +1676,27 @@ h4 {
   justify-items: end;
   gap: 1px;
   min-width: 0;
-  overflow: visible;
+  overflow: hidden;
   color: var(--ink);
-  font-size: 12px;
+  font-size: 10px;
   font-weight: 900;
   line-height: 1.15;
   text-align: right;
-  white-space: normal;
+  white-space: nowrap;
   word-break: keep-all;
 }
 
 .mobile-week-lesson-button span.compact-names {
-  font-size: 11px;
+  font-size: 10px;
 }
 
 .mobile-week-lesson-button span em {
+  display: block;
   font-style: normal;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .available-time-label {
