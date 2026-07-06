@@ -3094,18 +3094,28 @@ body[data-role="member"] .detail-panel[data-panel="payment"] {
 
   .timetable-title-cluster {
     flex-wrap: nowrap;
-    gap: 6px;
+    gap: 4px;
     width: 100%;
   }
 
   .timetable-title-copy {
-    flex: 1 1 auto;
+    flex: 0 0 70px;
     min-width: 0;
   }
 
   .timetable-title-copy .eyebrow,
   .timetable-title-copy h3 {
+    overflow: hidden;
+    text-overflow: ellipsis;
     white-space: nowrap;
+  }
+
+  .timetable-title-copy .eyebrow {
+    font-size: 10px;
+  }
+
+  .timetable-title-copy h3 {
+    font-size: 16px;
   }
 
   .timetable-head-controls {
@@ -3140,28 +3150,34 @@ body[data-role="member"] .detail-panel[data-panel="payment"] {
   }
 
   .today-count-card {
-    min-width: 100px;
-    min-height: 44px;
-    padding: 6px 8px;
+    flex: 0 0 88px;
+    min-width: 88px;
+    min-height: 40px;
+    padding: 5px 6px;
   }
 
   .today-count-card strong {
-    font-size: 14px;
+    font-size: 12px;
   }
 
   .desktop-day-navigation {
+    flex: 0 0 110px;
     margin-left: auto;
-    padding: 3px;
+    gap: 2px;
+    padding: 2px;
   }
 
   .desktop-day-navigation .day-nav-button {
-    width: 32px;
-    height: 40px;
+    width: 30px;
+    height: 38px;
+    font-size: 21px;
   }
 
   .desktop-day-navigation .day-today-button {
-    min-width: 48px;
-    padding: 0 8px;
+    min-width: 44px;
+    height: 38px;
+    padding: 0 6px;
+    font-size: 12px;
   }
 
   .available-time-strip {
