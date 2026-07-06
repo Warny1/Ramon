@@ -1437,6 +1437,40 @@ h4 {
   gap: 6px;
 }
 
+.monthly-lesson-summary {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.monthly-lesson-card {
+  display: grid;
+  gap: 4px;
+  border: 1px solid #dfe7eb;
+  border-radius: 10px;
+  background: #f8fbfc;
+  padding: 10px;
+}
+
+.monthly-lesson-card span {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.monthly-lesson-card strong {
+  color: var(--ink);
+  font-size: 18px;
+  font-weight: 900;
+}
+
+.monthly-lesson-card small {
+  color: #315f9c;
+  font-size: 12px;
+  font-weight: 900;
+}
+
 .day-nav-button {
   display: grid;
   flex: 0 0 auto;

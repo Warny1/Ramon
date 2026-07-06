@@ -223,6 +223,7 @@ const elements = {
   previousPaymentMonth: $("#previousPaymentMonth"),
   nextPaymentMonth: $("#nextPaymentMonth"),
   monthlyRevenue: $("#monthlyRevenue"),
+  monthlyLessonSummary: $("#monthlyLessonSummary"),
   monthlyPaymentList: $("#monthlyPaymentList"),
   allMembersGrid: $("#allMembersGrid"),
   allMembersCount: $("#allMembersCount"),
@@ -1166,6 +1167,7 @@ function renderPaymentOverview() {
   if (!canManagePayments()) return;
 
   elements.paymentMonthLabel.textContent = formatPaymentMonth(selectedPaymentMonth);
+  renderMonthlyLessonSummary();
   elements.monthlyPaymentList.innerHTML = "";
 
   if (!isPaymentHistoryUnlocked()) {
@@ -1202,6 +1204,99 @@ function getMonthlyPayments() {
     .flatMap((member) => member.payments.map((payment) => ({ member, payment })))
     .filter(({ payment }) => payment.date?.startsWith(selectedPaymentMonth))
     .sort((a, b) => b.payment.date.localeCompare(a.payment.date) || a.member.name.localeCompare(b.member.name, "ko-KR"));
+}
+
+function renderMonthlyLessonSummary() {
+  if (!elements.monthlyLessonSummary) return;
+
+  elements.monthlyLessonSummary.innerHTML = getMonthlyLessonBoardSummaries()
+    .map((summary) => `
+      <article class="monthly-lesson-card">
+        <span>${escapeHTML(summary.label)}</span>
+        <strong>${summary.times}타임</strong>
+        <small>${formatLessonTimeFromTimes(summary.times)}</small>
+      </article>
+    `)
+    .join("");
+}
+
+function getMonthlyLessonBoardSummaries() {
+  const groups = getMonthlyLessonGroups(selectedPaymentMonth);
+  return Object.entries(scheduleBoards).map(([board, fallbackLabel]) => {
+    const times = groups.filter((group) => group.scheduleBoard === board).length;
+    return {
+      board,
+      label: getScheduleBoardLabels()[board] || fallbackLabel,
+      times,
+    };
+  });
+}
+
+function getMonthlyLessonGroups(monthKey) {
+  const groups = new Map();
+
+  getMonthDateKeys(monthKey).forEach((dateKey) => {
+    const date = new Date(`${dateKey}T12:00:00`);
+    const day = date.getDay();
+
+    state.members.forEach((member) => {
+      member.schedules
+        .filter((schedule) => isScheduleOnDate(schedule, day, dateKey))
+        .forEach((schedule) => {
+          const board = getScheduleBoard(schedule);
+          const status = getScheduleStatus(schedule);
+          const key = [
+            dateKey,
+            board,
+            schedule.time || "",
+            schedule.className || "수업",
+            getScheduleLessonType(schedule),
+            status,
+            schedule.date || "",
+          ].join("|");
+
+          if (!groups.has(key)) {
+            groups.set(key, {
+              date: dateKey,
+              day,
+              time: schedule.time || "",
+              className: schedule.className || "수업",
+              lessonType: getScheduleLessonType(schedule),
+              status,
+              scheduleBoard: board,
+              members: [],
+            });
+          }
+
+          groups.get(key).members.push(member);
+        });
+    });
+  });
+
+  return [...groups.values()].filter((group) => {
+    const attendanceStatus = getCombinedAttendanceStatusForDate([group], group.date);
+    return !["결석", "당일취소"].includes(attendanceStatus);
+  });
+}
+
+function isScheduleOnDate(schedule, day, dateKey) {
+  if (schedule.date) return schedule.date === dateKey;
+  return Number(schedule.day) === day;
+}
+
+function getMonthDateKeys(monthKey) {
+  const dates = [];
+  const date = new Date(`${monthKey}-01T12:00:00`);
+  while (toISODate(date).startsWith(monthKey)) {
+    dates.push(toISODate(date));
+    date.setDate(date.getDate() + 1);
+  }
+  return dates;
+}
+
+function formatLessonTimeFromTimes(times) {
+  const hours = times / 2;
+  return `${Number.isInteger(hours) ? hours : hours.toFixed(1)}시간`;
 }
 
 function renderMemberList() {
