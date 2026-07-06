@@ -28,6 +28,7 @@ const today = new Date();
 const todayISO = toISODate(today);
 let selectedAttendanceDate = todayISO;
 let selectedPaymentMonth = todayISO.slice(0, 7);
+let paymentHistoryUnlocked = false;
 
 const seedData = {
   lessonTypes: defaultLessonTypes,
@@ -36,6 +37,7 @@ const seedData = {
     coach1: "코치1",
     coach2: "코치2",
   },
+  paymentHistoryPassword: "0000",
   members: [],
 };
 
@@ -268,6 +270,7 @@ const elements = {
   lessonSettingsModal: $("#lessonSettingsModal"),
   lessonSettingsForm: $("#lessonSettingsForm"),
   lessonSettingsList: $("#lessonSettingsList"),
+  paymentHistoryPasswordInput: document.querySelector('[name="paymentHistoryPassword"]'),
   scheduleBoardLabelInputs: {
     admin: document.querySelector('[name="scheduleBoardLabelAdmin"]'),
     coach1: document.querySelector('[name="scheduleBoardLabelCoach1"]'),
@@ -503,6 +506,7 @@ function loadLocalData() {
 
 function normalizeAppSettings() {
   state.scheduleBoardLabels = normalizeScheduleBoardLabels(state.scheduleBoardLabels);
+  state.paymentHistoryPassword = normalizePaymentHistoryPassword(state.paymentHistoryPassword);
 }
 
 function normalizeScheduleBoardLabels(labels = {}) {
@@ -521,6 +525,45 @@ function getScheduleBoardLabels() {
 
 function getScheduleBoardLabel(board) {
   return getScheduleBoardLabels()[normalizeScheduleBoard(board)];
+}
+
+function normalizePaymentHistoryPassword(password) {
+  const nextPassword = String(password || "").trim();
+  return nextPassword || "0000";
+}
+
+function getPaymentHistoryPassword() {
+  state.paymentHistoryPassword = normalizePaymentHistoryPassword(state.paymentHistoryPassword);
+  return state.paymentHistoryPassword;
+}
+
+function isPaymentHistoryUnlocked() {
+  return paymentHistoryUnlocked;
+}
+
+function unlockPaymentHistory() {
+  const input = prompt("결제내역 비밀번호를 입력하세요.");
+  if (input === null) return false;
+
+  if (String(input).trim() !== getPaymentHistoryPassword()) {
+    alert("비밀번호가 맞지 않습니다.");
+    return false;
+  }
+
+  paymentHistoryUnlocked = true;
+  render();
+  return true;
+}
+
+function createPaymentLockLine(message = "결제내역은 잠겨 있습니다.") {
+  const row = document.createElement("div");
+  row.className = "empty-line payment-lock-line";
+  row.innerHTML = `
+    <p>${escapeHTML(message)}</p>
+    <button class="secondary-button" type="button">비밀번호 입력</button>
+  `;
+  row.querySelector("button").addEventListener("click", unlockPaymentHistory);
+  return row;
 }
 
 function applyPresetTimetable(data) {
@@ -1117,11 +1160,18 @@ function renderStats() {
 function renderPaymentOverview() {
   if (!canManagePayments()) return;
 
+  elements.paymentMonthLabel.textContent = formatPaymentMonth(selectedPaymentMonth);
+  elements.monthlyPaymentList.innerHTML = "";
+
+  if (!isPaymentHistoryUnlocked()) {
+    elements.monthlyRevenue.textContent = "잠김";
+    elements.monthlyPaymentList.append(createPaymentLockLine("결제내역을 보려면 비밀번호를 입력하세요."));
+    return;
+  }
+
   const payments = getMonthlyPayments();
   const revenue = payments.reduce((sum, item) => sum + Number(item.payment.amount || 0), 0);
-  elements.paymentMonthLabel.textContent = formatPaymentMonth(selectedPaymentMonth);
   elements.monthlyRevenue.textContent = `${currency.format(revenue)}원`;
-  elements.monthlyPaymentList.innerHTML = "";
 
   if (!payments.length) {
     elements.monthlyPaymentList.append(createEmptyLine("선택한 달의 결제 기록이 없습니다."));
@@ -1324,7 +1374,7 @@ function renderDetail(member) {
       <small>레슨</small>
       <strong>${escapeHTML(member.defaultLessonType || "레슨 미지정")}${hasScheduleMismatch ? '<span class="lesson-warning" title="레슨-스케쥴 오류">!</span>' : ""}</strong>
     </span>
-    <span class="member-meta-row"><small>이용 기록</small><strong>${canManagePayments() ? `결제 ${paidSessions}회 · ` : ""}출석 ${member.attendances.length}회</strong></span>
+    <span class="member-meta-row"><small>이용 기록</small><strong>${canManagePayments() && isPaymentHistoryUnlocked() ? `결제 ${paidSessions}회 · ` : ""}출석 ${member.attendances.length}회</strong></span>
     ${lessonMembers.length > 1 ? `
       <span class="member-meta-row lesson-member-row">
         <small>같은 수업</small>
@@ -1463,6 +1513,11 @@ function renderPayments(member) {
   elements.paymentList.innerHTML = "";
   if (!canManagePayments()) {
     elements.paymentList.append(createEmptyLine("결제 기록은 관리자만 볼 수 있습니다."));
+    return;
+  }
+
+  if (!isPaymentHistoryUnlocked()) {
+    elements.paymentList.append(createPaymentLockLine("결제 기록을 보려면 비밀번호를 입력하세요."));
     return;
   }
 
@@ -1959,6 +2014,7 @@ function applyPaymentDiscountToAmount() {
 
 function renderLessonSettings() {
   renderScheduleBoardSettings();
+  renderPaymentHistoryPasswordSetting();
   elements.lessonSettingsList.innerHTML = "";
   state.lessonTypes.forEach((lesson) => addLessonSettingsRow(lesson));
 }
@@ -1981,6 +2037,12 @@ function renderScheduleBoardLabels() {
   elements.scheduleForm.querySelectorAll('[name="scheduleBoard"] option').forEach((option) => {
     option.textContent = labels[option.value] || scheduleBoards[option.value];
   });
+}
+
+function renderPaymentHistoryPasswordSetting() {
+  if (elements.paymentHistoryPasswordInput) {
+    elements.paymentHistoryPasswordInput.value = getPaymentHistoryPassword();
+  }
 }
 
 function addLessonSettingsRow(lesson = { name: "", amount: 0, sessions: 1 }) {
@@ -2022,6 +2084,9 @@ function saveLessonSettings(event) {
     coach1: elements.scheduleBoardLabelInputs.coach1?.value,
     coach2: elements.scheduleBoardLabelInputs.coach2?.value,
   });
+  const previousPassword = getPaymentHistoryPassword();
+  state.paymentHistoryPassword = normalizePaymentHistoryPassword(elements.paymentHistoryPasswordInput?.value);
+  if (state.paymentHistoryPassword !== previousPassword) paymentHistoryUnlocked = false;
   fillLessonTypeOptions();
   fillScheduleLessonTypeOptions();
   renderScheduleBoardLabels();
