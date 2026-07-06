@@ -1668,7 +1668,7 @@ function openMobileWeekDayModal(day, dayGroups, emptyTimes) {
       button.type = "button";
       button.innerHTML = `
         <strong>${escapeHTML(group.time)}</strong>
-        <span>${escapeHTML(group.members.map((member) => member.name).join(", "))}</span>
+        <span class="${group.members.length > 1 ? "compact-names" : ""}">${escapeHTML(group.members.map((member) => member.name).join("/"))}</span>
       `;
       button.addEventListener("click", () => {
         closeModal(elements.availableTimeModal);
