@@ -2303,9 +2303,13 @@ select:focus {
 }
 
 .payment-lock-line {
-  display: grid;
-  gap: 10px;
-  justify-items: start;
+  display: flex;
+  justify-content: center;
+  padding: 14px;
+}
+
+.payment-lock-line .secondary-button {
+  min-width: 128px;
 }
 
 .split-actions span {
@@ -3985,13 +3989,64 @@ select {
   }
 
   .day-panel .section-title {
-    margin: 0 2px 10px;
-    align-items: flex-end;
+    margin: 0 2px 8px;
+    align-items: center;
   }
 
   .day-panel .section-title h3 {
-    font-size: 20px;
+    font-size: 19px;
     line-height: 1.2;
+  }
+
+  .day-panel .day-panel-actions {
+    gap: 6px;
+    margin-left: 0;
+  }
+
+  .day-panel .day-panel-actions .day-nav-button {
+    width: 34px;
+    height: 38px;
+    font-size: 22px;
+  }
+
+  .day-panel .day-panel-actions .day-today-button {
+    min-width: 48px;
+    height: 38px;
+    padding: 0 8px;
+  }
+
+  .day-panel .day-date-pill {
+    height: 38px;
+    min-width: 96px;
+    border: 0;
+    background: #f3f7f5;
+    color: #4e5b58;
+    font-size: 12px;
+    box-shadow: none;
+  }
+
+  .day-panel .attendance-date-control {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    gap: 6px;
+    border: 1px solid #e1e7e5;
+    border-radius: 10px;
+    background: #ffffff;
+    margin: 0 0 8px;
+    padding: 8px;
+  }
+
+  .day-panel .attendance-date-control span {
+    align-self: center;
+    font-size: 11px;
+  }
+
+  .day-panel .attendance-date-control input {
+    width: 100%;
+    max-width: none;
+    min-height: 36px;
+    border-radius: 8px;
+    text-align: center;
   }
 
   .count-pill {
@@ -4004,8 +4059,8 @@ select {
 
   .mobile-today-actions {
     display: flex;
-    justify-content: flex-end;
-    margin: -2px 0 10px;
+    justify-content: stretch;
+    margin: 0 0 10px;
   }
 
   .mobile-today-actions .secondary-button {
@@ -4013,6 +4068,7 @@ select {
     align-items: center;
     justify-content: center;
     gap: 5px;
+    width: 100%;
     min-height: 40px;
     border: 1px solid #dfe4e3;
     background: #ffffff;

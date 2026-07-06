@@ -557,11 +557,10 @@ function unlockPaymentHistory() {
   return true;
 }
 
-function createPaymentLockLine(message = "결제내역은 잠겨 있습니다.") {
+function createPaymentLockLine() {
   const row = document.createElement("div");
   row.className = "empty-line payment-lock-line";
   row.innerHTML = `
-    <p>${escapeHTML(message)}</p>
     <button class="secondary-button" type="button">비밀번호 입력</button>
   `;
   row.querySelector("button").addEventListener("click", unlockPaymentHistory);
