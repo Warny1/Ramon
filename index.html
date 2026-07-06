@@ -14,7 +14,7 @@
     <header class="mobile-app-header">
       <span class="page-logo-placeholder" aria-label="로고 자리"></span>
       <span>
-        <strong>RAMON</strong>
+        <button id="mobileOpenLessonSettings" class="mobile-settings-brand" type="button">RAMON</button>
         <small id="mobileTodayLabel"></small>
       </span>
     </header>
@@ -30,7 +30,6 @@
           <div class="schedule-board-switcher sidebar-schedule-board-switcher" role="tablist" aria-label="담당 시간표 선택" data-labels-ready="false">
             <button class="schedule-board-button active" type="button" data-schedule-board="admin">관리자</button>
             <button class="schedule-board-button" type="button" data-schedule-board="coach1">코치1</button>
-            <button class="schedule-board-button" type="button" data-schedule-board="coach2">코치2</button>
           </div>
         </div>
 
@@ -69,7 +68,6 @@
           <div class="schedule-board-switcher topbar-schedule-board-switcher" role="tablist" aria-label="담당 시간표 선택" data-labels-ready="false">
             <button class="schedule-board-button active" type="button" data-schedule-board="admin">관리자</button>
             <button class="schedule-board-button" type="button" data-schedule-board="coach1">코치1</button>
-            <button class="schedule-board-button" type="button" data-schedule-board="coach2">코치2</button>
           </div>
           <div class="desktop-nav" role="tablist" aria-label="관리자 화면">
             <button class="desktop-nav-button active" type="button" data-desktop-view="operations">운영</button>
@@ -401,10 +399,6 @@
               <span>두 번째</span>
               <input name="scheduleBoardLabelCoach1" placeholder="코치1" />
             </label>
-            <label>
-              <span>세 번째</span>
-              <input name="scheduleBoardLabelCoach2" placeholder="코치2" />
-            </label>
           </div>
         </section>
         <section class="board-settings-section" aria-label="결제내역 잠금 설정">
@@ -542,7 +536,6 @@
           <select name="scheduleBoard">
             <option value="admin">관리자</option>
             <option value="coach1">코치1</option>
-            <option value="coach2">코치2</option>
           </select>
         </label>
         <label>

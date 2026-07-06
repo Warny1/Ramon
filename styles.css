@@ -434,6 +434,26 @@ h4 {
   gap: 3px;
 }
 
+.mobile-settings-brand {
+  appearance: none;
+  border: 0;
+  background: transparent;
+  color: var(--ink);
+  cursor: pointer;
+  font: inherit;
+  font-size: 22px;
+  font-weight: 900;
+  line-height: 1;
+  padding: 0;
+  text-align: left;
+}
+
+.mobile-settings-brand:focus-visible {
+  border-radius: 6px;
+  outline: 2px solid rgba(47, 111, 100, 0.28);
+  outline-offset: 3px;
+}
+
 .mobile-app-header small {
   color: #818990;
   font-size: 12px;
@@ -3843,6 +3863,7 @@ select {
     display: block;
   }
 
+  .mobile-settings-brand,
   .mobile-app-header strong {
     color: var(--ink);
     font-size: 22px;

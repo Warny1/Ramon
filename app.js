@@ -35,7 +35,6 @@ const seedData = {
   scheduleBoardLabels: {
     admin: "관리자",
     coach1: "코치1",
-    coach2: "코치2",
   },
   paymentHistoryPassword: "0000",
   members: [],
@@ -205,7 +204,6 @@ let activeScheduleBoard = localStorage.getItem("ramon-active-schedule-board") ||
 const scheduleBoards = {
   admin: "관리자",
   coach1: "코치1",
-  coach2: "코치2",
 };
 
 const $ = (selector) => document.querySelector(selector);
@@ -274,7 +272,6 @@ const elements = {
   scheduleBoardLabelInputs: {
     admin: document.querySelector('[name="scheduleBoardLabelAdmin"]'),
     coach1: document.querySelector('[name="scheduleBoardLabelCoach1"]'),
-    coach2: document.querySelector('[name="scheduleBoardLabelCoach2"]'),
   },
   availableTimeModal: $("#availableTimeModal"),
   availableTimeModalTitle: $("#availableTimeModalTitle"),
@@ -327,6 +324,10 @@ document.addEventListener("DOMContentLoaded", async () => {
     openMakeupScheduleModal();
   });
   $("#openLessonSettings").addEventListener("click", () => {
+    renderLessonSettings();
+    openModal(elements.lessonSettingsModal);
+  });
+  $("#mobileOpenLessonSettings")?.addEventListener("click", () => {
     renderLessonSettings();
     openModal(elements.lessonSettingsModal);
   });
@@ -2082,7 +2083,6 @@ function saveLessonSettings(event) {
   state.scheduleBoardLabels = normalizeScheduleBoardLabels({
     admin: elements.scheduleBoardLabelInputs.admin?.value,
     coach1: elements.scheduleBoardLabelInputs.coach1?.value,
-    coach2: elements.scheduleBoardLabelInputs.coach2?.value,
   });
   const previousPassword = getPaymentHistoryPassword();
   state.paymentHistoryPassword = normalizePaymentHistoryPassword(elements.paymentHistoryPasswordInput?.value);
