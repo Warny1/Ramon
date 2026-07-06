@@ -3093,8 +3093,19 @@ body[data-role="member"] .detail-panel[data-panel="payment"] {
   }
 
   .timetable-title-cluster {
-    flex-wrap: wrap;
-    gap: 8px;
+    flex-wrap: nowrap;
+    gap: 6px;
+    width: 100%;
+  }
+
+  .timetable-title-copy {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+
+  .timetable-title-copy .eyebrow,
+  .timetable-title-copy h3 {
+    white-space: nowrap;
   }
 
   .timetable-head-controls {
@@ -3129,17 +3140,28 @@ body[data-role="member"] .detail-panel[data-panel="payment"] {
   }
 
   .today-count-card {
-    min-width: 104px;
+    min-width: 100px;
     min-height: 44px;
-    padding: 6px 10px;
+    padding: 6px 8px;
   }
 
   .today-count-card strong {
-    font-size: 15px;
+    font-size: 14px;
   }
 
   .desktop-day-navigation {
+    margin-left: auto;
     padding: 3px;
+  }
+
+  .desktop-day-navigation .day-nav-button {
+    width: 32px;
+    height: 40px;
+  }
+
+  .desktop-day-navigation .day-today-button {
+    min-width: 48px;
+    padding: 0 8px;
   }
 
   .available-time-strip {
