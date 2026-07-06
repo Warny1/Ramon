@@ -1651,12 +1651,12 @@ h4 {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 6px;
+  gap: 12px;
   border: 1px solid #dfe7eb;
   border-radius: 8px;
   background: #ffffff;
   min-height: 58px;
-  padding: 8px 9px;
+  padding: 8px 10px;
   text-align: left;
 }
 
@@ -1670,6 +1670,9 @@ h4 {
 }
 
 .mobile-week-lesson-button span {
+  display: grid;
+  justify-items: end;
+  gap: 1px;
   min-width: 0;
   overflow: visible;
   color: var(--ink);
@@ -1683,6 +1686,10 @@ h4 {
 
 .mobile-week-lesson-button span.compact-names {
   font-size: 11px;
+}
+
+.mobile-week-lesson-button span em {
+  font-style: normal;
 }
 
 .available-time-label {
