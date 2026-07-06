@@ -1690,7 +1690,6 @@ function createMobileWeekSummary(groups) {
         <span>수업 ${dayGroups.length}개</span>
         <span>빈 시간 ${emptyTimes.length}개</span>
       </span>
-      <span class="mobile-week-day-preview">${escapeHTML(formatMobileWeekPreview(dayGroups, emptyTimes))}</span>
     `;
     button.addEventListener("click", () => openMobileWeekDayModal(day, dayGroups, emptyTimes));
     summary.append(button);
