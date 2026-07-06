@@ -1427,7 +1427,8 @@ h4 {
 }
 
 .day-panel-actions {
-  display: flex;
+  display: grid;
+  grid-template-columns: 34px 52px 34px 108px;
   align-items: center;
   flex-wrap: nowrap;
   gap: 4px;
@@ -1507,6 +1508,7 @@ h4 {
 .day-date-pill {
   display: grid;
   place-items: center;
+  width: 108px;
   height: 40px;
   border-radius: 8px;
   background: #f2f6f5;
@@ -3193,6 +3195,18 @@ body[data-role="member"] .detail-panel[data-panel="payment"] {
     padding: 0 6px;
   }
 
+  .mobile-header-schedule-board-switcher {
+    flex: 0 0 142px;
+    width: auto;
+    max-width: 142px;
+  }
+
+  .mobile-header-schedule-board-switcher .schedule-board-button {
+    min-height: 30px;
+    padding: 0 6px;
+    font-size: 11px;
+  }
+
   .today-count-card {
     flex: 0 0 88px;
     min-width: 88px;
@@ -4031,6 +4045,7 @@ select {
   }
 
   .day-panel .day-panel-actions {
+    grid-template-columns: 34px 48px 34px 96px;
     gap: 6px;
     margin-left: 0;
   }
@@ -4048,8 +4063,8 @@ select {
   }
 
   .day-panel .day-date-pill {
+    width: 96px;
     height: 38px;
-    min-width: 96px;
     border: 0;
     background: #f3f7f5;
     color: #4e5b58;

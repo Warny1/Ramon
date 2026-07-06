@@ -1,4 +1,4 @@
-const CACHE_NAME = "member-desk-app-v116";
+const CACHE_NAME = "member-desk-app-v117";
 const APP_FILES = [
   "/",
   "/index.html",
