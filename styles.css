@@ -1636,8 +1636,8 @@ h4 {
 }
 
 .mobile-week-day-modal-list {
-  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-  gap: 10px;
+  grid-template-columns: repeat(auto-fill, minmax(96px, 1fr));
+  gap: 8px;
 }
 
 .mobile-week-modal-section-title {
@@ -1649,44 +1649,31 @@ h4 {
 
 .mobile-week-lesson-button {
   display: grid;
-  grid-template-columns: 74px minmax(0, 1fr);
-  gap: 4px 10px;
-  align-items: start;
+  place-items: center;
+  gap: 4px;
   border: 1px solid #dfe7eb;
-  border-radius: 10px;
+  border-radius: 8px;
   background: #ffffff;
-  min-height: 74px;
-  padding: 11px 12px;
-  text-align: left;
+  min-height: 70px;
+  padding: 8px;
+  text-align: center;
 }
 
 .mobile-week-lesson-button strong {
-  grid-row: 1 / 3;
   color: var(--accent-dark);
-  font-size: 18px;
+  font-size: 16px;
   font-weight: 900;
   font-variant-numeric: tabular-nums;
-  line-height: 1.15;
+  line-height: 1.1;
 }
 
 .mobile-week-lesson-button span {
   min-width: 0;
   overflow: visible;
   color: var(--ink);
-  font-size: 15px;
+  font-size: 13px;
   font-weight: 900;
-  line-height: 1.25;
-  white-space: normal;
-  word-break: keep-all;
-}
-
-.mobile-week-lesson-button small {
-  min-width: 0;
-  overflow: visible;
-  color: var(--muted);
-  font-size: 12px;
-  font-weight: 800;
-  line-height: 1.25;
+  line-height: 1.2;
   white-space: normal;
   word-break: keep-all;
 }
