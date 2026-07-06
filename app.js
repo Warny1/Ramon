@@ -1221,9 +1221,9 @@ function renderMonthlyLessonSummary() {
 }
 
 function getMonthlyLessonBoardSummaries() {
-  const groups = getMonthlyLessonGroups(selectedPaymentMonth);
+  const lessons = getMonthlyAttendedLessons(selectedPaymentMonth);
   return Object.entries(scheduleBoards).map(([board, fallbackLabel]) => {
-    const times = groups.filter((group) => group.scheduleBoard === board).length;
+    const times = lessons.filter((lesson) => lesson.scheduleBoard === board).length;
     return {
       board,
       label: getScheduleBoardLabels()[board] || fallbackLabel,
@@ -1232,66 +1232,44 @@ function getMonthlyLessonBoardSummaries() {
   });
 }
 
-function getMonthlyLessonGroups(monthKey) {
-  const groups = new Map();
+function getMonthlyAttendedLessons(monthKey) {
+  const lessons = new Map();
 
-  getMonthDateKeys(monthKey).forEach((dateKey) => {
-    const date = new Date(`${dateKey}T12:00:00`);
-    const day = date.getDay();
+  state.members.forEach((member) => {
+    member.attendances
+      .filter((attendance) => attendance.date?.startsWith(monthKey))
+      .filter((attendance) => normalizeAttendanceStatus(attendance.status) === "출석")
+      .forEach((attendance) => {
+        const schedule = findScheduleForAttendance(member, attendance);
+        const board = getScheduleBoard(schedule);
+        const key = [
+          attendance.date,
+          board,
+          attendance.time || "",
+          attendance.className || "출석",
+        ].join("|");
 
-    state.members.forEach((member) => {
-      member.schedules
-        .filter((schedule) => isScheduleOnDate(schedule, day, dateKey))
-        .forEach((schedule) => {
-          const board = getScheduleBoard(schedule);
-          const status = getScheduleStatus(schedule);
-          const key = [
-            dateKey,
-            board,
-            schedule.time || "",
-            schedule.className || "수업",
-            getScheduleLessonType(schedule),
-            status,
-            schedule.date || "",
-          ].join("|");
-
-          if (!groups.has(key)) {
-            groups.set(key, {
-              date: dateKey,
-              day,
-              time: schedule.time || "",
-              className: schedule.className || "수업",
-              lessonType: getScheduleLessonType(schedule),
-              status,
-              scheduleBoard: board,
-              members: [],
-            });
-          }
-
-          groups.get(key).members.push(member);
-        });
-    });
+        if (!lessons.has(key)) {
+          lessons.set(key, {
+            date: attendance.date,
+            time: attendance.time || "",
+            className: attendance.className || "출석",
+            scheduleBoard: board,
+          });
+        }
+      });
   });
 
-  return [...groups.values()].filter((group) => {
-    const attendanceStatus = getCombinedAttendanceStatusForDate([group], group.date);
-    return !["결석", "당일취소"].includes(attendanceStatus);
-  });
+  return [...lessons.values()];
 }
 
-function isScheduleOnDate(schedule, day, dateKey) {
-  if (schedule.date) return schedule.date === dateKey;
-  return Number(schedule.day) === day;
-}
-
-function getMonthDateKeys(monthKey) {
-  const dates = [];
-  const date = new Date(`${monthKey}-01T12:00:00`);
-  while (toISODate(date).startsWith(monthKey)) {
-    dates.push(toISODate(date));
-    date.setDate(date.getDate() + 1);
-  }
-  return dates;
+function findScheduleForAttendance(member, attendance) {
+  const attendanceDay = new Date(`${attendance.date}T12:00:00`).getDay();
+  return member.schedules.find((schedule) =>
+    (schedule.className || "출석") === (attendance.className || "출석") &&
+    (schedule.time || "") === (attendance.time || "") &&
+    (schedule.date ? schedule.date === attendance.date : Number(schedule.day) === attendanceDay),
+  );
 }
 
 function formatLessonTimeFromTimes(times) {
