@@ -937,7 +937,11 @@ function isMemberRole() {
 }
 
 function getAccessibleMembers() {
-  return state.members;
+  if (activeScheduleBoard === "admin") return state.members;
+
+  return state.members.filter((member) =>
+    member.schedules.some((schedule) => getScheduleBoard(schedule) === activeScheduleBoard),
+  );
 }
 
 function render() {
