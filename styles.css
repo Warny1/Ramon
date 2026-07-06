@@ -680,10 +680,12 @@ h4 {
   display: flex;
   flex: 0 0 auto;
   align-items: center;
+  flex-wrap: nowrap;
   gap: 4px;
   border-radius: 8px;
   background: transparent;
   padding: 4px;
+  white-space: nowrap;
 }
 
 .desktop-attendance-date-control {
@@ -1461,6 +1463,7 @@ h4 {
   padding: 0 12px;
   font-size: 13px;
   font-weight: 900;
+  white-space: nowrap;
 }
 
 .day-date-pill {
@@ -1785,11 +1788,13 @@ h4 {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  flex-wrap: nowrap;
   gap: 10px;
   margin: -2px 0 10px;
   color: var(--muted);
   font-size: 13px;
   font-weight: 800;
+  white-space: nowrap;
 }
 
 .attendance-date-control input {
