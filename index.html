@@ -13,10 +13,14 @@
   <body>
     <header class="mobile-app-header">
       <span class="page-logo-placeholder" aria-label="로고 자리"></span>
-      <span>
+      <span class="mobile-brand-copy">
         <button id="mobileOpenLessonSettings" class="mobile-settings-brand" type="button">RAMON</button>
         <small id="mobileTodayLabel"></small>
       </span>
+      <div class="schedule-board-switcher mobile-header-schedule-board-switcher" role="tablist" aria-label="담당 시간표 선택" data-labels-ready="false">
+        <button class="schedule-board-button active" type="button" data-schedule-board="admin">관리자</button>
+        <button class="schedule-board-button" type="button" data-schedule-board="coach1">코치1</button>
+      </div>
     </header>
 
     <div class="app-shell">

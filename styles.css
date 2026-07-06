@@ -429,7 +429,7 @@ h4 {
   background: linear-gradient(145deg, #e9f3f0, #f8eee5);
 }
 
-.mobile-app-header > span:last-child {
+.mobile-brand-copy {
   display: grid;
   gap: 3px;
 }
@@ -654,6 +654,10 @@ h4 {
 
 .sidebar-schedule-board-switcher {
   margin-left: auto;
+}
+
+.mobile-header-schedule-board-switcher {
+  display: none;
 }
 
 .schedule-board-button {
@@ -2428,7 +2432,7 @@ body[data-role="member"] .detail-panel[data-panel="payment"] {
   }
 
   body[data-desktop-view="operations"] .desktop-day-controls {
-    display: flex;
+    display: none;
   }
 
   body[data-desktop-view="schedule"] .desktop-day-controls {
@@ -3175,7 +3179,7 @@ body[data-role="member"] .detail-panel[data-panel="payment"] {
   }
 
   body[data-mobile-view="timetable"] .topbar-schedule-board-switcher {
-    display: flex;
+    display: none;
   }
 
   .schedule-board-switcher {
@@ -3944,6 +3948,30 @@ select {
 
   .mobile-app-header .page-logo-placeholder {
     display: block;
+  }
+
+  .mobile-brand-copy {
+    flex: 0 0 auto;
+  }
+
+  .mobile-header-schedule-board-switcher {
+    display: flex;
+    flex: 1 1 auto;
+    justify-content: flex-end;
+    min-width: 0;
+    max-width: 178px;
+    margin-left: auto;
+    border-color: #dbe6e2;
+    background: #eef5f2;
+    padding: 3px;
+  }
+
+  .mobile-header-schedule-board-switcher .schedule-board-button {
+    flex: 1 1 0;
+    min-width: 0;
+    min-height: 30px;
+    padding: 0 8px;
+    font-size: 11px;
   }
 
   .mobile-settings-brand,
