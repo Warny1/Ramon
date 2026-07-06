@@ -2365,6 +2365,10 @@ select:focus {
   display: none;
 }
 
+.today-inline-actions {
+  display: contents;
+}
+
 .topbar .eyebrow {
   margin-bottom: 2px;
 }
@@ -3483,7 +3487,7 @@ body[data-role="member"] .detail-panel[data-panel="payment"] {
   }
 
   body[data-mobile-view="today"] .day-panel {
-    display: block;
+    display: grid;
   }
 
   body[data-mobile-view="timetable"] .sidebar,
@@ -4074,7 +4078,6 @@ select {
 
   .day-panel .attendance-date-control {
     display: grid;
-    grid-column: 1;
     grid-template-columns: 1fr;
     gap: 4px;
     min-width: 0;
@@ -4084,6 +4087,13 @@ select {
     background: #ffffff;
     margin: 0;
     padding: 7px 8px;
+  }
+
+  .today-inline-actions {
+    display: grid;
+    grid-column: 1 / -1;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
   }
 
   .day-panel .attendance-date-control span {
@@ -4110,7 +4120,6 @@ select {
 
   .mobile-today-actions {
     display: flex;
-    grid-column: 2;
     justify-content: stretch;
     min-width: 0;
     margin: 0;
