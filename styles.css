@@ -2968,6 +2968,10 @@ body[data-role="member"] .detail-panel[data-panel="payment"] {
     grid-column: 1 / -1;
   }
 
+  body[data-mobile-view="members"] .sidebar-schedule-board-switcher {
+    display: none;
+  }
+
   body[data-mobile-view="members"] .search-box {
     grid-column: 1;
     grid-row: 2;
@@ -3221,10 +3225,6 @@ body[data-role="member"] .detail-panel[data-panel="payment"] {
     min-height: 30px;
     padding: 0 6px;
     font-size: 11px;
-  }
-
-  body[data-mobile-view="members"] .mobile-header-schedule-board-switcher {
-    display: none;
   }
 
   .today-count-card {
