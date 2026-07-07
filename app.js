@@ -1237,7 +1237,7 @@ function getMonthlyAttendedLessons(monthKey) {
   state.members.forEach((member) => {
     member.attendances
       .filter((attendance) => attendance.date?.startsWith(monthKey))
-      .filter((attendance) => normalizeAttendanceStatus(attendance.status) === "출석")
+      .filter((attendance) => isMonthlyLessonAttendanceStatus(attendance.status))
       .forEach((attendance) => {
         const schedule = findScheduleForAttendance(member, attendance);
         const board = getScheduleBoard(schedule);
@@ -1357,7 +1357,7 @@ function renderTodaySidebarList(query) {
         <span class="today-lesson-time">
           ${getSidebarTimeMarkup(entry.timeLabel)}
           ${getScheduleScopeBadge(entry)}
-          ${entry.status === "보강" ? '<small class="today-lesson-status">보강</small>' : ""}
+          ${entry.status ? `<small class="today-lesson-status">${escapeHTML(entry.status)}</small>` : ""}
         </span>
         <strong class="today-lesson-names">${escapeHTML(names)}</strong>
         <span class="today-lesson-balance ${balanceTone}">${escapeHTML(balances)}</span>
@@ -1371,7 +1371,10 @@ function renderTodaySidebarList(query) {
       { status: "결석", label: "결석", className: "absent" },
     ].forEach((action) => {
       const button = document.createElement("button");
-      button.className = `mini-action sidebar-attendance ${action.className} ${attendanceStatus === action.status ? "selected" : ""}`;
+      const isSelected = action.status === "출석"
+        ? isPresentAttendanceStatus(attendanceStatus)
+        : attendanceStatus === action.status;
+      button.className = `mini-action sidebar-attendance ${action.className} ${isSelected ? "selected" : ""}`;
       button.type = "button";
       button.textContent = action.label;
       button.setAttribute("aria-label", action.label);
@@ -2193,10 +2196,10 @@ function renderTodaySchedule() {
           <strong>${escapeHTML(item.members.map((member) => member.name).join(", "))}</strong>
         </span>
       </button>
-      ${endTime || status === "보강" ? `
+      ${endTime || status ? `
         <span class="today-card-time-meta">
           ${endTime ? `<small class="today-card-end-time">${escapeHTML(endTime)}</small>` : ""}
-          ${status === "보강" ? '<small class="today-card-status">보강</small>' : ""}
+          ${status ? `<small class="today-card-status">${escapeHTML(status)}</small>` : ""}
         </span>
       ` : ""}
       <span class="today-card-details">
@@ -2212,7 +2215,10 @@ function renderTodaySchedule() {
       { status: "결석", label: "결석", className: "absent" },
     ].forEach((action) => {
       const button = document.createElement("button");
-      button.className = `mini-action attendance-big ${action.className} ${attendanceStatus === action.status ? "selected" : ""}`;
+      const isSelected = action.status === "출석"
+        ? isPresentAttendanceStatus(attendanceStatus)
+        : attendanceStatus === action.status;
+      button.className = `mini-action attendance-big ${action.className} ${isSelected ? "selected" : ""}`;
       button.type = "button";
       button.textContent = action.label;
       button.setAttribute("aria-label", action.label);
@@ -2488,7 +2494,8 @@ function markAttendance() {
   if (!member) return;
 
   const currentClass = member.schedules.find((item) => Number(item.day) === getSelectedAttendanceDate().getDay());
-  recordAttendance(member, currentClass?.className || "출석", currentClass?.time || "", "");
+  const status = getScheduleStatus(currentClass) === "시범수업" ? "시범수업" : "";
+  recordAttendance(member, currentClass?.className || "출석", currentClass?.time || "", status);
   commit();
 }
 
@@ -2496,7 +2503,8 @@ function markGroupAttendance(group) {
   if (!canEditSharedData()) return;
 
   group.members.forEach((member) => {
-    recordAttendance(member, group.className || "출석", group.time, "");
+    const status = getScheduleStatus(group) === "시범수업" ? "시범수업" : "";
+    recordAttendance(member, group.className || "출석", group.time, status);
   });
   selectedMemberId = group.members[0]?.id ?? selectedMemberId;
   commit();
@@ -2549,7 +2557,7 @@ function hasAttendanceForGroup(member, group) {
       item.date === selectedAttendanceDate &&
       (item.className || "출석") === (group.className || "출석") &&
       (item.time || "") === (group.time || "") &&
-      normalizeAttendanceStatus(item.status) === "출석",
+      isPresentAttendanceStatus(item.status),
   );
 }
 
@@ -3251,8 +3259,9 @@ function markCombinedAttendance(groups, status = "출석") {
 function markCombinedAttendanceForDate(groups, status, date) {
   if (!canEditSharedData()) return;
   groups.forEach((group) => {
+    const nextStatus = status === "출석" && getScheduleStatus(group) === "시범수업" ? "시범수업" : status;
     group.members.forEach((member) => {
-      recordAttendanceForDate(member, group.className || "출석", group.time, status, date);
+      recordAttendanceForDate(member, group.className || "출석", group.time, nextStatus, date);
     });
   });
   commit();
@@ -3435,7 +3444,7 @@ function createLessonBlock(group) {
 }
 
 function getAttendanceStateClass(status) {
-  if (status === "출석" || status === "보강완료") return "present";
+  if (isPresentAttendanceStatus(status)) return "present";
   if (status === "결석" || status === "당일취소") return "absent";
   return "pending";
 }
@@ -3566,6 +3575,7 @@ function getStatusClass(status) {
     결석: "absent",
     보강: "makeup",
     보강완료: "done",
+    시범수업: "trial",
     당일취소: "cancel",
   };
   return classes[status] || "note";
@@ -3804,7 +3814,7 @@ function getPaymentRecordKey(item) {
 
 function normalizeScheduleStatus(value) {
   const text = String(value || "").trim();
-  const allowed = ["결석", "보강", "보강완료", "당일취소"];
+  const allowed = ["결석", "보강", "보강완료", "시범수업", "당일취소"];
   return allowed.includes(text) ? text : "";
 }
 
@@ -3814,8 +3824,16 @@ function normalizeAttendanceStatus(value) {
   const normalized = normalizeHeader(text);
   if (["true", "checked", "check", "yes", "y", "o", "v", "✓", "✔"].includes(normalized)) return "출석";
   if (["false", "unchecked", "no", "n", "x", "✕", "✗"].includes(normalized)) return "결석";
-  const allowed = ["출석", "결석", "보강", "보강완료", "당일취소"];
+  const allowed = ["출석", "결석", "보강", "보강완료", "시범수업", "당일취소"];
   return allowed.includes(text) ? text : text;
+}
+
+function isPresentAttendanceStatus(value) {
+  return ["출석", "보강", "보강완료", "시범수업"].includes(normalizeAttendanceStatus(value));
+}
+
+function isMonthlyLessonAttendanceStatus(value) {
+  return ["출석", "시범수업"].includes(normalizeAttendanceStatus(value));
 }
 
 function normalizePastedAttendanceStatus(value, defaultToPresent = false) {

@@ -984,6 +984,11 @@ h4 {
   color: var(--success);
 }
 
+.status-badge.trial {
+  background: #edf4ff;
+  color: #315f9c;
+}
+
 .status-badge.note {
   background: #e5e7eb;
   color: var(--muted);
