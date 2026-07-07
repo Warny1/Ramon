@@ -3161,11 +3161,23 @@ body[data-role="member"] .detail-panel[data-panel="payment"] {
   }
 
   .timetable-title-copy .eyebrow {
-    font-size: 10px;
+    display: none;
   }
 
   .timetable-title-copy h3 {
     font-size: 16px;
+  }
+
+  .timetable-title-cluster {
+    display: grid;
+    grid-template-columns: 88px minmax(70px, 1fr) 110px;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .timetable-title-copy {
+    justify-self: center;
+    text-align: center;
   }
 
   .timetable-head-controls {
