@@ -1892,12 +1892,6 @@ function getVisibleTimetableDays() {
 }
 
 function openScheduleAt(day, time) {
-  const member = getSelectedMember();
-  if (!member) {
-    openModal(elements.memberModal);
-    return;
-  }
-
   prepareScheduleModal("regular");
   elements.scheduleForm.day.value = String(day);
   elements.scheduleForm.time.value = time;
