@@ -376,6 +376,9 @@ document.addEventListener("DOMContentLoaded", async () => {
   elements.scheduleForm.querySelectorAll('[name="scheduleScope"]').forEach((input) => {
     input.addEventListener("change", syncScheduleScopeFields);
   });
+  elements.scheduleForm.querySelectorAll('[name="scheduleStatus"]').forEach((input) => {
+    input.addEventListener("change", syncScheduleStatusFields);
+  });
   elements.scheduleForm.day.addEventListener("change", () => {
     if (getScheduleScope() === "once") {
       elements.scheduleForm.date.value = getDateForScheduleDay(Number(elements.scheduleForm.day.value));
@@ -1865,7 +1868,7 @@ function openMakeupScheduleModal({ date = selectedAttendanceDate, time = roundTo
   elements.scheduleForm.date.value = date;
   elements.scheduleForm.time.value = time;
   elements.scheduleForm.querySelector('[name="className"]').value = "보강";
-  elements.scheduleForm.querySelector('[name="scheduleStatus"]').value = "보강";
+  setScheduleStatus("보강", { shouldSync: false });
   setScheduleScope("once");
   renderScheduleMemberOptions([]);
   openModal(elements.scheduleModal);
@@ -1907,7 +1910,7 @@ function openScheduleAt(day, time) {
   if (lessonTypeSelect && !lessonTypeSelect.value) {
     lessonTypeSelect.value = state.lessonTypes[0]?.name || "";
   }
-  elements.scheduleForm.querySelector('[name="scheduleStatus"]').value = "";
+  setScheduleStatus("");
   setScheduleScope("weekly");
   renderScheduleMemberOptions([]);
   openModal(elements.scheduleModal);
@@ -2604,8 +2607,9 @@ function editScheduleGroup(group) {
   elements.scheduleForm.querySelector('[name="className"]').value = firstGroup.className || "수업";
   elements.scheduleForm.querySelector('[name="scheduleBoard"]').value = getScheduleBoard(firstGroup);
   elements.scheduleForm.querySelector('[name="scheduleLessonType"]').value = firstGroup.lessonType || state.lessonTypes[0]?.name || "";
-  elements.scheduleForm.querySelector('[name="scheduleStatus"]').value = firstGroup.status || "";
+  setScheduleStatus(firstGroup.status || "", { shouldSync: false });
   setScheduleScope(isOneDay ? "once" : "weekly");
+  syncScheduleStatusFields();
   renderScheduleMemberOptions(selectedIds);
   openModal(elements.scheduleModal);
 }
@@ -3478,9 +3482,9 @@ function prepareScheduleModal(mode) {
 
   if (!isMakeup) {
     elements.scheduleForm.date.value = "";
-    elements.scheduleForm.querySelector('[name="scheduleStatus"]').value = "";
+    setScheduleStatus("", { shouldSync: false });
   }
-  syncScheduleScopeFields();
+  syncScheduleStatusFields();
 }
 
 function setScheduleScope(scope) {
@@ -3491,6 +3495,36 @@ function setScheduleScope(scope) {
 
 function getScheduleScope() {
   return elements.scheduleForm.querySelector('[name="scheduleScope"]:checked')?.value || "weekly";
+}
+
+function setScheduleStatus(status, { shouldSync = true } = {}) {
+  const target = elements.scheduleForm.querySelector(`[name="scheduleStatus"][value="${status}"]`)
+    || elements.scheduleForm.querySelector('[name="scheduleStatus"][value=""]');
+  if (target) target.checked = true;
+  if (shouldSync) syncScheduleStatusFields();
+}
+
+function getScheduleFormStatus() {
+  return elements.scheduleForm.querySelector('[name="scheduleStatus"]:checked')?.value || "";
+}
+
+function syncScheduleStatusFields() {
+  const isTrial = getScheduleFormStatus() === "시범수업";
+  const weeklyInput = elements.scheduleForm.querySelector('[name="scheduleScope"][value="weekly"]');
+  const note = elements.scheduleForm.querySelector(".schedule-trial-note");
+
+  if (weeklyInput) weeklyInput.disabled = isTrial;
+  if (note) note.hidden = !isTrial;
+
+  if (isTrial) {
+    const day = Number(elements.scheduleForm.day.value || getSelectedAttendanceDate().getDay());
+    const date = getDateForScheduleDay(day);
+    setScheduleScope("once");
+    elements.scheduleForm.date.value = date;
+    return;
+  }
+
+  syncScheduleScopeFields();
 }
 
 function syncScheduleScopeFields() {

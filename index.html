@@ -549,17 +549,34 @@
           레슨 타입
           <select name="scheduleLessonType"></select>
         </label>
-        <label>
-          비고
-          <select name="scheduleStatus">
-            <option value="">일반</option>
-            <option value="결석">결석</option>
-            <option value="보강">보강</option>
-            <option value="보강완료">보강완료</option>
-            <option value="시범수업">시범수업</option>
-            <option value="당일취소">당일취소</option>
-          </select>
-        </label>
+        <fieldset class="segmented-field schedule-status-field">
+          <legend>수업 구분</legend>
+          <label>
+            <input name="scheduleStatus" type="radio" value="" checked />
+            <span>일반</span>
+          </label>
+          <label>
+            <input name="scheduleStatus" type="radio" value="보강" />
+            <span>보강</span>
+          </label>
+          <label>
+            <input name="scheduleStatus" type="radio" value="시범수업" />
+            <span>시범수업</span>
+          </label>
+          <label>
+            <input name="scheduleStatus" type="radio" value="결석" />
+            <span>결석</span>
+          </label>
+          <label>
+            <input name="scheduleStatus" type="radio" value="보강완료" />
+            <span>보강완료</span>
+          </label>
+          <label>
+            <input name="scheduleStatus" type="radio" value="당일취소" />
+            <span>당일취소</span>
+          </label>
+          <p class="schedule-trial-note" hidden>회원권 차감 없음 · 코치 수업횟수 포함</p>
+        </fieldset>
         <div class="search-box schedule-member-search">
           <span aria-hidden="true">⌕</span>
           <input id="scheduleMemberSearch" type="search" placeholder="회원 이름 검색" />

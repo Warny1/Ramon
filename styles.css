@@ -2110,6 +2110,22 @@ h4 {
   color: var(--accent-dark);
 }
 
+.segmented-field input:disabled + span {
+  opacity: 0.45;
+}
+
+.schedule-status-field {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.schedule-trial-note {
+  grid-column: 1 / -1;
+  margin: -2px 0 0;
+  color: #315f9c;
+  font-size: 12px;
+  font-weight: 900;
+}
+
 .modal-head {
   display: flex;
   align-items: center;
