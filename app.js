@@ -3863,10 +3863,12 @@ function normalizeAttendanceStatus(value) {
 }
 
 function isPresentAttendanceStatus(value) {
+  if (!String(value || "").trim()) return false;
   return ["출석", "보강", "보강완료", "시범수업"].includes(normalizeAttendanceStatus(value));
 }
 
 function isMonthlyLessonAttendanceStatus(value) {
+  if (!String(value || "").trim()) return false;
   return ["출석", "시범수업"].includes(normalizeAttendanceStatus(value));
 }
 
