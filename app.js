@@ -282,8 +282,6 @@ const elements = {
   scheduleForm: $("#scheduleForm"),
   scheduleDayField: $("#scheduleDayField"),
   makeupDateField: $("#makeupDateField"),
-  scheduleStartDateField: $("#scheduleStartDateField"),
-  scheduleEndDateField: $("#scheduleEndDateField"),
   scheduleScopeField: $("#scheduleScopeField"),
   scheduleMemberSearch: $("#scheduleMemberSearch"),
   scheduleMemberOptions: $("#scheduleMemberOptions"),
@@ -2667,7 +2665,7 @@ function editScheduleGroup(group) {
   elements.scheduleForm.time.value = firstGroup.time || group.startTime || group.time || roundToNextHalfHour();
   elements.scheduleForm.date.value = firstGroup.date || getDateForScheduleDay(Number(firstGroup.day));
   elements.scheduleForm.startDate.value = firstGroup.date ? "" : getDateForScheduleDay(Number(firstGroup.day));
-  elements.scheduleForm.endDate.value = firstGroup.endDate || "";
+  elements.scheduleForm.endDate.value = "";
   elements.scheduleForm.querySelector('[name="className"]').value = firstGroup.className || "수업";
   elements.scheduleForm.querySelector('[name="scheduleBoard"]').value = getScheduleBoard(firstGroup);
   elements.scheduleForm.querySelector('[name="scheduleLessonType"]').value = firstGroup.lessonType || state.lessonTypes[0]?.name || "";
@@ -3654,8 +3652,6 @@ function syncScheduleScopeFields() {
   const showStartDate = !isMakeup && scope === "weekly";
 
   elements.makeupDateField.hidden = !showDate;
-  elements.scheduleStartDateField.hidden = !showStartDate;
-  elements.scheduleEndDateField.hidden = !showStartDate;
   elements.scheduleForm.date.required = showDate;
   elements.scheduleForm.startDate.required = false;
   elements.scheduleForm.endDate.required = false;
@@ -3672,9 +3668,9 @@ function syncScheduleScopeFields() {
 }
 
 function syncScheduleStartDateDefault() {
-  if (getScheduleScope() !== "weekly" || elements.scheduleForm.dataset.mode === "edit") return;
-  if (elements.scheduleForm.startDate.value) return;
+  if (getScheduleScope() !== "weekly") return;
   elements.scheduleForm.startDate.value = getDateForScheduleDay(Number(elements.scheduleForm.day.value || getSelectedAttendanceDate().getDay()));
+  elements.scheduleForm.endDate.value = "";
 }
 
 function renderScheduleMemberOptions(selectedIds = []) {
