@@ -282,6 +282,7 @@ const elements = {
   scheduleForm: $("#scheduleForm"),
   scheduleDayField: $("#scheduleDayField"),
   makeupDateField: $("#makeupDateField"),
+  scheduleStartDateField: $("#scheduleStartDateField"),
   scheduleScopeField: $("#scheduleScopeField"),
   scheduleMemberSearch: $("#scheduleMemberSearch"),
   scheduleMemberOptions: $("#scheduleMemberOptions"),
@@ -1918,7 +1919,7 @@ function openScheduleAt(day, time) {
   elements.scheduleForm.day.value = String(day);
   elements.scheduleForm.time.value = time;
   elements.scheduleForm.date.value = getDateForScheduleDay(day);
-  elements.scheduleForm.startDate.value = getDateForScheduleDay(day);
+  elements.scheduleForm.startDate.value = "";
   elements.scheduleForm.endDate.value = "";
   const classNameInput = elements.scheduleForm.querySelector('[name="className"]');
   if (classNameInput && !classNameInput.value) {
@@ -2492,6 +2493,9 @@ function addSchedule(event) {
   memberIds.forEach((memberId) => {
     const member = state.members.find((item) => item.id === memberId);
     if (!member) return;
+    const memberScheduleStartDate = !isMakeup && scheduleScope === "weekly"
+      ? scheduleStartDate || (!isEdit ? getMemberFirstPaymentDate(member) : "") || getDateForScheduleDay(scheduleDay)
+      : "";
 
     scheduleTimes.forEach((time) => {
       member.schedules.push({
@@ -2503,7 +2507,7 @@ function addSchedule(event) {
         lessonType: String(form.get("scheduleLessonType")),
         status: String(form.get("scheduleStatus")),
         date: scheduleDate,
-        startDate: scheduleStartDate,
+        startDate: memberScheduleStartDate,
         endDate: scheduleEndDate,
       });
     });
@@ -2514,6 +2518,13 @@ function addSchedule(event) {
   editingScheduleGroup = null;
   closeModal(elements.scheduleModal);
   commit();
+}
+
+function getMemberFirstPaymentDate(member) {
+  return [...(member?.payments || [])]
+    .map((item) => String(item.date || "").trim())
+    .filter(Boolean)
+    .sort((a, b) => a.localeCompare(b))[0] || "";
 }
 
 function getPreviousISODate(date) {
@@ -3652,6 +3663,7 @@ function syncScheduleScopeFields() {
   const showStartDate = !isMakeup && scope === "weekly";
 
   elements.makeupDateField.hidden = !showDate;
+  elements.scheduleStartDateField.hidden = !showStartDate;
   elements.scheduleForm.date.required = showDate;
   elements.scheduleForm.startDate.required = false;
   elements.scheduleForm.endDate.required = false;
@@ -3669,6 +3681,7 @@ function syncScheduleScopeFields() {
 
 function syncScheduleStartDateDefault() {
   if (getScheduleScope() !== "weekly") return;
+  if (elements.scheduleForm.dataset.mode !== "edit") return;
   elements.scheduleForm.startDate.value = getDateForScheduleDay(Number(elements.scheduleForm.day.value || getSelectedAttendanceDate().getDay()));
   elements.scheduleForm.endDate.value = "";
 }
