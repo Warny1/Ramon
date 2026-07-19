@@ -69,17 +69,29 @@ create index if not exists payments_member_id_idx on public.payments (member_id)
 create index if not exists attendances_member_id_idx on public.attendances (member_id);
 create index if not exists attendances_updated_at_idx on public.attendances (updated_at);
 
+create table if not exists public.app_backups (
+  id text primary key,
+  backup_date date not null,
+  source text not null default 'vercel-cron',
+  data jsonb not null,
+  summary jsonb not null default '{}'::jsonb,
+  created_at timestamptz not null default now()
+);
+
+create index if not exists app_backups_backup_date_idx on public.app_backups (backup_date desc);
+
 alter table public.app_settings enable row level security;
 alter table public.members enable row level security;
 alter table public.schedules enable row level security;
 alter table public.payments enable row level security;
 alter table public.attendances enable row level security;
+alter table public.app_backups enable row level security;
 
 do $$
 declare
   table_name text;
 begin
-  foreach table_name in array array['app_settings', 'members', 'schedules', 'payments', 'attendances']
+  foreach table_name in array array['app_settings', 'members', 'schedules', 'payments', 'attendances', 'app_backups']
   loop
     execute format('drop policy if exists "Allow public read" on public.%I', table_name);
     execute format('drop policy if exists "Allow public insert" on public.%I', table_name);

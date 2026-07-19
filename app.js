@@ -282,6 +282,7 @@ const elements = {
   scheduleForm: $("#scheduleForm"),
   scheduleDayField: $("#scheduleDayField"),
   makeupDateField: $("#makeupDateField"),
+  scheduleStartDateField: $("#scheduleStartDateField"),
   scheduleScopeField: $("#scheduleScopeField"),
   scheduleMemberSearch: $("#scheduleMemberSearch"),
   scheduleMemberOptions: $("#scheduleMemberOptions"),
@@ -383,6 +384,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     if (getScheduleScope() === "once") {
       elements.scheduleForm.date.value = getDateForScheduleDay(Number(elements.scheduleForm.day.value));
     }
+    syncScheduleStartDateDefault();
   });
   elements.scheduleMemberOptions.addEventListener("change", (event) => {
     const checkbox = event.target.closest('input[name="memberIds"]');
@@ -709,6 +711,8 @@ function deduplicateSchedules(schedules = []) {
       String(item.className || "수업").trim(),
       normalizeScheduleBoard(item.scheduleBoard),
       String(item.date || "").trim(),
+      String(item.startDate || "").trim(),
+      String(item.endDate || "").trim(),
     ].join("|");
     const existing = schedulesByKey.get(key);
 
@@ -716,6 +720,8 @@ function deduplicateSchedules(schedules = []) {
       if (!existing.lessonType && item.lessonType) existing.lessonType = item.lessonType;
       if (!existing.status && item.status) existing.status = item.status;
       if (!existing.scheduleBoard && item.scheduleBoard) existing.scheduleBoard = normalizeScheduleBoard(item.scheduleBoard);
+      if (!existing.startDate && item.startDate) existing.startDate = item.startDate;
+      if (!existing.endDate && item.endDate) existing.endDate = item.endDate;
       return;
     }
 
@@ -1270,7 +1276,7 @@ function findScheduleForAttendance(member, attendance) {
   return member.schedules.find((schedule) =>
     (schedule.className || "출석") === (attendance.className || "출석") &&
     (schedule.time || "") === (attendance.time || "") &&
-    (schedule.date ? schedule.date === attendance.date : Number(schedule.day) === attendanceDay),
+    (schedule.date ? schedule.date === attendance.date : Number(schedule.day) === attendanceDay && isScheduleActiveOnDate(schedule, attendance.date)),
   );
 }
 
@@ -1548,7 +1554,7 @@ function renderAttendanceCheckList(member) {
 
   const selectedDay = getSelectedAttendanceDate().getDay();
   const schedules = member.schedules
-    .filter((item) => (!item.date && Number(item.day) === selectedDay) || item.date === selectedAttendanceDate)
+    .filter((item) => item.date === selectedAttendanceDate || (!item.date && Number(item.day) === selectedDay && isScheduleActiveOnDate(item, selectedAttendanceDate)))
     .sort((a, b) => (a.time || "").localeCompare(b.time || ""));
 
   if (!schedules.length) {
@@ -1875,6 +1881,7 @@ function openAvailableTimeModal(times, day) {
 function openMakeupScheduleModal({ date = selectedAttendanceDate, time = roundToNextHalfHour() } = {}) {
   prepareScheduleModal("makeup");
   elements.scheduleForm.date.value = date;
+  elements.scheduleForm.startDate.value = "";
   elements.scheduleForm.time.value = time;
   elements.scheduleForm.querySelector('[name="className"]').value = "보강";
   setScheduleStatus("보강", { shouldSync: false });
@@ -1911,6 +1918,7 @@ function openScheduleAt(day, time) {
   elements.scheduleForm.day.value = String(day);
   elements.scheduleForm.time.value = time;
   elements.scheduleForm.date.value = getDateForScheduleDay(day);
+  elements.scheduleForm.startDate.value = getDateForScheduleDay(day);
   const classNameInput = elements.scheduleForm.querySelector('[name="className"]');
   if (classNameInput && !classNameInput.value) {
     classNameInput.value = "수업";
@@ -2442,6 +2450,7 @@ function addSchedule(event) {
   const isEdit = elements.scheduleForm.dataset.mode === "edit";
   const scheduleScope = getScheduleScope();
   const scheduleDate = isMakeup || scheduleScope === "once" ? String(form.get("date")) : "";
+  const scheduleStartDate = !isMakeup && scheduleScope === "weekly" ? String(form.get("startDate") || "") : "";
   const formTime = String(form.get("time"));
 
   if (!memberIds.length) {
@@ -2488,6 +2497,7 @@ function addSchedule(event) {
         lessonType: String(form.get("scheduleLessonType")),
         status: String(form.get("scheduleStatus")),
         date: scheduleDate,
+        startDate: scheduleStartDate,
       });
     });
   });
@@ -2613,6 +2623,7 @@ function editScheduleGroup(group) {
   elements.scheduleForm.day.value = String(firstGroup.day);
   elements.scheduleForm.time.value = firstGroup.time || group.startTime || group.time || roundToNextHalfHour();
   elements.scheduleForm.date.value = firstGroup.date || getDateForScheduleDay(Number(firstGroup.day));
+  elements.scheduleForm.startDate.value = firstGroup.startDate || "";
   elements.scheduleForm.querySelector('[name="className"]').value = firstGroup.className || "수업";
   elements.scheduleForm.querySelector('[name="scheduleBoard"]').value = getScheduleBoard(firstGroup);
   elements.scheduleForm.querySelector('[name="scheduleLessonType"]').value = firstGroup.lessonType || state.lessonTypes[0]?.name || "";
@@ -2739,19 +2750,19 @@ async function saveNow() {
 function exportSheetCsv() {
   if (!canManageSettings()) return;
 
-  const headers = ["type", "memberName", "phone", "memo", "day", "time", "className", "lessonType", "date", "sessions", "amount", "note", "scheduleBoard"];
+  const headers = ["type", "memberName", "phone", "memo", "day", "time", "className", "lessonType", "date", "sessions", "amount", "note", "scheduleBoard", "startDate"];
   const rows = [headers];
 
   state.members.forEach((member) => {
-    rows.push(["member", member.name, member.phone, member.memo, "", "", "", member.defaultLessonType || "", member.createdAt, "", "", "", ""]);
+    rows.push(["member", member.name, member.phone, member.memo, "", "", "", member.defaultLessonType || "", member.createdAt, "", "", "", "", ""]);
     member.schedules.forEach((item) => {
-      rows.push(["schedule", member.name, member.phone, "", item.day, item.time, item.className || "수업", getScheduleLessonType(item), item.date || "", "", "", getScheduleStatus(item), getScheduleBoard(item)]);
+      rows.push(["schedule", member.name, member.phone, "", item.day, item.time, item.className || "수업", getScheduleLessonType(item), item.date || "", "", "", getScheduleStatus(item), getScheduleBoard(item), item.startDate || ""]);
     });
     member.payments.forEach((item) => {
-      rows.push(["payment", member.name, member.phone, "", "", "", "", item.lessonType || "", item.date, item.sessions, item.amount, item.memo || "", ""]);
+      rows.push(["payment", member.name, member.phone, "", "", "", "", item.lessonType || "", item.date, item.sessions, item.amount, item.memo || "", "", ""]);
     });
     member.attendances.forEach((item) => {
-      rows.push(["attendance", member.name, member.phone, "", "", item.time || "", item.className || "출석", "", item.date, "", "", item.status || "", ""]);
+      rows.push(["attendance", member.name, member.phone, "", "", item.time || "", item.className || "출석", "", item.date, "", "", item.status || "", "", ""]);
     });
   });
 
@@ -2808,6 +2819,7 @@ function importSheetCsv(event) {
             status: row[index.note] || "",
             date: row[index.date] || "",
             scheduleBoard: normalizeScheduleBoard(index.scheduleBoard === undefined ? "admin" : row[index.scheduleBoard]),
+            startDate: index.startDate === undefined ? "" : row[index.startDate] || "",
           });
         }
 
@@ -3363,20 +3375,30 @@ function getScheduleItems() {
     member.schedules
       .filter((item) => getScheduleBoard(item) === activeScheduleBoard)
       .filter((item) =>
-        !item.date ||
-        (isFullTimetableView()
-          ? isDateInSelectedWeek(item.date)
-          : item.date === selectedAttendanceDate),
+        item.date
+          ? isFullTimetableView()
+            ? isDateInSelectedWeek(item.date)
+            : item.date === selectedAttendanceDate
+          : isScheduleActiveOnDate(item, getDateForScheduleDay(item.day)),
       )
       .map((item) => ({ ...item, member })),
   );
+}
+
+function isScheduleActiveOnDate(schedule, date) {
+  if (!date) return true;
+  const startDate = String(schedule.startDate || "").trim();
+  const endDate = String(schedule.endDate || "").trim();
+  if (startDate && date < startDate) return false;
+  if (endDate && date > endDate) return false;
+  return true;
 }
 
 function getScheduleGroups() {
   const groups = new Map();
 
   getScheduleItems().forEach((item) => {
-    const key = [item.day, item.time, item.className || "수업", getScheduleLessonType(item), getScheduleStatus(item), getScheduleBoard(item), item.date || ""].join("|");
+    const key = [item.day, item.time, item.className || "수업", getScheduleLessonType(item), getScheduleStatus(item), getScheduleBoard(item), item.date || "", item.startDate || "", item.endDate || ""].join("|");
     if (!groups.has(key)) {
       groups.set(key, {
         day: item.day,
@@ -3386,6 +3408,8 @@ function getScheduleGroups() {
         status: getScheduleStatus(item),
         scheduleBoard: getScheduleBoard(item),
         date: item.date || "",
+        startDate: item.startDate || "",
+        endDate: item.endDate || "",
         members: [],
         entries: [],
       });
@@ -3516,6 +3540,7 @@ function prepareScheduleModal(mode) {
   elements.scheduleDayField.hidden = isMakeup;
   elements.scheduleScopeField.hidden = false;
   elements.scheduleForm.date.required = isMakeup;
+  elements.scheduleForm.startDate.value = "";
 
   if (!isMakeup) {
     elements.scheduleForm.date.value = "";
@@ -3558,6 +3583,7 @@ function syncScheduleStatusFields() {
     const date = getDateForScheduleDay(day);
     setScheduleScope("once");
     elements.scheduleForm.date.value = date;
+    elements.scheduleForm.startDate.value = "";
     return;
   }
 
@@ -3569,14 +3595,25 @@ function syncScheduleScopeFields() {
   const isMakeup = elements.scheduleForm.dataset.mode === "makeup";
   const dateLabel = $("#scheduleDateLabel");
   const showDate = isMakeup || scope === "once";
+  const showStartDate = !isMakeup && scope === "weekly";
 
   elements.makeupDateField.hidden = !showDate;
+  elements.scheduleStartDateField.hidden = !showStartDate;
   elements.scheduleForm.date.required = showDate;
+  elements.scheduleForm.startDate.required = false;
   if (dateLabel) dateLabel.textContent = isMakeup ? "보강 날짜" : "적용 날짜";
 
   if (scope === "once" && !elements.scheduleForm.date.value) {
     elements.scheduleForm.date.value = getDateForScheduleDay(Number(elements.scheduleForm.day.value || getSelectedAttendanceDate().getDay()));
   }
+  if (showStartDate) syncScheduleStartDateDefault();
+  if (!showStartDate) elements.scheduleForm.startDate.value = "";
+}
+
+function syncScheduleStartDateDefault() {
+  if (getScheduleScope() !== "weekly" || elements.scheduleForm.dataset.mode === "edit") return;
+  if (elements.scheduleForm.startDate.value) return;
+  elements.scheduleForm.startDate.value = getDateForScheduleDay(Number(elements.scheduleForm.day.value || getSelectedAttendanceDate().getDay()));
 }
 
 function renderScheduleMemberOptions(selectedIds = []) {
@@ -3638,7 +3675,9 @@ function getStatusBadge(status) {
 
 function getScheduleScopeBadge(item) {
   const isOneDay = Boolean(item.date || item.groups?.some((group) => group.date));
-  return `<span class="scope-badge ${isOneDay ? "once" : "weekly"}">${isOneDay ? "오늘만" : "매주"}</span>`;
+  const startDate = !isOneDay ? item.startDate || item.groups?.find((group) => group.startDate)?.startDate : "";
+  const label = isOneDay ? "오늘만" : startDate ? `매주 · ${formatShortDate(startDate)}부터` : "매주";
+  return `<span class="scope-badge ${isOneDay ? "once" : "weekly"}">${escapeHTML(label)}</span>`;
 }
 
 function getStatusClass(status) {
