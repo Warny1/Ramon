@@ -113,7 +113,8 @@ async function requestSupabase(table, query = "", options = {}) {
   }
 
   if (result.status === 204) return [];
-  return result.json();
+  const text = await result.text();
+  return text ? JSON.parse(text) : [];
 }
 
 function getSupabaseUrl() {
