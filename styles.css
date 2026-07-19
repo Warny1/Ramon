@@ -1346,6 +1346,12 @@ h4 {
   vertical-align: 1px;
 }
 
+.usage-detail-row strong,
+.usage-formula-row strong {
+  font-size: 12px;
+  line-height: 1.45;
+}
+
 .balance-chip {
   flex: 0 0 auto;
   display: grid;

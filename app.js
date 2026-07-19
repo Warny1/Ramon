@@ -1442,7 +1442,7 @@ function renderAllMembersOverview() {
 
 function renderDetail(member) {
   const balance = getBalance(member);
-  const paidSessions = member.payments.reduce((sum, item) => sum + Number(item.sessions || 0), 0);
+  const usage = getMemberUsageSummary(member);
   const hasScheduleMismatch = hasLessonScheduleMismatch(member);
   const lessonMembers = selectedLessonMemberIds
     .map((id) => state.members.find((item) => item.id === id))
@@ -1457,7 +1457,16 @@ function renderDetail(member) {
       <small>레슨</small>
       <strong>${escapeHTML(member.defaultLessonType || "레슨 미지정")}${hasScheduleMismatch ? '<span class="lesson-warning" title="레슨-스케쥴 오류">!</span>' : ""}</strong>
     </span>
-    <span class="member-meta-row"><small>이용 기록</small><strong>${canManagePayments() && isPaymentHistoryUnlocked() ? `결제 ${paidSessions}회 · ` : ""}출석 ${member.attendances.length}회</strong></span>
+    <span class="member-meta-row usage-detail-row">
+      <small>이용 기록</small>
+      <strong>${canManagePayments() && isPaymentHistoryUnlocked() ? `결제 ${usage.paid}회 · ` : ""}차감 ${usage.counted}회 · 출석 ${usage.present}회 · 결석 ${usage.absent}회 · 시범 ${usage.trial}회</strong>
+    </span>
+    ${canManagePayments() && isPaymentHistoryUnlocked() ? `
+      <span class="member-meta-row usage-formula-row">
+        <small>잔여 계산</small>
+        <strong>잔여 ${balance}회 = 결제 ${usage.paid}회 - 차감 ${usage.counted}회</strong>
+      </span>
+    ` : ""}
     ${lessonMembers.length > 1 ? `
       <span class="member-meta-row lesson-member-row">
         <small>같은 수업</small>
@@ -3190,6 +3199,34 @@ function getBalance(member) {
   const paid = member.payments.reduce((sum, item) => sum + Number(item.sessions || 0), 0);
   const used = deduplicateAttendances(member.attendances).filter(isCountedAttendance).length;
   return paid - used;
+}
+
+function getMemberUsageSummary(member) {
+  const attendances = deduplicateAttendances(member.attendances);
+  const summary = {
+    paid: member.payments.reduce((sum, item) => sum + Number(item.sessions || 0), 0),
+    total: attendances.length,
+    counted: 0,
+    present: 0,
+    absent: 0,
+    trial: 0,
+    makeup: 0,
+    done: 0,
+    cancel: 0,
+  };
+
+  attendances.forEach((attendance) => {
+    const status = normalizeAttendanceStatus(attendance.status);
+    if (isCountedAttendance(attendance)) summary.counted += 1;
+    if (status === "출석") summary.present += 1;
+    if (status === "결석") summary.absent += 1;
+    if (status === "시범수업") summary.trial += 1;
+    if (status === "보강") summary.makeup += 1;
+    if (status === "보강완료") summary.done += 1;
+    if (status === "당일취소") summary.cancel += 1;
+  });
+
+  return summary;
 }
 
 function isCountedAttendance(item) {
