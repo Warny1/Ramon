@@ -283,6 +283,7 @@ const elements = {
   scheduleDayField: $("#scheduleDayField"),
   makeupDateField: $("#makeupDateField"),
   scheduleStartDateField: $("#scheduleStartDateField"),
+  scheduleEndDateField: $("#scheduleEndDateField"),
   scheduleScopeField: $("#scheduleScopeField"),
   scheduleMemberSearch: $("#scheduleMemberSearch"),
   scheduleMemberOptions: $("#scheduleMemberOptions"),
@@ -1882,6 +1883,7 @@ function openMakeupScheduleModal({ date = selectedAttendanceDate, time = roundTo
   prepareScheduleModal("makeup");
   elements.scheduleForm.date.value = date;
   elements.scheduleForm.startDate.value = "";
+  elements.scheduleForm.endDate.value = "";
   elements.scheduleForm.time.value = time;
   elements.scheduleForm.querySelector('[name="className"]').value = "보강";
   setScheduleStatus("보강", { shouldSync: false });
@@ -1919,6 +1921,7 @@ function openScheduleAt(day, time) {
   elements.scheduleForm.time.value = time;
   elements.scheduleForm.date.value = getDateForScheduleDay(day);
   elements.scheduleForm.startDate.value = getDateForScheduleDay(day);
+  elements.scheduleForm.endDate.value = "";
   const classNameInput = elements.scheduleForm.querySelector('[name="className"]');
   if (classNameInput && !classNameInput.value) {
     classNameInput.value = "수업";
@@ -2451,6 +2454,7 @@ function addSchedule(event) {
   const scheduleScope = getScheduleScope();
   const scheduleDate = isMakeup || scheduleScope === "once" ? String(form.get("date")) : "";
   const scheduleStartDate = !isMakeup && scheduleScope === "weekly" ? String(form.get("startDate") || "") : "";
+  const scheduleEndDate = !isMakeup && scheduleScope === "weekly" ? String(form.get("endDate") || "") : "";
   const formTime = String(form.get("time"));
 
   if (!memberIds.length) {
@@ -2474,7 +2478,11 @@ function addSchedule(event) {
     ? editGroups.map((group) => minutesToTime(timeToMinutes(formTime) + timeToMinutes(group.time) - editStartMinutes))
     : [formTime];
 
-  if (isEdit && editingScheduleGroup) {
+  const shouldSplitWeeklyEdit = isEdit && editingScheduleGroup && scheduleScope === "weekly" && scheduleStartDate;
+
+  if (shouldSplitWeeklyEdit) {
+    closeScheduleGroupBeforeDate(editingScheduleGroup, scheduleStartDate);
+  } else if (isEdit && editingScheduleGroup) {
     getScheduleGroupEntries(editingScheduleGroup).forEach(({ memberId, scheduleId }) => {
       const member = state.members.find((item) => item.id === memberId);
       if (!member) return;
@@ -2498,6 +2506,7 @@ function addSchedule(event) {
         status: String(form.get("scheduleStatus")),
         date: scheduleDate,
         startDate: scheduleStartDate,
+        endDate: scheduleEndDate,
       });
     });
   });
@@ -2507,6 +2516,33 @@ function addSchedule(event) {
   editingScheduleGroup = null;
   closeModal(elements.scheduleModal);
   commit();
+}
+
+function getPreviousISODate(date) {
+  const target = new Date(`${date}T12:00:00`);
+  target.setDate(target.getDate() - 1);
+  return toISODate(target);
+}
+
+function closeScheduleGroupBeforeDate(group, date) {
+  getScheduleGroupEntries(group).forEach(({ memberId, scheduleId }) => {
+    const member = state.members.find((item) => item.id === memberId);
+    const schedule = member?.schedules.find((item) => item.id === scheduleId);
+    if (!member || !schedule) return;
+
+    closeScheduleBeforeDate(member, schedule, date);
+  });
+}
+
+function closeScheduleBeforeDate(member, schedule, date) {
+  const endDate = getPreviousISODate(date);
+
+  if (schedule.startDate && endDate < schedule.startDate) {
+    member.schedules = member.schedules.filter((item) => item.id !== schedule.id);
+    return;
+  }
+
+  schedule.endDate = endDate;
 }
 
 function markAttendance() {
@@ -2602,7 +2638,14 @@ function removeSchedule(memberId, scheduleId) {
   if (!canManageSettings()) return;
 
   const member = state.members.find((item) => item.id === memberId);
-  member.schedules = member.schedules.filter((item) => item.id !== scheduleId);
+  const schedule = member?.schedules.find((item) => item.id === scheduleId);
+  if (!member || !schedule) return;
+
+  if (schedule.date) {
+    member.schedules = member.schedules.filter((item) => item.id !== scheduleId);
+  } else {
+    closeScheduleBeforeDate(member, schedule, getDateForScheduleDay(Number(schedule.day)));
+  }
   commit();
 }
 
@@ -2623,7 +2666,8 @@ function editScheduleGroup(group) {
   elements.scheduleForm.day.value = String(firstGroup.day);
   elements.scheduleForm.time.value = firstGroup.time || group.startTime || group.time || roundToNextHalfHour();
   elements.scheduleForm.date.value = firstGroup.date || getDateForScheduleDay(Number(firstGroup.day));
-  elements.scheduleForm.startDate.value = firstGroup.startDate || "";
+  elements.scheduleForm.startDate.value = firstGroup.date ? "" : getDateForScheduleDay(Number(firstGroup.day));
+  elements.scheduleForm.endDate.value = firstGroup.endDate || "";
   elements.scheduleForm.querySelector('[name="className"]').value = firstGroup.className || "수업";
   elements.scheduleForm.querySelector('[name="scheduleBoard"]').value = getScheduleBoard(firstGroup);
   elements.scheduleForm.querySelector('[name="scheduleLessonType"]').value = firstGroup.lessonType || state.lessonTypes[0]?.name || "";
@@ -2641,14 +2685,23 @@ function removeScheduleGroup(group) {
   if (!entries.length) return;
 
   const memberNames = group.members.map((member) => member.name).join(", ");
-  const ok = confirm(`${memberNames} ${group.time} 시간표를 삭제할까요?`);
+  const ok = confirm(`${memberNames} ${group.time} 시간표를 이 날짜부터 삭제할까요?`);
   if (!ok) return;
+
+  const groups = group.groups?.length ? group.groups : [group];
+  const firstGroup = groups[0] || group;
+  const effectiveDate = firstGroup.date || getDateForScheduleDay(Number(firstGroup.day));
 
   entries.forEach(({ memberId, scheduleId }) => {
     const member = state.members.find((item) => item.id === memberId);
-    if (!member) return;
+    const schedule = member?.schedules.find((item) => item.id === scheduleId);
+    if (!member || !schedule) return;
 
-    member.schedules = member.schedules.filter((item) => item.id !== scheduleId);
+    if (schedule.date) {
+      member.schedules = member.schedules.filter((item) => item.id !== scheduleId);
+    } else {
+      closeScheduleBeforeDate(member, schedule, effectiveDate);
+    }
   });
   commit();
 }
@@ -2750,19 +2803,19 @@ async function saveNow() {
 function exportSheetCsv() {
   if (!canManageSettings()) return;
 
-  const headers = ["type", "memberName", "phone", "memo", "day", "time", "className", "lessonType", "date", "sessions", "amount", "note", "scheduleBoard", "startDate"];
+  const headers = ["type", "memberName", "phone", "memo", "day", "time", "className", "lessonType", "date", "sessions", "amount", "note", "scheduleBoard", "startDate", "endDate"];
   const rows = [headers];
 
   state.members.forEach((member) => {
-    rows.push(["member", member.name, member.phone, member.memo, "", "", "", member.defaultLessonType || "", member.createdAt, "", "", "", "", ""]);
+    rows.push(["member", member.name, member.phone, member.memo, "", "", "", member.defaultLessonType || "", member.createdAt, "", "", "", "", "", ""]);
     member.schedules.forEach((item) => {
-      rows.push(["schedule", member.name, member.phone, "", item.day, item.time, item.className || "수업", getScheduleLessonType(item), item.date || "", "", "", getScheduleStatus(item), getScheduleBoard(item), item.startDate || ""]);
+      rows.push(["schedule", member.name, member.phone, "", item.day, item.time, item.className || "수업", getScheduleLessonType(item), item.date || "", "", "", getScheduleStatus(item), getScheduleBoard(item), item.startDate || "", item.endDate || ""]);
     });
     member.payments.forEach((item) => {
-      rows.push(["payment", member.name, member.phone, "", "", "", "", item.lessonType || "", item.date, item.sessions, item.amount, item.memo || "", "", ""]);
+      rows.push(["payment", member.name, member.phone, "", "", "", "", item.lessonType || "", item.date, item.sessions, item.amount, item.memo || "", "", "", ""]);
     });
     member.attendances.forEach((item) => {
-      rows.push(["attendance", member.name, member.phone, "", "", item.time || "", item.className || "출석", "", item.date, "", "", item.status || "", "", ""]);
+      rows.push(["attendance", member.name, member.phone, "", "", item.time || "", item.className || "출석", "", item.date, "", "", item.status || "", "", "", ""]);
     });
   });
 
@@ -2820,6 +2873,7 @@ function importSheetCsv(event) {
             date: row[index.date] || "",
             scheduleBoard: normalizeScheduleBoard(index.scheduleBoard === undefined ? "admin" : row[index.scheduleBoard]),
             startDate: index.startDate === undefined ? "" : row[index.startDate] || "",
+            endDate: index.endDate === undefined ? "" : row[index.endDate] || "",
           });
         }
 
@@ -3541,6 +3595,7 @@ function prepareScheduleModal(mode) {
   elements.scheduleScopeField.hidden = false;
   elements.scheduleForm.date.required = isMakeup;
   elements.scheduleForm.startDate.value = "";
+  elements.scheduleForm.endDate.value = "";
 
   if (!isMakeup) {
     elements.scheduleForm.date.value = "";
@@ -3584,6 +3639,7 @@ function syncScheduleStatusFields() {
     setScheduleScope("once");
     elements.scheduleForm.date.value = date;
     elements.scheduleForm.startDate.value = "";
+    elements.scheduleForm.endDate.value = "";
     return;
   }
 
@@ -3599,15 +3655,20 @@ function syncScheduleScopeFields() {
 
   elements.makeupDateField.hidden = !showDate;
   elements.scheduleStartDateField.hidden = !showStartDate;
+  elements.scheduleEndDateField.hidden = !showStartDate;
   elements.scheduleForm.date.required = showDate;
   elements.scheduleForm.startDate.required = false;
+  elements.scheduleForm.endDate.required = false;
   if (dateLabel) dateLabel.textContent = isMakeup ? "보강 날짜" : "적용 날짜";
 
   if (scope === "once" && !elements.scheduleForm.date.value) {
     elements.scheduleForm.date.value = getDateForScheduleDay(Number(elements.scheduleForm.day.value || getSelectedAttendanceDate().getDay()));
   }
   if (showStartDate) syncScheduleStartDateDefault();
-  if (!showStartDate) elements.scheduleForm.startDate.value = "";
+  if (!showStartDate) {
+    elements.scheduleForm.startDate.value = "";
+    elements.scheduleForm.endDate.value = "";
+  }
 }
 
 function syncScheduleStartDateDefault() {
@@ -3676,7 +3737,16 @@ function getStatusBadge(status) {
 function getScheduleScopeBadge(item) {
   const isOneDay = Boolean(item.date || item.groups?.some((group) => group.date));
   const startDate = !isOneDay ? item.startDate || item.groups?.find((group) => group.startDate)?.startDate : "";
-  const label = isOneDay ? "오늘만" : startDate ? `매주 · ${formatShortDate(startDate)}부터` : "매주";
+  const endDate = !isOneDay ? item.endDate || item.groups?.find((group) => group.endDate)?.endDate : "";
+  const label = isOneDay
+    ? "오늘만"
+    : startDate && endDate
+      ? `매주 · ${formatShortDate(startDate)}~${formatShortDate(endDate)}`
+      : startDate
+        ? `매주 · ${formatShortDate(startDate)}부터`
+        : endDate
+          ? `매주 · ${formatShortDate(endDate)}까지`
+          : "매주";
   return `<span class="scope-badge ${isOneDay ? "once" : "weekly"}">${escapeHTML(label)}</span>`;
 }
 
