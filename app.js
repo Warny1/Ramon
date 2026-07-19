@@ -772,25 +772,7 @@ function deduplicateMemberData(data) {
   });
 
   data.members = [...membersByKey.values()];
-  applyScheduleStartDateFallbacks(data);
   return data;
-}
-
-function applyScheduleStartDateFallbacks(data) {
-  data.members.forEach((member) => {
-    const firstPaymentDate = (member.payments || [])
-      .map((payment) => String(payment.date || "").trim())
-      .filter(Boolean)
-      .sort()[0];
-
-    if (!firstPaymentDate) return;
-
-    (member.schedules || []).forEach((schedule) => {
-      if (schedule.date || schedule.startDate) return;
-      if ((schedule.className || "수업") !== "수업") return;
-      schedule.startDate = firstPaymentDate;
-    });
-  });
 }
 
 function findOrCreateMemberInData(data, name) {
