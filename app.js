@@ -2521,8 +2521,8 @@ function renderMemberScheduleStartFields(member) {
   container.innerHTML = `
     <div class="member-schedule-start-header">
       <span>
-        <small>첫 결제일</small>
-        <strong>${escapeHTML(firstPaymentDate ? formatDate(firstPaymentDate) : "결제 없음")}</strong>
+        <small>시작일 지정</small>
+        <strong>첫 결제일 ${escapeHTML(firstPaymentDate ? formatDate(firstPaymentDate) : "없음")}</strong>
       </span>
     </div>
     <div class="member-schedule-start-list"></div>
@@ -2955,6 +2955,8 @@ function clearAttendanceRecords() {
   const ok = confirm(`전체 출석기록 ${total}건을 삭제할까요?\n회원, 시간표, 결제기록은 유지됩니다.`);
   if (!ok) return;
 
+  const attendanceIds = state.members.flatMap((member) => member.attendances.map((item) => item.id));
+  queueAttendanceDeletes(attendanceIds);
   state.members.forEach((member) => {
     member.attendances = [];
   });
@@ -3874,18 +3876,21 @@ function getScheduleFormStatus() {
 }
 
 function syncScheduleStatusFields() {
-  const isTrial = getScheduleFormStatus() === "시범수업";
+  const status = getScheduleFormStatus();
+  const isTrial = status === "시범수업";
+  const isMakeupStatus = status === "보강";
+  const shouldForceOneDay = isTrial || isMakeupStatus;
   const weeklyInput = elements.scheduleForm.querySelector('[name="scheduleScope"][value="weekly"]');
   const note = elements.scheduleForm.querySelector(".schedule-trial-note");
 
-  if (weeklyInput) weeklyInput.disabled = isTrial;
+  if (weeklyInput) weeklyInput.disabled = shouldForceOneDay;
   if (note) note.hidden = !isTrial;
 
-  if (isTrial) {
+  if (shouldForceOneDay) {
     const day = Number(elements.scheduleForm.day.value || getSelectedAttendanceDate().getDay());
     const date = getDateForScheduleDay(day);
     setScheduleScope("once");
-    elements.scheduleForm.date.value = date;
+    if (!elements.scheduleForm.date.value) elements.scheduleForm.date.value = date;
     elements.scheduleForm.startDate.value = "";
     elements.scheduleForm.endDate.value = "";
     return;
