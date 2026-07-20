@@ -25,11 +25,11 @@
 
     try {
       const [settingsRows, memberRows, scheduleRows, paymentRows, attendanceRows] = await Promise.all([
-        request(TABLES.settings, `?id=eq.${encodeURIComponent(SETTINGS_ID)}&select=data,updated_at`),
-        request(TABLES.members, "?select=id,data,updated_at"),
-        request(TABLES.schedules, "?select=id,member_id,data,updated_at"),
-        request(TABLES.payments, "?select=id,member_id,data,updated_at"),
-        request(TABLES.attendances, "?select=id,member_id,data,updated_at"),
+        requestAll(TABLES.settings, `?id=eq.${encodeURIComponent(SETTINGS_ID)}&select=data,updated_at`),
+        requestAll(TABLES.members, "?select=id,data,updated_at"),
+        requestAll(TABLES.schedules, "?select=id,member_id,data,updated_at"),
+        requestAll(TABLES.payments, "?select=id,member_id,data,updated_at"),
+        requestAll(TABLES.attendances, "?select=id,member_id,data,updated_at"),
       ]);
 
       const hasData =
@@ -327,6 +327,24 @@
     if (response.status === 204) return [];
     const text = await response.text();
     return text ? JSON.parse(text) : [];
+  }
+
+  async function requestAll(table, query = "") {
+    const pageSize = 1000;
+    const rows = [];
+
+    for (let offset = 0; ; offset += pageSize) {
+      const page = await request(table, addPagination(query, pageSize, offset));
+      rows.push(...page);
+      if (page.length < pageSize) break;
+    }
+
+    return rows;
+  }
+
+  function addPagination(query, limit, offset) {
+    const divider = query.includes("?") ? "&" : "?";
+    return `${query}${divider}limit=${limit}&offset=${offset}`;
   }
 
   function getBaseUrl() {
