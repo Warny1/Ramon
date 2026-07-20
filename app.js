@@ -1276,7 +1276,7 @@ function findScheduleForAttendance(member, attendance) {
   return member.schedules.find((schedule) =>
     (schedule.className || "출석") === (attendance.className || "출석") &&
     (schedule.time || "") === (attendance.time || "") &&
-    (schedule.date ? schedule.date === attendance.date : Number(schedule.day) === attendanceDay && isScheduleActiveOnDate(schedule, attendance.date)),
+    (schedule.date ? schedule.date === attendance.date : Number(schedule.day) === attendanceDay && isScheduleActiveOnDate(schedule, attendance.date, member)),
   );
 }
 
@@ -1554,7 +1554,7 @@ function renderAttendanceCheckList(member) {
 
   const selectedDay = getSelectedAttendanceDate().getDay();
   const schedules = member.schedules
-    .filter((item) => item.date === selectedAttendanceDate || (!item.date && Number(item.day) === selectedDay && isScheduleActiveOnDate(item, selectedAttendanceDate)))
+    .filter((item) => item.date === selectedAttendanceDate || (!item.date && Number(item.day) === selectedDay && isScheduleActiveOnDate(item, selectedAttendanceDate, member)))
     .sort((a, b) => (a.time || "").localeCompare(b.time || ""));
 
   if (!schedules.length) {
@@ -3521,21 +3521,22 @@ function getScheduleItems() {
           ? isFullTimetableView()
             ? isDateInSelectedWeek(item.date)
             : item.date === selectedAttendanceDate
-          : isScheduleActiveOnDate(item, getDateForScheduleDay(item.day)),
+          : isScheduleActiveOnDate(item, getDateForScheduleDay(item.day), member),
       )
       .map((item) => ({ ...item, member })),
   );
 }
 
-function isScheduleActiveOnDate(schedule, date) {
+function isScheduleActiveOnDate(schedule, date, member) {
   if (!date) return true;
-  const startDate = String(schedule.startDate || "").trim();
-  const endDate = String(schedule.endDate || "").trim();
-  const hasInvalidPeriod = startDate && endDate && startDate > endDate;
+  const startDate = getScheduleStartBasis(schedule, member);
 
   if (startDate && date < startDate) return false;
-  if (endDate && !hasInvalidPeriod && date > endDate) return false;
   return true;
+}
+
+function getScheduleStartBasis(schedule, member) {
+  return String(schedule.startDate || "").trim() || getMemberFirstPaymentDate(member);
 }
 
 function getScheduleGroups() {
