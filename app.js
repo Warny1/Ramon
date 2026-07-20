@@ -4204,6 +4204,13 @@ function formatDate(value) {
   }).format(new Date(`${value}T00:00:00`));
 }
 
+function formatShortDate(value) {
+  return new Intl.DateTimeFormat("ko-KR", {
+    month: "numeric",
+    day: "numeric",
+  }).format(new Date(`${value}T00:00:00`));
+}
+
 function escapeHTML(value) {
   return String(value).replace(/[&<>"']/g, (char) => {
     const entities = {
