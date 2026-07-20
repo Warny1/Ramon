@@ -1,4 +1,5 @@
 const STORAGE_KEY = "member-desk-data-v5-corrected-payments";
+const PENDING_SYNC_KEY = "member-desk-pending-shared-sync";
 const LEGACY_STORAGE_KEY = "member-desk-data-v1";
 const SUPABASE_TABLE = "app_state";
 const SUPABASE_RECORD_ID = "member-desk";
@@ -439,6 +440,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   render();
   startSharedDataSync();
+  flushPendingSharedSync();
 });
 
 async function initializeData() {
@@ -449,6 +451,10 @@ async function initializeData() {
 
 async function loadData() {
   if (hasSupabaseConfig()) {
+    if (hasPendingSharedSync()) {
+      return loadLocalData();
+    }
+
     if (window.RamonSync) {
       const normalized = await window.RamonSync.load();
       if (normalized.status === "ready") {
@@ -817,12 +823,41 @@ function loadLegacySettings() {
 function saveData() {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
   if (window.RamonSync?.isConfigured() && canEditSharedData()) {
-    window.RamonSync.queue(state);
+    markPendingSharedSync();
+    window.RamonSync.flush(state).then(clearPendingSharedSync).catch(reportDeferredSaveError);
   } else if (hasSupabaseConfig() && canEditSharedData()) {
-    saveSupabaseData(state).catch(() => {
-      alert("Supabase 저장에 실패했습니다. 현재 브라우저 백업은 유지됩니다.");
-    });
+    markPendingSharedSync();
+    saveSupabaseData(state).then(clearPendingSharedSync).catch(reportDeferredSaveError);
   }
+}
+
+function hasPendingSharedSync() {
+  return localStorage.getItem(PENDING_SYNC_KEY) === "1";
+}
+
+function markPendingSharedSync() {
+  localStorage.setItem(PENDING_SYNC_KEY, "1");
+}
+
+function clearPendingSharedSync() {
+  localStorage.removeItem(PENDING_SYNC_KEY);
+}
+
+function flushPendingSharedSync() {
+  if (!hasPendingSharedSync() || !canEditSharedData()) return;
+
+  if (window.RamonSync?.isConfigured()) {
+    window.RamonSync.flush(state).then(clearPendingSharedSync).catch(reportDeferredSaveError);
+    return;
+  }
+
+  if (hasSupabaseConfig()) {
+    saveSupabaseData(state).then(clearPendingSharedSync).catch(reportDeferredSaveError);
+  }
+}
+
+function reportDeferredSaveError() {
+  // 로컬 저장은 유지한다. 다음 새로고침 때 로컬 데이터를 먼저 살리고 다시 저장을 시도한다.
 }
 
 function startSharedDataSync() {
@@ -2880,6 +2915,7 @@ async function saveNow() {
   if (window.RamonSync?.isConfigured()) {
     try {
       await window.RamonSync.flush(state);
+      clearPendingSharedSync();
     } catch (error) {
       alert(`Supabase 저장에 실패했습니다.\n\n${error.message || ""}`.trim());
       return;
@@ -2887,6 +2923,7 @@ async function saveNow() {
   } else if (hasSupabaseConfig()) {
     try {
       await saveSupabaseData(state);
+      clearPendingSharedSync();
     } catch {
       alert("Supabase 저장에 실패했습니다. 네트워크와 Supabase 설정을 확인해주세요.");
       return;
