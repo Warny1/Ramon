@@ -269,6 +269,10 @@
     if (!isConfigured()) return;
 
     const refresh = async () => {
+      if (window.RamonHasPendingSharedSync?.()) {
+        window.RamonFlushPendingSharedSync?.();
+        return;
+      }
       if (syncPromise || pendingSnapshot || document.hidden) return;
       const remote = await load();
       if (remote.status !== "ready" || !remote.data) return;

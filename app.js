@@ -860,6 +860,9 @@ function reportDeferredSaveError() {
   // 로컬 저장은 유지한다. 다음 새로고침 때 로컬 데이터를 먼저 살리고 다시 저장을 시도한다.
 }
 
+window.RamonHasPendingSharedSync = hasPendingSharedSync;
+window.RamonFlushPendingSharedSync = flushPendingSharedSync;
+
 function startSharedDataSync() {
   if (!window.RamonSync?.isConfigured()) return;
 
