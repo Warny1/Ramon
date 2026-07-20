@@ -237,8 +237,6 @@ const elements = {
   attendanceCheckList: $("#attendanceCheckList"),
   attendanceList: $("#attendanceList"),
   manualAttendanceForm: $("#manualAttendanceForm"),
-  manualAttendanceTime: $("#manualAttendanceTime"),
-  manualAttendanceStatus: $("#manualAttendanceStatus"),
   paymentList: $("#paymentList"),
   detailTabs: document.querySelectorAll(".detail-tab"),
   detailPanels: document.querySelectorAll(".detail-panel"),
@@ -2656,15 +2654,7 @@ function addManualAttendance(event) {
   const member = getSelectedMember();
   if (!member) return;
 
-  const time = elements.manualAttendanceTime.value;
-  if (!time) {
-    elements.manualAttendanceTime.focus();
-    return;
-  }
-
-  const status = normalizeAttendanceStatus(elements.manualAttendanceStatus.value || "출석") || "출석";
-  recordAttendanceForDate(member, "수업", time, status, selectedAttendanceDate);
-  elements.manualAttendanceTime.value = "";
+  recordAttendanceForDate(member, "수업", "", "출석", selectedAttendanceDate);
   commit();
 }
 
