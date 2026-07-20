@@ -47,11 +47,11 @@ export default async function handler(request, response) {
 
 async function loadCurrentData() {
   const [settingsRows, memberRows, scheduleRows, paymentRows, attendanceRows] = await Promise.all([
-    requestSupabase(TABLES.settings, `?id=eq.${encodeURIComponent(SETTINGS_ID)}&select=data,updated_at`),
-    requestSupabase(TABLES.members, "?select=id,data,updated_at"),
-    requestSupabase(TABLES.schedules, "?select=id,member_id,data,updated_at"),
-    requestSupabase(TABLES.payments, "?select=id,member_id,data,updated_at"),
-    requestSupabase(TABLES.attendances, "?select=id,member_id,data,updated_at"),
+    requestSupabaseAll(TABLES.settings, `?id=eq.${encodeURIComponent(SETTINGS_ID)}&select=data,updated_at`),
+    requestSupabaseAll(TABLES.members, "?select=id,data,updated_at"),
+    requestSupabaseAll(TABLES.schedules, "?select=id,member_id,data,updated_at"),
+    requestSupabaseAll(TABLES.payments, "?select=id,member_id,data,updated_at"),
+    requestSupabaseAll(TABLES.attendances, "?select=id,member_id,data,updated_at"),
   ]);
 
   if (settingsRows.length || memberRows.length || scheduleRows.length || paymentRows.length || attendanceRows.length) {
@@ -78,7 +78,7 @@ async function loadCurrentData() {
     };
   }
 
-  const legacyRows = await requestSupabase(TABLES.legacyState, `?id=eq.${encodeURIComponent(SETTINGS_ID)}&select=data`);
+  const legacyRows = await requestSupabaseAll(TABLES.legacyState, `?id=eq.${encodeURIComponent(SETTINGS_ID)}&select=data`);
   const legacyData = legacyRows[0]?.data;
   if (legacyData?.members) return legacyData;
 
@@ -91,6 +91,24 @@ function attachRows(membersById, rows, key) {
     if (!member) return;
     member[key].push({ ...row.data, id: row.id });
   });
+}
+
+async function requestSupabaseAll(table, query = "") {
+  const pageSize = 1000;
+  const rows = [];
+
+  for (let offset = 0; ; offset += pageSize) {
+    const page = await requestSupabase(table, addPagination(query, pageSize, offset));
+    rows.push(...page);
+    if (page.length < pageSize) break;
+  }
+
+  return rows;
+}
+
+function addPagination(query, limit, offset) {
+  const divider = query.includes("?") ? "&" : "?";
+  return `${query}${divider}limit=${limit}&offset=${offset}`;
 }
 
 async function requestSupabase(table, query = "", options = {}) {
