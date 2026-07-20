@@ -2188,6 +2188,61 @@ label {
   display: none;
 }
 
+.member-schedule-start-fields {
+  display: grid;
+  gap: 10px;
+  border: 1px solid #e0e8e5;
+  border-radius: 10px;
+  background: #fbfdfc;
+  padding: 12px;
+}
+
+.member-schedule-start-fields[hidden] {
+  display: none;
+}
+
+.member-schedule-start-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.member-schedule-start-header span {
+  display: grid;
+  gap: 3px;
+}
+
+.member-schedule-start-header small,
+.member-schedule-start-row span {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.member-schedule-start-header strong {
+  color: var(--ink);
+  font-size: 15px;
+}
+
+.member-schedule-start-list {
+  display: grid;
+  gap: 8px;
+}
+
+.member-schedule-start-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 150px;
+  align-items: center;
+  gap: 10px;
+}
+
+.compact-button {
+  min-height: 34px;
+  padding: 8px 12px;
+  white-space: nowrap;
+}
+
 .member-picker {
   display: grid;
   gap: 9px;
@@ -4629,5 +4684,15 @@ select {
   .available-time-modal-button {
     min-height: 46px;
     padding: 6px 8px;
+  }
+
+  .member-schedule-start-header {
+    display: grid;
+    align-items: stretch;
+  }
+
+  .member-schedule-start-row {
+    grid-template-columns: 1fr;
+    align-items: stretch;
   }
 }

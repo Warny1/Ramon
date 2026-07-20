@@ -270,6 +270,7 @@ const elements = {
   lessonSettingsForm: $("#lessonSettingsForm"),
   lessonSettingsList: $("#lessonSettingsList"),
   paymentHistoryPasswordInput: document.querySelector('[name="paymentHistoryPassword"]'),
+  memberScheduleStartFields: $("#memberScheduleStartFields"),
   scheduleBoardLabelInputs: {
     admin: document.querySelector('[name="scheduleBoardLabelAdmin"]'),
     coach1: document.querySelector('[name="scheduleBoardLabelCoach1"]'),
@@ -282,7 +283,6 @@ const elements = {
   scheduleForm: $("#scheduleForm"),
   scheduleDayField: $("#scheduleDayField"),
   makeupDateField: $("#makeupDateField"),
-  scheduleStartDateField: $("#scheduleStartDateField"),
   scheduleScopeField: $("#scheduleScopeField"),
   scheduleMemberSearch: $("#scheduleMemberSearch"),
   scheduleMemberOptions: $("#scheduleMemberOptions"),
@@ -2300,6 +2300,7 @@ function addMember(event) {
     existing.memo = String(form.get("memo")).trim();
     existing.defaultLessonType = nextLessonType;
     syncMemberSchedulesToLessonType(existing, nextLessonType);
+    applyMemberScheduleStartFields(existing);
     selectedMemberId = existing.id;
     elements.memberForm.reset();
     prepareMemberModal();
@@ -2345,6 +2346,7 @@ function prepareMemberModal() {
   delete elements.memberForm.dataset.editingMemberId;
   elements.memberForm.reset();
   fillMemberLessonTypeOptions();
+  renderMemberScheduleStartFields(null);
   syncMemberPaymentFields();
 }
 
@@ -2366,8 +2368,71 @@ function openMemberModalForEdit() {
   elements.memberForm.querySelector('[name="phone"]').value = member.phone || "";
   elements.memberForm.querySelector('[name="memo"]').value = member.memo || "";
   elements.memberForm.querySelector('[name="defaultLessonType"]').value = member.defaultLessonType || "";
+  renderMemberScheduleStartFields(member);
   syncMemberPaymentFields();
   openModal(elements.memberModal);
+}
+
+function renderMemberScheduleStartFields(member) {
+  const container = elements.memberScheduleStartFields;
+  if (!container) return;
+
+  container.innerHTML = "";
+  if (!member) {
+    container.hidden = true;
+    return;
+  }
+
+  const firstPaymentDate = getMemberFirstPaymentDate(member);
+  const weeklySchedules = [...(member.schedules || [])]
+    .filter((schedule) => !schedule.date)
+    .sort((a, b) => Number(a.day) - Number(b.day) || (a.time || "").localeCompare(b.time || ""));
+
+  container.hidden = false;
+  container.innerHTML = `
+    <div class="member-schedule-start-header">
+      <span>
+        <small>첫 결제일</small>
+        <strong>${escapeHTML(firstPaymentDate ? formatDate(firstPaymentDate) : "결제 없음")}</strong>
+      </span>
+      <button class="secondary-button compact-button" type="button" data-fill-first-payment ${firstPaymentDate ? "" : "disabled"}>첫 결제일로 맞춤</button>
+    </div>
+    <div class="member-schedule-start-list"></div>
+  `;
+
+  const list = container.querySelector(".member-schedule-start-list");
+  if (!weeklySchedules.length) {
+    list.append(createEmptyLine("등록된 주간 시간표가 없습니다."));
+  } else {
+    weeklySchedules.forEach((schedule) => {
+      const label = [dayNames[schedule.day], schedule.time, getScheduleBoardLabel(schedule.scheduleBoard), schedule.className || "수업"].filter(Boolean).join(" · ");
+      const row = document.createElement("label");
+      row.className = "member-schedule-start-row";
+      row.innerHTML = `
+        <span>${escapeHTML(label)}</span>
+        <input type="date" value="${escapeHTML(schedule.startDate || firstPaymentDate || "")}" data-schedule-start-id="${escapeHTML(schedule.id)}" />
+      `;
+      list.append(row);
+    });
+  }
+
+  container.querySelector("[data-fill-first-payment]")?.addEventListener("click", () => {
+    if (!firstPaymentDate) return;
+    container.querySelectorAll("[data-schedule-start-id]").forEach((input) => {
+      input.value = firstPaymentDate;
+    });
+  });
+}
+
+function applyMemberScheduleStartFields(member) {
+  const container = elements.memberScheduleStartFields;
+  if (!member || !container || container.hidden) return;
+
+  container.querySelectorAll("[data-schedule-start-id]").forEach((input) => {
+    const schedule = member.schedules.find((item) => item.id === input.dataset.scheduleStartId);
+    if (!schedule || schedule.date) return;
+    schedule.startDate = String(input.value || "").trim();
+  });
 }
 
 function addPayment(event) {
@@ -3663,7 +3728,6 @@ function syncScheduleScopeFields() {
   const showStartDate = !isMakeup && scope === "weekly";
 
   elements.makeupDateField.hidden = !showDate;
-  elements.scheduleStartDateField.hidden = !showStartDate;
   elements.scheduleForm.date.required = showDate;
   elements.scheduleForm.startDate.required = false;
   elements.scheduleForm.endDate.required = false;

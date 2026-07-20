@@ -294,6 +294,7 @@
             <option value="">레슨 미지정</option>
           </select>
         </label>
+        <section id="memberScheduleStartFields" class="member-schedule-start-fields" hidden></section>
         <label class="inline-check">
           <input name="withPayment" type="checkbox" />
           <span>회원 추가와 동시에 결제도 등록</span>
@@ -534,10 +535,7 @@
           <span id="scheduleDateLabel">보강 날짜</span>
           <input name="date" type="date" />
         </label>
-        <label id="scheduleStartDateField" hidden>
-          적용 시작일
-          <input name="startDate" type="date" />
-        </label>
+        <input name="startDate" type="hidden" />
         <input name="endDate" type="hidden" />
         <label>
           수업명
