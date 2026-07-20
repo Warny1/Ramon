@@ -703,6 +703,23 @@ function getAttendanceRecordKey(item) {
   ].join("|");
 }
 
+function normalizeAttendanceClassName(value) {
+  const text = String(value || "").trim();
+  if (!text || text === "출석") return "수업";
+  return text;
+}
+
+function matchesAttendanceSlot(item, { date, className, time }) {
+  const itemTime = normalizeTime(item.time) || String(item.time || "").trim();
+  const targetTime = normalizeTime(time) || String(time || "").trim();
+
+  return (
+    item.date === date &&
+    itemTime === targetTime &&
+    normalizeAttendanceClassName(item.className) === normalizeAttendanceClassName(className)
+  );
+}
+
 function deduplicateAttendances(attendances = []) {
   const recordsByKey = new Map();
 
@@ -1674,9 +1691,11 @@ function renderAttendanceCheckList(member) {
 function getAttendanceStatusForSchedule(member, schedule) {
   const record = member.attendances.find(
     (item) =>
-      item.date === selectedAttendanceDate &&
-      (item.className || "출석") === (schedule.className || "출석") &&
-      (item.time || "") === (schedule.time || ""),
+      matchesAttendanceSlot(item, {
+        date: selectedAttendanceDate,
+        className: schedule.className || "수업",
+        time: schedule.time || "",
+      }),
   );
 
   return record ? normalizeAttendanceStatus(record.status) : "";
@@ -2749,10 +2768,7 @@ function recordAttendance(member, className, time, status = "") {
 function recordAttendanceForDate(member, className, time, status = "", date = selectedAttendanceDate) {
   const normalizedStatus = normalizeAttendanceStatus(status);
   const existing = member.attendances.find(
-    (item) =>
-      item.date === date &&
-      (item.className || "출석") === className &&
-      (item.time || "") === (time || ""),
+    (item) => matchesAttendanceSlot(item, { date, className, time }),
   );
 
   if (existing) {
@@ -2786,9 +2802,11 @@ function getGroupAttendanceState(group) {
 function hasAttendanceForGroup(member, group) {
   return member.attendances.some(
     (item) =>
-      item.date === selectedAttendanceDate &&
-      (item.className || "출석") === (group.className || "출석") &&
-      (item.time || "") === (group.time || "") &&
+      matchesAttendanceSlot(item, {
+        date: selectedAttendanceDate,
+        className: group.className || "수업",
+        time: group.time || "",
+      }) &&
       isPresentAttendanceStatus(item.status),
   );
 }
@@ -3559,9 +3577,11 @@ function getCombinedAttendanceStatusForDate(groups, date) {
     group.members.map((member) => {
       const record = member.attendances.find(
         (item) =>
-          item.date === date &&
-          (item.className || "출석") === (group.className || "출석") &&
-          (item.time || "") === (group.time || ""),
+          matchesAttendanceSlot(item, {
+            date,
+            className: group.className || "수업",
+            time: group.time || "",
+          }),
       );
       return record ? normalizeAttendanceStatus(record.status) : "";
     }),
@@ -3576,11 +3596,11 @@ function clearCombinedAttendanceForDate(groups, date) {
     group.members.forEach((member) => {
       member.attendances = member.attendances.filter(
         (item) =>
-          !(
-            item.date === date &&
-            (item.className || "출석") === (group.className || "출석") &&
-            (item.time || "") === (group.time || "")
-          ),
+          !matchesAttendanceSlot(item, {
+            date,
+            className: group.className || "수업",
+            time: group.time || "",
+          }),
       );
     });
   });
