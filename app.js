@@ -452,7 +452,21 @@ async function initializeData() {
 async function loadData() {
   if (hasSupabaseConfig()) {
     if (hasPendingSharedSync()) {
-      return loadLocalData();
+      const localData = loadLocalData();
+
+      if (window.RamonSync) {
+        const normalized = await window.RamonSync.load();
+        if (normalized.status === "ready") {
+          return mergeSharedData(localData, normalized.data);
+        }
+      }
+
+      const remoteData = await loadSupabaseData();
+      if (remoteData && remoteData !== false) {
+        return mergeSharedData(localData, remoteData);
+      }
+
+      return localData;
     }
 
     if (window.RamonSync) {
@@ -494,6 +508,22 @@ async function loadData() {
   }
 
   return loadLocalData();
+}
+
+function mergeSharedData(localData, remoteData) {
+  const local = Array.isArray(localData?.members) ? cloneData(localData) : cloneData(seedData);
+  const remote = Array.isArray(remoteData?.members) ? cloneData(remoteData) : cloneData(seedData);
+
+  return deduplicateMemberData({
+    ...local,
+    ...remote,
+    lessonTypes: Array.isArray(remote.lessonTypes)
+      ? remote.lessonTypes
+      : Array.isArray(local.lessonTypes)
+        ? local.lessonTypes
+        : cloneData(defaultLessonTypes),
+    members: [...(local.members || []), ...(remote.members || [])],
+  });
 }
 
 function loadLocalData() {
