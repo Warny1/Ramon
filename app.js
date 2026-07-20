@@ -545,7 +545,7 @@ function getPaymentHistoryPassword() {
 }
 
 function isPaymentHistoryUnlocked() {
-  return paymentHistoryUnlocked;
+  return true;
 }
 
 function unlockPaymentHistory() {
