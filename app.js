@@ -2395,7 +2395,6 @@ function renderMemberScheduleStartFields(member) {
         <small>첫 결제일</small>
         <strong>${escapeHTML(firstPaymentDate ? formatDate(firstPaymentDate) : "결제 없음")}</strong>
       </span>
-      <button class="secondary-button compact-button" type="button" data-fill-first-payment ${firstPaymentDate ? "" : "disabled"}>첫 결제일로 맞춤</button>
     </div>
     <div class="member-schedule-start-list"></div>
   `;
@@ -2416,15 +2415,6 @@ function renderMemberScheduleStartFields(member) {
       list.append(row);
     });
   }
-
-  container.querySelector("[data-fill-first-payment]")?.addEventListener("click", () => {
-    if (!firstPaymentDate) return;
-    container.querySelectorAll("[data-schedule-start-id]").forEach((input) => {
-      const endDate = String(input.dataset.scheduleEndDate || "");
-      if (endDate && firstPaymentDate > endDate) return;
-      input.value = firstPaymentDate;
-    });
-  });
 }
 
 function getSchedulePeriodLabel(schedule) {
@@ -3538,6 +3528,13 @@ function getScheduleItems() {
 }
 
 function isScheduleActiveOnDate(schedule, date) {
+  if (!date) return true;
+  const startDate = String(schedule.startDate || "").trim();
+  const endDate = String(schedule.endDate || "").trim();
+  const hasInvalidPeriod = startDate && endDate && startDate > endDate;
+
+  if (startDate && date < startDate) return false;
+  if (endDate && !hasInvalidPeriod && date > endDate) return false;
   return true;
 }
 
@@ -3828,17 +3825,8 @@ function getStatusBadge(status) {
 
 function getScheduleScopeBadge(item) {
   const isOneDay = Boolean(item.date || item.groups?.some((group) => group.date));
-  const startDate = !isOneDay ? item.startDate || item.groups?.find((group) => group.startDate)?.startDate : "";
-  const endDate = !isOneDay ? item.endDate || item.groups?.find((group) => group.endDate)?.endDate : "";
-  const label = isOneDay
-    ? "오늘만"
-    : startDate && endDate
-      ? `매주 · ${formatShortDate(startDate)}~${formatShortDate(endDate)}`
-      : startDate
-        ? `매주 · ${formatShortDate(startDate)}부터`
-        : endDate
-          ? `매주 · ${formatShortDate(endDate)}까지`
-          : "매주";
+  if (!isOneDay) return "";
+  const label = "오늘만";
   return `<span class="scope-badge ${isOneDay ? "once" : "weekly"}">${escapeHTML(label)}</span>`;
 }
 
