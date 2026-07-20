@@ -2532,7 +2532,7 @@ body[data-role="member"] .detail-panel[data-panel="payment"] {
   }
 
   body[data-desktop-view="operations"] .desktop-day-controls {
-    display: none;
+    display: flex;
   }
 
   body[data-desktop-view="schedule"] .desktop-day-controls {
