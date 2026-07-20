@@ -135,7 +135,10 @@
     const memberDeletes = removedIds(previous.members, next.members);
     const scheduleDeletes = removedIds(previous.schedules, next.schedules);
     const paymentDeletes = removedIds(previous.payments, next.payments);
-    const attendanceDeletes = removedIds(previous.attendances, next.attendances);
+    // 오래된 브라우저가 아직 최신 출석 기록을 못 받은 상태에서 저장하면,
+    // "내 화면에 없음"을 삭제로 오해해 실제 출석 기록을 지울 수 있다.
+    // 출석은 수업/잔여횟수의 원장에 가까워서 자동 동기화 삭제를 막고, 추가/수정만 반영한다.
+    const attendanceDeletes = [];
 
     await Promise.all([
       deleteRows(TABLES.schedules, scheduleDeletes),
