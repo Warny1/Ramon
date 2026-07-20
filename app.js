@@ -201,6 +201,7 @@ let mobileView = "today";
 let desktopView = "operations";
 let editingScheduleGroup = null;
 let activeScheduleBoard = localStorage.getItem("ramon-active-schedule-board") || "admin";
+let pendingAttendanceDeleteIds = new Set();
 
 const scheduleBoards = {
   admin: "관리자",
@@ -871,7 +872,14 @@ function saveData() {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
   if (window.RamonSync?.isConfigured() && canEditSharedData()) {
     markPendingSharedSync();
-    window.RamonSync.flush(state).then(clearPendingSharedSync).catch(reportDeferredSaveError);
+    const attendanceDeleteIds = consumePendingAttendanceDeleteIds();
+    window.RamonSync.flush(state)
+      .then(() => deleteSyncedAttendances(attendanceDeleteIds))
+      .then(clearPendingSharedSync)
+      .catch((error) => {
+        restorePendingAttendanceDeleteIds(attendanceDeleteIds);
+        reportDeferredSaveError(error);
+      });
   } else if (hasSupabaseConfig() && canEditSharedData()) {
     markPendingSharedSync();
     saveSupabaseData(state).then(clearPendingSharedSync).catch(reportDeferredSaveError);
@@ -894,7 +902,14 @@ function flushPendingSharedSync() {
   if (!hasPendingSharedSync() || !canEditSharedData()) return;
 
   if (window.RamonSync?.isConfigured()) {
-    window.RamonSync.flush(state).then(clearPendingSharedSync).catch(reportDeferredSaveError);
+    const attendanceDeleteIds = consumePendingAttendanceDeleteIds();
+    window.RamonSync.flush(state)
+      .then(() => deleteSyncedAttendances(attendanceDeleteIds))
+      .then(clearPendingSharedSync)
+      .catch((error) => {
+        restorePendingAttendanceDeleteIds(attendanceDeleteIds);
+        reportDeferredSaveError(error);
+      });
     return;
   }
 
@@ -905,6 +920,26 @@ function flushPendingSharedSync() {
 
 function reportDeferredSaveError() {
   // 로컬 저장은 유지한다. 다음 새로고침 때 로컬 데이터를 먼저 살리고 다시 저장을 시도한다.
+}
+
+function queueAttendanceDeletes(ids = []) {
+  ids.filter(Boolean).forEach((id) => pendingAttendanceDeleteIds.add(id));
+}
+
+function consumePendingAttendanceDeleteIds() {
+  const ids = [...pendingAttendanceDeleteIds];
+  pendingAttendanceDeleteIds = new Set();
+  return ids;
+}
+
+function restorePendingAttendanceDeleteIds(ids = []) {
+  queueAttendanceDeletes(ids);
+}
+
+async function deleteSyncedAttendances(ids = []) {
+  const targetIds = ids.filter(Boolean);
+  if (!targetIds.length || !window.RamonSync?.deleteAttendances) return;
+  await window.RamonSync.deleteAttendances(targetIds);
 }
 
 window.RamonHasPendingSharedSync = hasPendingSharedSync;
@@ -2902,8 +2937,10 @@ function removeAttendance(memberId, attendanceId) {
   if (!canEditSharedData()) return;
 
   const member = state.members.find((item) => item.id === memberId);
+  if (!member) return;
+  queueAttendanceDeletes([attendanceId]);
   member.attendances = member.attendances.filter((item) => item.id !== attendanceId);
-  commit();
+  commit({ preserveScroll: true });
 }
 
 function clearAttendanceRecords() {
@@ -3592,8 +3629,19 @@ function getCombinedAttendanceStatusForDate(groups, date) {
 
 function clearCombinedAttendanceForDate(groups, date) {
   if (!canEditSharedData()) return;
+  const removedAttendanceIds = [];
+
   groups.forEach((group) => {
     group.members.forEach((member) => {
+      member.attendances.forEach((item) => {
+        if (matchesAttendanceSlot(item, {
+          date,
+          className: group.className || "수업",
+          time: group.time || "",
+        })) {
+          removedAttendanceIds.push(item.id);
+        }
+      });
       member.attendances = member.attendances.filter(
         (item) =>
           !matchesAttendanceSlot(item, {
@@ -3604,6 +3652,7 @@ function clearCombinedAttendanceForDate(groups, date) {
       );
     });
   });
+  queueAttendanceDeletes(removedAttendanceIds);
   commit({ preserveScroll: true });
 }
 

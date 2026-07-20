@@ -138,4 +138,7 @@ const finalLoad = await firstDevice.load();
 assert.equal(finalLoad.data.members[0].attendances.length, 1);
 assert.equal(finalLoad.data.members[0].payments.length, 1);
 
+await firstDevice.deleteAttendances(["attendance-1"]);
+assert.equal(tables.attendances.size, 0, "직접 삭제한 출석 기록은 원격에서도 삭제되어야 합니다.");
+
 console.log("동시 기기 출석/결제 저장 충돌 테스트 통과");

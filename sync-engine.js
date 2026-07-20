@@ -131,6 +131,13 @@
     await flush();
   }
 
+  async function deleteAttendances(ids = []) {
+    if (!isConfigured()) return;
+    const targetIds = [...new Set(ids)].filter(Boolean);
+    await deleteRows(TABLES.attendances, targetIds);
+    targetIds.forEach((id) => baseline?.attendances?.delete(id));
+  }
+
   async function syncChanges(previous, next) {
     const memberDeletes = removedIds(previous.members, next.members);
     const scheduleDeletes = removedIds(previous.schedules, next.schedules);
@@ -372,6 +379,7 @@
     load,
     queue,
     flush,
+    deleteAttendances,
     replaceAll,
     start,
     stop,
