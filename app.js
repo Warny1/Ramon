@@ -2405,12 +2405,13 @@ function renderMemberScheduleStartFields(member) {
     list.append(createEmptyLine("등록된 주간 시간표가 없습니다."));
   } else {
     weeklySchedules.forEach((schedule) => {
-      const label = [dayNames[schedule.day], schedule.time, getScheduleBoardLabel(schedule.scheduleBoard), schedule.className || "수업"].filter(Boolean).join(" · ");
+      const periodLabel = getSchedulePeriodLabel(schedule);
+      const label = [dayNames[schedule.day], schedule.time, getScheduleBoardLabel(schedule.scheduleBoard), schedule.className || "수업", periodLabel].filter(Boolean).join(" · ");
       const row = document.createElement("label");
       row.className = "member-schedule-start-row";
       row.innerHTML = `
         <span>${escapeHTML(label)}</span>
-        <input type="date" value="${escapeHTML(schedule.startDate || firstPaymentDate || "")}" data-schedule-start-id="${escapeHTML(schedule.id)}" />
+        <input type="date" value="${escapeHTML(schedule.startDate || firstPaymentDate || "")}" data-schedule-start-id="${escapeHTML(schedule.id)}" data-schedule-end-date="${escapeHTML(schedule.endDate || "")}" />
       `;
       list.append(row);
     });
@@ -2419,20 +2420,43 @@ function renderMemberScheduleStartFields(member) {
   container.querySelector("[data-fill-first-payment]")?.addEventListener("click", () => {
     if (!firstPaymentDate) return;
     container.querySelectorAll("[data-schedule-start-id]").forEach((input) => {
+      const endDate = String(input.dataset.scheduleEndDate || "");
+      if (endDate && firstPaymentDate > endDate) return;
       input.value = firstPaymentDate;
     });
   });
+}
+
+function getSchedulePeriodLabel(schedule) {
+  const startDate = String(schedule.startDate || "").trim();
+  const endDate = String(schedule.endDate || "").trim();
+  if (startDate && endDate) return `${formatShortDate(startDate)}~${formatShortDate(endDate)}`;
+  if (startDate) return `${formatShortDate(startDate)}부터`;
+  if (endDate) return `${formatShortDate(endDate)}까지`;
+  return "";
 }
 
 function applyMemberScheduleStartFields(member) {
   const container = elements.memberScheduleStartFields;
   if (!member || !container || container.hidden) return;
 
+  const invalidRows = [];
   container.querySelectorAll("[data-schedule-start-id]").forEach((input) => {
     const schedule = member.schedules.find((item) => item.id === input.dataset.scheduleStartId);
     if (!schedule || schedule.date) return;
-    schedule.startDate = String(input.value || "").trim();
+    const nextStartDate = String(input.value || "").trim();
+    const endDate = String(schedule.endDate || "").trim();
+    if (nextStartDate && endDate && nextStartDate > endDate) {
+      invalidRows.push([dayNames[schedule.day], schedule.time].filter(Boolean).join(" "));
+      input.value = schedule.startDate || "";
+      return;
+    }
+    schedule.startDate = nextStartDate;
   });
+
+  if (invalidRows.length) {
+    alert(`종료일보다 늦은 시작일은 저장하지 않았습니다.\n${invalidRows.join(", ")}`);
+  }
 }
 
 function addPayment(event) {
