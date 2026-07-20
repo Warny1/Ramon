@@ -3538,11 +3538,6 @@ function getScheduleItems() {
 }
 
 function isScheduleActiveOnDate(schedule, date) {
-  if (!date) return true;
-  const startDate = String(schedule.startDate || "").trim();
-  const endDate = String(schedule.endDate || "").trim();
-  if (startDate && date < startDate) return false;
-  if (endDate && date > endDate) return false;
   return true;
 }
 
