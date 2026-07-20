@@ -204,6 +204,20 @@
                     <span>출석 날짜</span>
                     <input id="detailAttendanceDate" type="date" />
                   </label>
+                  <form id="manualAttendanceForm" class="manual-attendance-form">
+                    <label>
+                      <span>시간</span>
+                      <input id="manualAttendanceTime" type="time" step="1800" required />
+                    </label>
+                    <label>
+                      <span>구분</span>
+                      <select id="manualAttendanceStatus">
+                        <option value="출석">출석</option>
+                        <option value="결석">결석</option>
+                      </select>
+                    </label>
+                    <button class="action-button" type="submit">기록 추가</button>
+                  </form>
                   <div id="attendanceCheckList" class="stack-list"></div>
                   <div class="section-title compact-title">
                     <h4>최근 기록</h4>

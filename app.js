@@ -236,6 +236,9 @@ const elements = {
   scheduleList: $("#scheduleList"),
   attendanceCheckList: $("#attendanceCheckList"),
   attendanceList: $("#attendanceList"),
+  manualAttendanceForm: $("#manualAttendanceForm"),
+  manualAttendanceTime: $("#manualAttendanceTime"),
+  manualAttendanceStatus: $("#manualAttendanceStatus"),
   paymentList: $("#paymentList"),
   detailTabs: document.querySelectorAll(".detail-tab"),
   detailPanels: document.querySelectorAll(".detail-panel"),
@@ -345,6 +348,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   $("#clearPaymentRecords").addEventListener("click", clearPaymentRecords);
   $("#addLessonType").addEventListener("click", () => addLessonSettingsRow());
   $("#markAttendance").addEventListener("click", markAttendance);
+  elements.manualAttendanceForm.addEventListener("submit", addManualAttendance);
   $("#deleteMember").addEventListener("click", deleteSelectedMember);
   $("#mobileDetailBack").addEventListener("click", () => {
     setMobileView("members");
@@ -2642,6 +2646,25 @@ function markAttendance() {
   const currentClass = member.schedules.find((item) => Number(item.day) === getSelectedAttendanceDate().getDay());
   const status = getScheduleStatus(currentClass) === "시범수업" ? "시범수업" : "";
   recordAttendance(member, currentClass?.className || "출석", currentClass?.time || "", status);
+  commit();
+}
+
+function addManualAttendance(event) {
+  event.preventDefault();
+  if (!canEditSharedData()) return;
+
+  const member = getSelectedMember();
+  if (!member) return;
+
+  const time = elements.manualAttendanceTime.value;
+  if (!time) {
+    elements.manualAttendanceTime.focus();
+    return;
+  }
+
+  const status = normalizeAttendanceStatus(elements.manualAttendanceStatus.value || "출석") || "출석";
+  recordAttendanceForDate(member, "수업", time, status, selectedAttendanceDate);
+  elements.manualAttendanceTime.value = "";
   commit();
 }
 
