@@ -875,6 +875,11 @@ function startSharedDataSync() {
   });
 
   window.RamonSync.start((remoteData) => {
+    if (hasPendingSharedSync()) {
+      flushPendingSharedSync();
+      return;
+    }
+
     const selectedId = selectedMemberId;
     state = applyPresetTimetable({
       ...remoteData,

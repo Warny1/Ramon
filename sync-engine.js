@@ -276,6 +276,10 @@
       if (syncPromise || pendingSnapshot || document.hidden) return;
       const remote = await load();
       if (remote.status !== "ready" || !remote.data) return;
+      if (syncPromise || pendingSnapshot || document.hidden || window.RamonHasPendingSharedSync?.()) {
+        window.RamonFlushPendingSharedSync?.();
+        return;
+      }
 
       applyingRemote = true;
       try {
