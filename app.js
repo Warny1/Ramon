@@ -1626,7 +1626,7 @@ function renderAttendanceCheckList(member) {
       button.disabled = !canEditSharedData();
       button.addEventListener("click", () => {
         recordAttendance(member, schedule.className || "출석", schedule.time || "", action.status);
-        commit();
+        commit({ preserveScroll: true });
       });
       actions.append(button);
     });
@@ -2682,7 +2682,7 @@ function markAttendance() {
   const currentClass = member.schedules.find((item) => Number(item.day) === getSelectedAttendanceDate().getDay());
   const status = getScheduleStatus(currentClass) === "시범수업" ? "시범수업" : "";
   recordAttendance(member, currentClass?.className || "출석", currentClass?.time || "", status);
-  commit();
+  commit({ preserveScroll: true });
 }
 
 function addManualAttendance(event) {
@@ -2693,7 +2693,7 @@ function addManualAttendance(event) {
   if (!member) return;
 
   recordAttendanceForDate(member, "수업", "", "출석", selectedAttendanceDate);
-  commit();
+  commit({ preserveScroll: true });
 }
 
 function markGroupAttendance(group) {
@@ -2704,7 +2704,7 @@ function markGroupAttendance(group) {
     recordAttendance(member, group.className || "출석", group.time, status);
   });
   selectedMemberId = group.members[0]?.id ?? selectedMemberId;
-  commit();
+  commit({ preserveScroll: true });
 }
 
 function recordAttendance(member, className, time, status = "") {
@@ -3512,7 +3512,7 @@ function markCombinedAttendanceForDate(groups, status, date) {
       recordAttendanceForDate(member, group.className || "출석", group.time, nextStatus, date);
     });
   });
-  commit();
+  commit({ preserveScroll: true });
 }
 
 function getCombinedAttendanceStatus(groups) {
@@ -3549,7 +3549,7 @@ function clearCombinedAttendanceForDate(groups, date) {
       );
     });
   });
-  commit();
+  commit({ preserveScroll: true });
 }
 
 function getTodayEntries() {
@@ -4007,8 +4007,38 @@ function closeModal(modal) {
   }
 }
 
-function commit() {
+function getScrollableTargets() {
+  return [
+    elements.memberList,
+    elements.todaySchedule,
+    elements.attendanceCheckList,
+    document.scrollingElement,
+  ].filter(Boolean);
+}
+
+function preserveScrollPosition(callback) {
+  const positions = getScrollableTargets().map((target) => ({
+    target,
+    top: target.scrollTop,
+    left: target.scrollLeft,
+  }));
+
+  callback();
+
+  requestAnimationFrame(() => {
+    positions.forEach(({ target, top, left }) => {
+      target.scrollTop = top;
+      target.scrollLeft = left;
+    });
+  });
+}
+
+function commit(options = {}) {
   saveData();
+  if (options.preserveScroll) {
+    preserveScrollPosition(render);
+    return;
+  }
   render();
 }
 
