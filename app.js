@@ -344,7 +344,6 @@ document.addEventListener("DOMContentLoaded", async () => {
   $("#importPastedTimetable").addEventListener("click", importPastedTimetable);
   $("#importPastedAttendance").addEventListener("click", importPastedAttendance);
   $("#importPastedPayments").addEventListener("click", importPastedPayments);
-  $("#clearAttendanceRecords").addEventListener("click", clearAttendanceRecords);
   $("#clearPaymentRecords").addEventListener("click", clearPaymentRecords);
   $("#addLessonType").addEventListener("click", () => addLessonSettingsRow());
   $("#markAttendance").addEventListener("click", markAttendance);
@@ -2941,28 +2940,6 @@ function removeAttendance(memberId, attendanceId) {
   queueAttendanceDeletes([attendanceId]);
   member.attendances = member.attendances.filter((item) => item.id !== attendanceId);
   commit({ preserveScroll: true });
-}
-
-function clearAttendanceRecords() {
-  if (!canManageSettings()) return;
-
-  const total = state.members.reduce((sum, member) => sum + member.attendances.length, 0);
-  if (!total) {
-    alert("초기화할 출석기록이 없습니다.");
-    return;
-  }
-
-  const ok = confirm(`전체 출석기록 ${total}건을 삭제할까요?\n회원, 시간표, 결제기록은 유지됩니다.`);
-  if (!ok) return;
-
-  const attendanceIds = state.members.flatMap((member) => member.attendances.map((item) => item.id));
-  queueAttendanceDeletes(attendanceIds);
-  state.members.forEach((member) => {
-    member.attendances = [];
-  });
-  closeModal(elements.sheetsModal);
-  commit();
-  alert("출석기록만 초기화했습니다. 이제 구글시트 출석기록을 다시 붙여넣어 주세요.");
 }
 
 function clearPaymentRecords() {
