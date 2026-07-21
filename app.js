@@ -583,11 +583,11 @@ function getPaymentHistoryPassword() {
 }
 
 function isPaymentHistoryUnlocked() {
-  return true;
+  return paymentHistoryUnlocked;
 }
 
 function unlockPaymentHistory() {
-  const input = prompt("결제내역 비밀번호를 입력하세요.");
+  const input = prompt("비밀번호 입력");
   if (input === null) return false;
 
   if (String(input).trim() !== getPaymentHistoryPassword()) {
