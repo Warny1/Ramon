@@ -751,8 +751,12 @@ function deduplicateAttendanceData(data) {
   return data;
 }
 
+function normalizeMemberName(value) {
+  return String(value || "").trim().replace(/\s+/g, " ");
+}
+
 function getMemberRecordKey(member) {
-  return `${String(member.name || "").trim().replace(/\s+/g, " ")}|${normalizePhone(member.phone)}`;
+  return `${normalizeMemberName(member.name)}|${normalizePhone(member.phone)}`;
 }
 
 function deduplicateSchedules(schedules = []) {
@@ -2419,12 +2423,22 @@ function addMember(event) {
   const form = new FormData(elements.memberForm);
   const editingMemberId = elements.memberForm.dataset.editingMemberId || "";
   const existing = editingMemberId ? state.members.find((item) => item.id === editingMemberId) : null;
+  const nextName = normalizeMemberName(form.get("name"));
+  const nextPhone = String(form.get("phone")).trim();
+  const nextMemo = String(form.get("memo")).trim();
+  const nextLessonType = String(form.get("defaultLessonType") || "");
+
+  if (!nextName) {
+    alert("이름을 입력해주세요.");
+    return;
+  }
+
+  if (!confirmMemberDuplicate({ name: nextName, phone: nextPhone, editingMemberId })) return;
 
   if (existing) {
-    const nextLessonType = String(form.get("defaultLessonType") || "");
-    existing.name = String(form.get("name")).trim();
-    existing.phone = String(form.get("phone")).trim();
-    existing.memo = String(form.get("memo")).trim();
+    existing.name = nextName;
+    existing.phone = nextPhone;
+    existing.memo = nextMemo;
     existing.defaultLessonType = nextLessonType;
     syncMemberSchedulesToLessonType(existing, nextLessonType);
     applyMemberScheduleStartFields(existing);
@@ -2438,10 +2452,10 @@ function addMember(event) {
 
   const member = {
     id: crypto.randomUUID(),
-    name: String(form.get("name")).trim(),
-    phone: String(form.get("phone")).trim(),
-    memo: String(form.get("memo")).trim(),
-    defaultLessonType: String(form.get("defaultLessonType") || ""),
+    name: nextName,
+    phone: nextPhone,
+    memo: nextMemo,
+    defaultLessonType: nextLessonType,
     createdAt: todayISO,
     schedules: [],
     payments: [],
@@ -2458,6 +2472,34 @@ function addMember(event) {
   prepareMemberModal();
   closeModal(elements.memberModal);
   commit();
+}
+
+function confirmMemberDuplicate({ name, phone, editingMemberId = "" }) {
+  const normalizedName = normalizeMemberName(name);
+  const normalizedPhone = normalizePhone(phone);
+  const otherMembers = state.members.filter((member) => member.id !== editingMemberId);
+  const sameIdentity = otherMembers.find((member) =>
+    normalizeMemberName(member.name) === normalizedName && normalizePhone(member.phone) === normalizedPhone,
+  );
+
+  if (sameIdentity) {
+    alert(`${sameIdentity.name} 회원이 이미 등록되어 있습니다.`);
+    return false;
+  }
+
+  const sameName = otherMembers.find((member) => normalizeMemberName(member.name) === normalizedName);
+  if (sameName && !confirm(`${sameName.name} 회원과 이름이 같습니다.\n동명이인으로 저장할까요?`)) {
+    return false;
+  }
+
+  const samePhone = normalizedPhone
+    ? otherMembers.find((member) => normalizePhone(member.phone) === normalizedPhone)
+    : null;
+  if (samePhone && !confirm(`${samePhone.name} 회원과 연락처가 같습니다.\n새 회원으로 저장할까요?`)) {
+    return false;
+  }
+
+  return true;
 }
 
 function syncMemberSchedulesToLessonType(member, lessonType) {
