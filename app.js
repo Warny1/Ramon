@@ -7,6 +7,8 @@ const PRESET_TIMETABLE_VERSION = "2026-06-photo-timetable-1";
 const PRESET_PAYMENTS_VERSION = "2026-06-corrected-payments-1";
 const PRESET_ATTENDANCE_VERSION = window.PRESET_ATTENDANCE_VERSION || "";
 const presetAttendanceEntries = window.PRESET_ATTENDANCE_ENTRIES || [];
+const TRIAL_MEMBER_NAME = "시범수업";
+const TRIAL_MEMBER_MEMO = "신규 체험용 전용 회원";
 
 const dayNames = ["일", "월", "화", "수", "목", "금", "토"];
 const timetableDays = [1, 2, 3, 4, 5, 6, 0];
@@ -445,7 +447,9 @@ document.addEventListener("DOMContentLoaded", async () => {
 async function initializeData() {
   state = await loadData();
   normalizeAppSettings();
-  selectedMemberId = getAccessibleMembers()[0]?.id ?? null;
+  const didAddTrialMember = ensureTrialMember(state);
+  selectedMemberId = getDefaultSelectedMemberId();
+  if (didAddTrialMember) saveData();
 }
 
 async function loadData() {
@@ -551,6 +555,65 @@ function loadLocalData() {
 function normalizeAppSettings() {
   state.scheduleBoardLabels = normalizeScheduleBoardLabels(state.scheduleBoardLabels);
   state.paymentHistoryPassword = normalizePaymentHistoryPassword(state.paymentHistoryPassword);
+}
+
+function ensureTrialMember(data = state) {
+  if (!Array.isArray(data.members)) data.members = [];
+
+  const existing = data.members.find((member) => normalizeMemberName(member.name) === TRIAL_MEMBER_NAME);
+  if (existing) {
+    let didUpdate = false;
+    if (!existing.memo) {
+      existing.memo = TRIAL_MEMBER_MEMO;
+      didUpdate = true;
+    }
+    if (!existing.defaultLessonType) {
+      existing.defaultLessonType = getTrialLessonTypeName(data);
+      didUpdate = true;
+    }
+    if (!Array.isArray(existing.schedules)) {
+      existing.schedules = [];
+      didUpdate = true;
+    }
+    if (!Array.isArray(existing.payments)) {
+      existing.payments = [];
+      didUpdate = true;
+    }
+    if (!Array.isArray(existing.attendances)) {
+      existing.attendances = [];
+      didUpdate = true;
+    }
+    return didUpdate;
+  }
+
+  data.members.unshift({
+    id: crypto.randomUUID(),
+    name: TRIAL_MEMBER_NAME,
+    phone: "",
+    memo: TRIAL_MEMBER_MEMO,
+    defaultLessonType: getTrialLessonTypeName(data),
+    createdAt: todayISO,
+    schedules: [],
+    payments: [],
+    attendances: [],
+  });
+  return true;
+}
+
+function isTrialMember(member) {
+  return normalizeMemberName(member?.name) === TRIAL_MEMBER_NAME;
+}
+
+function getDefaultSelectedMemberId() {
+  const members = getAccessibleMembers();
+  return members.find((member) => !isTrialMember(member))?.id ?? members[0]?.id ?? null;
+}
+
+function getTrialLessonTypeName(data = state) {
+  const lessonTypes = Array.isArray(data.lessonTypes) ? data.lessonTypes : [];
+  return lessonTypes.find((lesson) => String(lesson.name || "").includes("체험"))?.name
+    || lessonTypes[0]?.name
+    || "";
 }
 
 function normalizeScheduleBoardLabels(labels = {}) {
