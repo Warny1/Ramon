@@ -7,13 +7,17 @@
     payments: "payments",
     attendances: "attendances",
   };
-  const POLL_INTERVAL = 5000;
+  const POLL_INTERVAL = 10 * 60 * 1000;
+  const FOCUS_REFRESH_COOLDOWN = 60 * 1000;
 
   let baseline = null;
   let pendingSnapshot = null;
   let syncPromise = null;
   let syncTimer = null;
   let pollTimer = null;
+  let refreshHandler = null;
+  let visibilityHandler = null;
+  let lastRefreshAt = 0;
   let applyingRemote = false;
 
   function isConfigured() {
@@ -278,12 +282,17 @@
     stop();
     if (!isConfigured()) return;
 
-    const refresh = async () => {
+    const refresh = async ({ bypassCooldown = false } = {}) => {
       if (window.RamonHasPendingSharedSync?.()) {
         window.RamonFlushPendingSharedSync?.();
         return;
       }
       if (syncPromise || pendingSnapshot || document.hidden) return;
+
+      const now = Date.now();
+      if (!bypassCooldown && now - lastRefreshAt < FOCUS_REFRESH_COOLDOWN) return;
+      lastRefreshAt = now;
+
       const remote = await load();
       if (remote.status !== "ready" || !remote.data) return;
       if (syncPromise || pendingSnapshot || document.hidden || window.RamonHasPendingSharedSync?.()) {
@@ -299,16 +308,27 @@
       }
     };
 
-    pollTimer = window.setInterval(() => {
+    refreshHandler = () => {
       refresh().catch(() => {});
+    };
+    visibilityHandler = () => {
+      refresh().catch(() => {});
+    };
+
+    pollTimer = window.setInterval(() => {
+      refresh({ bypassCooldown: true }).catch(() => {});
     }, POLL_INTERVAL);
-    window.addEventListener("focus", refresh);
-    document.addEventListener("visibilitychange", refresh);
+    window.addEventListener("focus", refreshHandler);
+    document.addEventListener("visibilitychange", visibilityHandler);
   }
 
   function stop() {
     window.clearInterval(pollTimer);
     pollTimer = null;
+    if (refreshHandler && window.removeEventListener) window.removeEventListener("focus", refreshHandler);
+    if (visibilityHandler && document.removeEventListener) document.removeEventListener("visibilitychange", visibilityHandler);
+    refreshHandler = null;
+    visibilityHandler = null;
   }
 
   async function request(table, query = "", options = {}) {
