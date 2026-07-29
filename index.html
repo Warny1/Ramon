@@ -8,7 +8,7 @@
     <link rel="manifest" href="/manifest.webmanifest" />
     <link rel="icon" href="/icon.svg" type="image/svg+xml" />
     <link rel="apple-touch-icon" href="/icon.svg" />
-    <link rel="stylesheet" href="./styles.css?v=20260728-1" />
+    <link rel="stylesheet" href="./styles.css?v=20260729-1" />
   </head>
   <body>
     <header class="mobile-app-header">
@@ -327,7 +327,7 @@
             </label>
             <label>
               결제 금액
-              <input name="paymentAmount" type="number" min="0" step="1000" />
+              <input name="paymentAmount" type="number" min="0" step="100" />
             </label>
           </div>
           <label>
@@ -378,7 +378,7 @@
           </label>
           <label>
             금액
-            <input name="amount" type="number" min="0" step="1000" required />
+            <input name="amount" type="number" min="0" step="100" required />
           </label>
         </div>
         <label>
@@ -598,10 +598,10 @@
       </form>
     </dialog>
 
-    <script src="./supabase-config.js?v=20260728-1"></script>
+    <script src="./supabase-config.js?v=20260729-1"></script>
     <script src="./attendance-data.js"></script>
-    <script src="./sync-engine.js?v=20260728-1"></script>
-    <script src="./app.js?v=20260728-1"></script>
+    <script src="./sync-engine.js?v=20260729-1"></script>
+    <script src="./app.js?v=20260729-1"></script>
     <script>
       if ("serviceWorker" in navigator) {
         window.addEventListener("load", () => {
