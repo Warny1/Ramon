@@ -204,6 +204,7 @@ let desktopView = "operations";
 let editingScheduleGroup = null;
 let activeScheduleBoard = localStorage.getItem("ramon-active-schedule-board") || "admin";
 let pendingAttendanceDeleteIds = new Set();
+let isScheduleSubmitting = false;
 
 const scheduleBoards = {
   admin: "관리자",
@@ -852,7 +853,50 @@ function deduplicateSchedules(schedules = []) {
     });
   });
 
-  return [...schedulesByKey.values()];
+  return mergeOverlappingDuplicateSchedules([...schedulesByKey.values()]);
+}
+
+function mergeOverlappingDuplicateSchedules(schedules = []) {
+  const merged = [];
+
+  schedules.forEach((schedule) => {
+    const existing = merged.find((item) => isSameScheduleSlot(item, schedule) && doRawSchedulePeriodsOverlap(item, schedule));
+
+    if (!existing) {
+      merged.push(schedule);
+      return;
+    }
+
+    if (!existing.lessonType && schedule.lessonType) existing.lessonType = schedule.lessonType;
+    if (!existing.status && schedule.status) existing.status = schedule.status;
+    if (!existing.scheduleBoard && schedule.scheduleBoard) existing.scheduleBoard = normalizeScheduleBoard(schedule.scheduleBoard);
+    mergeSchedulePeriod(existing, schedule);
+  });
+
+  return merged;
+}
+
+function doRawSchedulePeriodsOverlap(first, second) {
+  if (first.date || second.date) return String(first.date || "").trim() === String(second.date || "").trim();
+
+  const firstStart = String(first.startDate || "").trim() || "0000-00-00";
+  const firstEnd = String(first.endDate || "").trim() || "9999-99-99";
+  const secondStart = String(second.startDate || "").trim() || "0000-00-00";
+  const secondEnd = String(second.endDate || "").trim() || "9999-99-99";
+
+  return firstStart <= secondEnd && secondStart <= firstEnd;
+}
+
+function mergeSchedulePeriod(target, source) {
+  if (target.date || source.date) return;
+
+  const starts = [target.startDate, source.startDate].map((date) => String(date || "").trim()).filter(Boolean);
+  const ends = [target.endDate, source.endDate].map((date) => String(date || "").trim()).filter(Boolean);
+
+  if (starts.length) target.startDate = starts.sort((a, b) => a.localeCompare(b))[0];
+  if (target.endDate || source.endDate) {
+    target.endDate = ends.length === 2 ? ends.sort((a, b) => b.localeCompare(a))[0] : "";
+  }
 }
 
 function mergeRecordsById(first = [], second = []) {
@@ -2755,7 +2799,7 @@ function openPaymentEditor(memberId, paymentId) {
 
 function addSchedule(event) {
   event.preventDefault();
-  if (!canManageSettings()) return;
+  if (!canManageSettings() || isScheduleSubmitting) return;
 
   const form = new FormData(elements.scheduleForm);
   const memberIds = form.getAll("memberIds");
@@ -2788,47 +2832,111 @@ function addSchedule(event) {
     ? editGroups.map((group) => minutesToTime(timeToMinutes(formTime) + timeToMinutes(group.time) - editStartMinutes))
     : [formTime];
 
-  const shouldSplitWeeklyEdit = isEdit && editingScheduleGroup && scheduleScope === "weekly" && scheduleStartDate;
+  const submitButton = event.submitter || elements.scheduleForm.querySelector('[type="submit"]');
+  isScheduleSubmitting = true;
+  if (submitButton) submitButton.disabled = true;
+  let addedScheduleCount = 0;
 
-  if (shouldSplitWeeklyEdit) {
-    closeScheduleGroupBeforeDate(editingScheduleGroup, scheduleStartDate);
-  } else if (isEdit && editingScheduleGroup) {
-    getScheduleGroupEntries(editingScheduleGroup).forEach(({ memberId, scheduleId }) => {
+  try {
+    const shouldSplitWeeklyEdit = isEdit && editingScheduleGroup && scheduleScope === "weekly" && scheduleStartDate;
+
+    if (shouldSplitWeeklyEdit) {
+      closeScheduleGroupBeforeDate(editingScheduleGroup, scheduleStartDate);
+    } else if (isEdit && editingScheduleGroup) {
+      getScheduleGroupEntries(editingScheduleGroup).forEach(({ memberId, scheduleId }) => {
+        const member = state.members.find((item) => item.id === memberId);
+        if (!member) return;
+
+        member.schedules = member.schedules.filter((item) => item.id !== scheduleId);
+      });
+    }
+
+    memberIds.forEach((memberId) => {
       const member = state.members.find((item) => item.id === memberId);
       if (!member) return;
+      const memberScheduleStartDate = !isMakeup && scheduleScope === "weekly"
+        ? scheduleStartDate || (!isEdit ? getMemberFirstPaymentDate(member) : "") || getDateForScheduleDay(scheduleDay)
+        : "";
 
-      member.schedules = member.schedules.filter((item) => item.id !== scheduleId);
-    });
-  }
+      scheduleTimes.forEach((time) => {
+        const nextSchedule = {
+          id: crypto.randomUUID(),
+          day: scheduleDay,
+          time,
+          className: String(form.get("className")).trim() || "수업",
+          scheduleBoard: normalizeScheduleBoard(form.get("scheduleBoard")),
+          lessonType: String(form.get("scheduleLessonType")),
+          status: String(form.get("scheduleStatus")),
+          date: scheduleDate,
+          startDate: memberScheduleStartDate,
+          endDate: scheduleEndDate,
+        };
 
-  memberIds.forEach((memberId) => {
-    const member = state.members.find((item) => item.id === memberId);
-    if (!member) return;
-    const memberScheduleStartDate = !isMakeup && scheduleScope === "weekly"
-      ? scheduleStartDate || (!isEdit ? getMemberFirstPaymentDate(member) : "") || getDateForScheduleDay(scheduleDay)
-      : "";
-
-    scheduleTimes.forEach((time) => {
-      member.schedules.push({
-        id: crypto.randomUUID(),
-        day: scheduleDay,
-        time,
-        className: String(form.get("className")).trim() || "수업",
-        scheduleBoard: normalizeScheduleBoard(form.get("scheduleBoard")),
-        lessonType: String(form.get("scheduleLessonType")),
-        status: String(form.get("scheduleStatus")),
-        date: scheduleDate,
-        startDate: memberScheduleStartDate,
-        endDate: scheduleEndDate,
+        if (hasOverlappingSchedule(member, nextSchedule)) return;
+        member.schedules.push(nextSchedule);
+        addedScheduleCount += 1;
       });
     });
-  });
+  } finally {
+    isScheduleSubmitting = false;
+    if (submitButton) submitButton.disabled = false;
+  }
+
+  if (!addedScheduleCount && !isEdit) {
+    alert("이미 같은 시간표가 등록되어 있습니다.");
+    return;
+  }
 
   elements.scheduleForm.reset();
   prepareScheduleModal("regular");
   editingScheduleGroup = null;
   closeModal(elements.scheduleModal);
   commit();
+}
+
+function hasOverlappingSchedule(member, nextSchedule) {
+  return (member.schedules || []).some((schedule) =>
+    isSameScheduleSlot(schedule, nextSchedule) && doSchedulePeriodsOverlap(member, schedule, nextSchedule),
+  );
+}
+
+function isSameScheduleSlot(first, second) {
+  const firstDate = String(first.date || "").trim();
+  const secondDate = String(second.date || "").trim();
+
+  if (firstDate || secondDate) {
+    return firstDate === secondDate &&
+      Number(first.day) === Number(second.day) &&
+      normalizeTime(first.time) === normalizeTime(second.time) &&
+      String(first.className || "수업").trim() === String(second.className || "수업").trim() &&
+      getScheduleLessonType(first) === getScheduleLessonType(second) &&
+      getScheduleStatus(first) === getScheduleStatus(second) &&
+      getScheduleBoard(first) === getScheduleBoard(second);
+  }
+
+  return Number(first.day) === Number(second.day) &&
+    normalizeTime(first.time) === normalizeTime(second.time) &&
+    String(first.className || "수업").trim() === String(second.className || "수업").trim() &&
+    getScheduleLessonType(first) === getScheduleLessonType(second) &&
+    getScheduleStatus(first) === getScheduleStatus(second) &&
+    getScheduleBoard(first) === getScheduleBoard(second);
+}
+
+function doSchedulePeriodsOverlap(member, first, second) {
+  if (first.date || second.date) return String(first.date || "").trim() === String(second.date || "").trim();
+
+  const firstStart = getScheduleStartBasis(first, member) || "0000-00-00";
+  const firstEnd = String(first.endDate || "").trim() || "9999-99-99";
+  const secondStart = getScheduleStartBasis(second, member) || "0000-00-00";
+  const secondEnd = String(second.endDate || "").trim() || "9999-99-99";
+
+  return firstStart <= secondEnd && secondStart <= firstEnd;
+}
+
+function normalizeTime(value) {
+  const match = String(value || "").trim().match(/^(\d{1,2}):(\d{2})/);
+  if (!match) return String(value || "").trim();
+  return `${match[1].padStart(2, "0")}:${match[2]}`;
 }
 
 function getMemberFirstPaymentDate(member) {
@@ -3765,7 +3873,7 @@ function getScheduleGroups() {
   const groups = new Map();
 
   getScheduleItems().forEach((item) => {
-    const key = [item.day, item.time, item.className || "수업", getScheduleLessonType(item), getScheduleStatus(item), getScheduleBoard(item), item.date || "", item.startDate || "", item.endDate || ""].join("|");
+    const key = [item.day, normalizeTime(item.time), item.className || "수업", getScheduleLessonType(item), getScheduleStatus(item), getScheduleBoard(item), item.date || ""].join("|");
     if (!groups.has(key)) {
       groups.set(key, {
         day: item.day,
@@ -3782,8 +3890,11 @@ function getScheduleGroups() {
       });
     }
 
-    groups.get(key).members.push(item.member);
-    groups.get(key).entries.push({ memberId: item.member.id, scheduleId: item.id });
+    const group = groups.get(key);
+    if (!group.members.some((member) => member.id === item.member.id)) {
+      group.members.push(item.member);
+    }
+    group.entries.push({ memberId: item.member.id, scheduleId: item.id });
   });
 
   return [...groups.values()].map((group) => ({
