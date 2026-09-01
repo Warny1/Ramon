@@ -189,6 +189,60 @@ h4 {
   border: 1px solid var(--line);
 }
 
+.member-status-tabs {
+  display: none;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.member-status-tab {
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: white;
+  color: var(--muted);
+  min-height: 34px;
+  padding: 0 8px;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.member-status-tab.active {
+  border-color: #1d4ed8;
+  background: #eff6ff;
+  color: #1d4ed8;
+}
+
+.member-status-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  padding: 4px 8px;
+  font-size: 11px;
+  font-weight: 900;
+  white-space: nowrap;
+}
+
+.member-status-badge.active {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.member-status-badge.pending {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.member-status-badge.expired {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.member-overview-status-tabs {
+  display: grid;
+  margin-bottom: 10px;
+}
+
 .schedule-member-search {
   margin-top: 4px;
 }
@@ -212,6 +266,15 @@ h4 {
   background: var(--row-soft);
   padding: 10px;
   text-align: left;
+}
+
+.member-card > span:last-child,
+.directory-member > span:last-child {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 6px;
+  flex-wrap: wrap;
 }
 
 .today-attendance-card {
@@ -3053,13 +3116,23 @@ body[data-role="member"] .detail-panel[data-panel="payment"] {
   body[data-mobile-view="members"] .sidebar {
     display: grid;
     grid-template-columns: minmax(0, 1fr) auto;
-    grid-template-rows: auto auto minmax(0, 1fr);
+    grid-template-rows: auto auto auto minmax(0, 1fr);
     gap: 10px 8px;
   }
 
   body[data-mobile-view="members"] .brand,
   body[data-mobile-view="members"] .member-list {
     grid-column: 1 / -1;
+  }
+
+  body[data-mobile-view="members"] .sidebar > .member-status-tabs {
+    display: grid;
+    grid-column: 1 / -1;
+    grid-row: 3;
+  }
+
+  body[data-mobile-view="members"] .member-list {
+    grid-row: 4;
   }
 
   body[data-mobile-view="members"] .sidebar-schedule-board-switcher {
@@ -3080,7 +3153,7 @@ body[data-role="member"] .detail-panel[data-panel="payment"] {
   }
 
   body[data-mobile-view="members"] .member-card {
-    grid-template-columns: minmax(0, 1fr) 78px;
+    grid-template-columns: minmax(0, 1fr) 116px;
     align-items: center;
   }
 
@@ -3143,7 +3216,7 @@ body[data-role="member"] .detail-panel[data-panel="payment"] {
   }
 
   body[data-mobile-view="members"] .member-card {
-    grid-template-columns: minmax(0, 1fr) 72px;
+    grid-template-columns: minmax(0, 1fr) 108px;
     align-items: center;
     border-bottom: 1px solid #edf0f0;
     border-radius: 0;

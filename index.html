@@ -42,6 +42,13 @@
           <input id="memberSearch" type="search" placeholder="오늘 회원 검색" />
         </div>
 
+        <div class="member-status-tabs" aria-label="회원 상태 필터">
+          <button class="member-status-tab active" type="button" data-member-status-filter="active">정상</button>
+          <button class="member-status-tab" type="button" data-member-status-filter="pending">보류</button>
+          <button class="member-status-tab" type="button" data-member-status-filter="expired">만료</button>
+          <button class="member-status-tab" type="button" data-member-status-filter="all">전체</button>
+        </div>
+
         <div class="sidebar-quick-actions">
           <button class="secondary-button today-jump-button" id="goTodayButton" type="button">
             <span aria-hidden="true">↺</span>
@@ -114,6 +121,12 @@
               <h3>전체 회원</h3>
             </div>
             <span id="allMembersCount" class="count-pill">0</span>
+          </div>
+          <div class="member-status-tabs member-overview-status-tabs" aria-label="회원 상태 필터">
+            <button class="member-status-tab active" type="button" data-member-status-filter="active">정상</button>
+            <button class="member-status-tab" type="button" data-member-status-filter="pending">보류</button>
+            <button class="member-status-tab" type="button" data-member-status-filter="expired">만료</button>
+            <button class="member-status-tab" type="button" data-member-status-filter="all">전체</button>
           </div>
           <div id="allMembersGrid" class="all-members-grid"></div>
         </section>
@@ -601,7 +614,7 @@
     <script src="./supabase-config.js?v=20260729-1"></script>
     <script src="./attendance-data.js"></script>
     <script src="./sync-engine.js?v=20260729-1"></script>
-    <script src="./app.js?v=20260901-1"></script>
+    <script src="./app.js?v=20260901-2"></script>
     <script>
       if ("serviceWorker" in navigator) {
         window.addEventListener("load", () => {

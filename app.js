@@ -205,10 +205,18 @@ let editingScheduleGroup = null;
 let activeScheduleBoard = localStorage.getItem("ramon-active-schedule-board") || "admin";
 let pendingAttendanceDeleteIds = new Set();
 let isScheduleSubmitting = false;
+let activeMemberStatusFilter = localStorage.getItem("ramon-member-status-filter") || "active";
 
 const scheduleBoards = {
   admin: "관리자",
   coach1: "코치1",
+};
+
+const memberStatusFilters = {
+  active: "정상",
+  pending: "보류",
+  expired: "만료",
+  all: "전체",
 };
 
 const $ = (selector) => document.querySelector(selector);
@@ -217,6 +225,7 @@ const elements = {
   sidebarTitle: $("#sidebarTitle"),
   memberSearch: $("#memberSearch"),
   memberList: $("#memberList"),
+  memberStatusTabs: document.querySelectorAll("[data-member-status-filter]"),
   mobileNavButtons: document.querySelectorAll("[data-mobile-view]"),
   desktopNavButtons: document.querySelectorAll("[data-desktop-view]"),
   scheduleBoardButtons: document.querySelectorAll("[data-schedule-board]"),
@@ -375,6 +384,9 @@ document.addEventListener("DOMContentLoaded", async () => {
   });
 
   elements.memberSearch.addEventListener("input", render);
+  elements.memberStatusTabs.forEach((button) => {
+    button.addEventListener("click", () => setActiveMemberStatusFilter(button.dataset.memberStatusFilter));
+  });
   elements.memberForm.querySelector('[name="defaultLessonType"]').addEventListener("change", applyMemberLessonTypeToInlinePayment);
   elements.memberForm.querySelector('[name="paymentDiscountOption"]').addEventListener("change", applyMemberLessonTypeToInlinePayment);
   elements.memberForm.querySelector('[name="withPayment"]').addEventListener("change", syncMemberPaymentFields);
@@ -436,6 +448,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   fillScheduleLessonTypeOptions();
   renderScheduleBoardLabels();
   setActiveScheduleBoard(activeScheduleBoard, { shouldRender: false });
+  setActiveMemberStatusFilter(activeMemberStatusFilter, { shouldRender: false });
   setMobileTimetableView(mobileTimetableView, { shouldRender: false });
   setMobileView("today");
   document.body.dataset.desktopView = desktopView;
@@ -1198,6 +1211,7 @@ function render() {
   renderMobileNav();
   renderStats();
   renderPaymentOverview();
+  renderMemberStatusTabs();
   renderMemberList();
   renderAllMembersOverview();
   renderTimetable();
@@ -1290,6 +1304,26 @@ function setActiveScheduleBoard(board, { shouldRender = true } = {}) {
     button.setAttribute("aria-selected", String(isActive));
   });
   if (shouldRender) render();
+}
+
+function setActiveMemberStatusFilter(filter, { shouldRender = true } = {}) {
+  activeMemberStatusFilter = Object.hasOwn(memberStatusFilters, filter) ? filter : "active";
+  localStorage.setItem("ramon-member-status-filter", activeMemberStatusFilter);
+  renderMemberStatusTabs();
+  if (shouldRender) render();
+}
+
+function renderMemberStatusTabs() {
+  const counts = getMemberStatusCounts();
+  elements.memberStatusTabs.forEach((button) => {
+    const filter = button.dataset.memberStatusFilter;
+    const label = memberStatusFilters[filter] || "전체";
+    const count = filter === "all" ? counts.all : counts[filter] || 0;
+    const isActive = filter === activeMemberStatusFilter;
+    button.textContent = `${label} ${count}`;
+    button.classList.toggle("active", isActive);
+    button.setAttribute("aria-selected", String(isActive));
+  });
 }
 
 function goToToday() {
@@ -1534,7 +1568,7 @@ function renderMemberList() {
     return;
   }
 
-  const entries = getAccessibleMembers()
+  const entries = filterMembersByLifecycleStatus(getAccessibleMembers())
     .map((member) => ({
       member,
       time: "",
@@ -1555,6 +1589,7 @@ function renderMemberList() {
   filtered.forEach(({ member, time, className, lessonType }) => {
     const balance = getBalance(member);
     const balanceTone = getBalanceTone([balance]);
+    const lifecycleStatus = getMemberLifecycleStatus(member);
     const button = document.createElement("button");
     button.className = `member-card ${member.id === selectedMemberId ? "active" : ""}`;
     button.type = "button";
@@ -1563,7 +1598,10 @@ function renderMemberList() {
         <strong>${escapeHTML(member.name)}</strong>
         <span>${escapeHTML(compactLessonType(lessonType))}</span>
       </span>
-      <span class="mini-balance ${balanceTone}">잔여 ${balance}회</span>
+      <span>
+        <span class="mini-balance ${balanceTone}">잔여 ${balance}회</span>
+        <span class="member-status-badge ${lifecycleStatus}">${escapeHTML(getMemberStatusLabel(lifecycleStatus))}</span>
+      </span>
     `;
     button.addEventListener("click", () => {
       selectedMemberId = member.id;
@@ -1650,8 +1688,9 @@ function getSidebarTimeMarkup(timeLabel) {
 }
 
 function renderAllMembersOverview() {
-  const members = [...getAccessibleMembers()].sort((a, b) => a.name.localeCompare(b.name, "ko-KR"));
-  elements.allMembersCount.textContent = String(members.length);
+  const members = filterMembersByLifecycleStatus([...getAccessibleMembers()]).sort((a, b) => a.name.localeCompare(b.name, "ko-KR"));
+  const counts = getMemberStatusCounts();
+  elements.allMembersCount.textContent = `${members.length}/${counts.all}`;
   elements.allMembersGrid.innerHTML = "";
 
   if (!members.length) {
@@ -1662,6 +1701,7 @@ function renderAllMembersOverview() {
   members.forEach((member) => {
     const balance = getBalance(member);
     const balanceTone = getBalanceTone([balance]);
+    const lifecycleStatus = getMemberLifecycleStatus(member);
     const card = document.createElement("button");
     card.className = "directory-member";
     card.type = "button";
@@ -1671,7 +1711,10 @@ function renderAllMembersOverview() {
         <small>${escapeHTML(member.phone || "연락처 없음")}</small>
         <small>${escapeHTML(member.defaultLessonType || "레슨 미지정")}</small>
       </span>
-      <span class="mini-balance ${balanceTone}">잔여 ${balance}회</span>
+      <span>
+        <span class="mini-balance ${balanceTone}">잔여 ${balance}회</span>
+        <span class="member-status-badge ${lifecycleStatus}">${escapeHTML(getMemberStatusLabel(lifecycleStatus))}</span>
+      </span>
     `;
     card.addEventListener("click", () => {
       selectedMemberId = member.id;
@@ -1686,12 +1729,13 @@ function renderDetail(member) {
   const balance = getBalance(member);
   const usage = getMemberUsageSummary(member);
   const hasScheduleMismatch = hasLessonScheduleMismatch(member);
+  const lifecycleStatus = getMemberLifecycleStatus(member);
   const lessonMembers = selectedLessonMemberIds
     .map((id) => state.members.find((item) => item.id === id))
     .filter(Boolean);
   if (!canManagePayments() && activeDetailPanel === "payment") activeDetailPanel = "schedule";
 
-  elements.memberStatus.textContent = balance <= 2 ? "잔여 횟수 확인 필요" : "정상 이용";
+  elements.memberStatus.textContent = `${getMemberStatusLabel(lifecycleStatus)} · ${getMemberLifecycleStatusReason(member, lifecycleStatus)}`;
   elements.memberName.textContent = member.name;
   elements.memberMeta.innerHTML = `
     <span class="member-meta-row"><small>연락처</small><strong>${escapeHTML(member.phone || "연락처 없음")}</strong></span>
@@ -3667,6 +3711,92 @@ function getBalance(member) {
   const paid = member.payments.reduce((sum, item) => sum + Number(item.sessions || 0), 0);
   const used = deduplicateAttendances(member.attendances).filter(isCountedAttendance).length;
   return paid - used;
+}
+
+function getMemberLifecycleStatus(member, referenceDate = todayISO) {
+  const paid = getMemberPaidSessions(member);
+  const balance = getBalance(member);
+  const startDate = getMemberEffectiveStartDate(member);
+  const lastAttendanceDate = getMemberLastCountedAttendanceDate(member);
+
+  if (!paid || !startDate || startDate > referenceDate) {
+    return "pending";
+  }
+
+  if (balance <= 0 && lastAttendanceDate && addDays(lastAttendanceDate, 14) < referenceDate) {
+    return "expired";
+  }
+
+  return "active";
+}
+
+function getMemberPaidSessions(member) {
+  return (member?.payments || []).reduce((sum, item) => sum + Number(item.sessions || 0), 0);
+}
+
+function getMemberFirstScheduleStartDate(member) {
+  return [...(member?.schedules || [])]
+    .map((item) => String(item.startDate || "").trim())
+    .filter(Boolean)
+    .sort((a, b) => a.localeCompare(b))[0] || "";
+}
+
+function getMemberEffectiveStartDate(member) {
+  return getMemberFirstScheduleStartDate(member) || getMemberFirstPaymentDate(member);
+}
+
+function getMemberLastCountedAttendanceDate(member) {
+  return deduplicateAttendances(member?.attendances || [])
+    .filter(isCountedAttendance)
+    .map((item) => String(item.date || "").trim())
+    .filter(Boolean)
+    .sort((a, b) => a.localeCompare(b)).at(-1) || "";
+}
+
+function addDays(date, days) {
+  const target = new Date(`${date}T12:00:00`);
+  target.setDate(target.getDate() + days);
+  return toISODate(target);
+}
+
+function getMemberStatusCounts() {
+  const counts = { active: 0, pending: 0, expired: 0, all: 0 };
+  getAccessibleMembers().forEach((member) => {
+    const status = getMemberLifecycleStatus(member);
+    counts[status] = (counts[status] || 0) + 1;
+    counts.all += 1;
+  });
+  return counts;
+}
+
+function filterMembersByLifecycleStatus(members) {
+  if (activeMemberStatusFilter === "all") return members;
+  return members.filter((member) => getMemberLifecycleStatus(member) === activeMemberStatusFilter);
+}
+
+function getMemberStatusLabel(status) {
+  return memberStatusFilters[status] || "정상";
+}
+
+function getMemberLifecycleStatusReason(member, status = getMemberLifecycleStatus(member)) {
+  const paid = getMemberPaidSessions(member);
+  const scheduleStartDate = getMemberFirstScheduleStartDate(member);
+  const startDate = getMemberEffectiveStartDate(member);
+  const lastAttendanceDate = getMemberLastCountedAttendanceDate(member);
+
+  if (status === "pending") {
+    if (!paid) return "결제 없음";
+    if (!startDate) return "시작일/첫 결제일 없음";
+    if (startDate > todayISO) return `${formatDate(startDate)} 시작 예정`;
+    return "대기";
+  }
+
+  if (status === "expired") {
+    return lastAttendanceDate ? `마지막 출석 ${formatDate(lastAttendanceDate)}` : "잔여 없음";
+  }
+
+  if (!scheduleStartDate && startDate) return `첫 결제일 ${formatDate(startDate)} 기준`;
+  return getBalance(member) <= 2 ? "잔여 횟수 확인 필요" : "정상 이용";
 }
 
 function getMemberUsageSummary(member) {
