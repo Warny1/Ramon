@@ -1600,7 +1600,7 @@ function renderMemberList() {
       </span>
       <span>
         <span class="mini-balance ${balanceTone}">잔여 ${balance}회</span>
-        <span class="member-status-badge ${lifecycleStatus}">${escapeHTML(getMemberStatusLabel(lifecycleStatus))}</span>
+        ${lifecycleStatus === "active" ? "" : `<span class="member-status-badge ${lifecycleStatus}">${escapeHTML(getMemberStatusLabel(lifecycleStatus))}</span>`}
       </span>
     `;
     button.addEventListener("click", () => {
@@ -1713,7 +1713,7 @@ function renderAllMembersOverview() {
       </span>
       <span>
         <span class="mini-balance ${balanceTone}">잔여 ${balance}회</span>
-        <span class="member-status-badge ${lifecycleStatus}">${escapeHTML(getMemberStatusLabel(lifecycleStatus))}</span>
+        ${lifecycleStatus === "active" ? "" : `<span class="member-status-badge ${lifecycleStatus}">${escapeHTML(getMemberStatusLabel(lifecycleStatus))}</span>`}
       </span>
     `;
     card.addEventListener("click", () => {
@@ -3796,7 +3796,7 @@ function getMemberLifecycleStatusReason(member, status = getMemberLifecycleStatu
   }
 
   if (!scheduleStartDate && startDate) return `첫 결제일 ${formatDate(startDate)} 기준`;
-  return getBalance(member) <= 2 ? "잔여 횟수 확인 필요" : "정상 이용";
+  return getBalance(member) <= 2 ? "잔여 횟수 확인 필요" : "수업 중";
 }
 
 function getMemberUsageSummary(member) {
