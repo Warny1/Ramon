@@ -1914,6 +1914,8 @@ h4 {
 }
 
 .attendance-date-control input {
+  box-sizing: border-box;
+  min-width: 0;
   max-width: 160px;
 }
 
@@ -4285,6 +4287,9 @@ select {
   }
 
   .day-panel .attendance-date-control input {
+    appearance: none;
+    -webkit-appearance: none;
+    min-width: 0;
     width: 100%;
     max-width: none;
     min-height: 30px;

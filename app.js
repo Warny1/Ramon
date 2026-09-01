@@ -2865,6 +2865,11 @@ function addSchedule(event) {
     return;
   }
 
+  if (!isHalfHourTime(formTime)) {
+    alert("시간은 30분 단위로 입력해주세요.");
+    return;
+  }
+
   const scheduleDay = isMakeup ? new Date(`${scheduleDate}T12:00:00`).getDay() : Number(form.get("day"));
   const editGroups = isEdit && editingScheduleGroup
     ? editingScheduleGroup.groups?.length
@@ -2981,6 +2986,13 @@ function normalizeTime(value) {
   const match = String(value || "").trim().match(/^(\d{1,2}):(\d{2})/);
   if (!match) return String(value || "").trim();
   return `${match[1].padStart(2, "0")}:${match[2]}`;
+}
+
+function isHalfHourTime(value) {
+  const normalized = normalizeTime(value);
+  const match = normalized.match(/^(\d{2}):(\d{2})$/);
+  if (!match) return false;
+  return Number(match[2]) === 0 || Number(match[2]) === 30;
 }
 
 function getMemberFirstPaymentDate(member) {
@@ -3742,7 +3754,7 @@ function getMemberFirstScheduleStartDate(member) {
 }
 
 function getMemberEffectiveStartDate(member) {
-  return getMemberFirstScheduleStartDate(member) || getMemberFirstPaymentDate(member);
+  return getMemberFirstPaymentDate(member) || getMemberFirstScheduleStartDate(member);
 }
 
 function getMemberLastCountedAttendanceDate(member) {
@@ -3795,7 +3807,7 @@ function getMemberLifecycleStatusReason(member, status = getMemberLifecycleStatu
     return lastAttendanceDate ? `마지막 출석 ${formatDate(lastAttendanceDate)}` : "잔여 없음";
   }
 
-  if (!scheduleStartDate && startDate) return `첫 결제일 ${formatDate(startDate)} 기준`;
+  if (getMemberFirstPaymentDate(member)) return `첫 결제일 ${formatDate(getMemberFirstPaymentDate(member))} 기준`;
   return getBalance(member) <= 2 ? "잔여 횟수 확인 필요" : "수업 중";
 }
 

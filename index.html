@@ -544,7 +544,7 @@
           </label>
           <label>
             시간
-            <input name="time" type="time" required />
+            <input name="time" type="time" step="1800" required />
           </label>
         </div>
         <label id="makeupDateField" hidden>
@@ -614,7 +614,7 @@
     <script src="./supabase-config.js?v=20260729-1"></script>
     <script src="./attendance-data.js"></script>
     <script src="./sync-engine.js?v=20260729-1"></script>
-    <script src="./app.js?v=20260901-2"></script>
+    <script src="./app.js?v=20260901-3"></script>
     <script>
       if ("serviceWorker" in navigator) {
         window.addEventListener("load", () => {
