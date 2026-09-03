@@ -1839,6 +1839,77 @@ h4 {
   white-space: nowrap;
 }
 
+.readonly-week-overview {
+  display: grid;
+  gap: 10px;
+  padding: 10px;
+}
+
+.readonly-week-day {
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: white;
+  overflow: hidden;
+}
+
+.readonly-week-day-head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  border-bottom: 1px solid var(--line);
+  background: var(--row-soft);
+  padding: 9px 12px;
+}
+
+.readonly-week-day-head strong {
+  color: var(--ink);
+  font-size: 16px;
+}
+
+.readonly-week-day-head span {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.readonly-week-list {
+  display: grid;
+}
+
+.readonly-week-row {
+  display: grid;
+  grid-template-columns: 58px minmax(0, 1fr);
+  align-items: center;
+  gap: 10px;
+  min-height: 34px;
+  border-bottom: 1px solid #edf0f0;
+  padding: 6px 12px;
+}
+
+.readonly-week-row:last-child {
+  border-bottom: 0;
+}
+
+.readonly-week-row span {
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.readonly-week-row strong {
+  overflow: hidden;
+  color: var(--ink);
+  font-size: 15px;
+  font-weight: 900;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.readonly-week-row.empty strong,
+.readonly-week-row.empty span {
+  color: #a0a8ae;
+}
+
 .available-time-label {
   flex: 0 0 auto;
   color: #79838b;
@@ -3629,7 +3700,7 @@ body[data-role="member"] .detail-panel[data-panel="payment"] {
     bottom: 0;
     z-index: 9;
     display: grid;
-    grid-template-columns: repeat(4, 1fr);
+    grid-template-columns: repeat(5, 1fr);
     gap: 4px;
     border-top: 1px solid var(--line);
     background: rgba(255, 255, 255, 0.96);
@@ -3652,12 +3723,9 @@ body[data-role="member"] .detail-panel[data-panel="payment"] {
     color: white;
   }
 
-  body[data-role="coach"] .mobile-nav {
-    grid-template-columns: repeat(4, 1fr);
-  }
-
+  body[data-role="coach"] .mobile-nav,
   body[data-role="member"] .mobile-nav {
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(4, 1fr);
   }
 
   body[data-mobile-view="today"] .sidebar,
@@ -3673,6 +3741,27 @@ body[data-role="member"] .detail-panel[data-panel="payment"] {
 
   body[data-mobile-view="today"] .day-panel {
     display: grid;
+  }
+
+  body[data-mobile-view="overview"] .sidebar,
+  body[data-mobile-view="overview"] .stats-grid,
+  body[data-mobile-view="overview"] .payment-overview-panel,
+  body[data-mobile-view="overview"] .workspace {
+    display: none;
+  }
+
+  body[data-mobile-view="overview"] .topbar-actions,
+  body[data-mobile-view="overview"] .mobile-timetable-mode,
+  body[data-mobile-view="overview"] .desktop-attendance-date-control {
+    display: none;
+  }
+
+  body[data-mobile-view="overview"] .timetable-panel {
+    display: block;
+  }
+
+  body[data-mobile-view="overview"] .topbar-schedule-board-switcher {
+    display: none;
   }
 
   body[data-mobile-view="timetable"] .sidebar,

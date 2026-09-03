@@ -305,6 +305,7 @@ const elements = {
 
 document.addEventListener("DOMContentLoaded", async () => {
   elements.attendanceDate.value = selectedAttendanceDate;
+  fillScheduleTimeOptions();
 
   $("#openMemberModal").addEventListener("click", () => openMemberModalForCreate());
   $("#editMember").addEventListener("click", openMemberModalForEdit);
@@ -1345,7 +1346,7 @@ function moveSelectedAttendanceDate(offsetDays) {
 }
 
 function moveDesktopTimetableDate(direction) {
-  moveSelectedAttendanceDate(isFullTimetableView() ? direction * 7 : direction);
+  moveSelectedAttendanceDate(isFullTimetableView() || isReadOnlyOverviewView() ? direction * 7 : direction);
 }
 
 function goToDesktopToday() {
@@ -1409,6 +1410,10 @@ function isFullTimetableView() {
   return (!isMobileLayout() && timetableView === "week") || (isMobileLayout() && mobileView === "timetable" && mobileTimetableView === "week");
 }
 
+function isReadOnlyOverviewView() {
+  return isMobileLayout() && mobileView === "overview";
+}
+
 function renderMobileNav() {
   elements.mobileNavButtons.forEach((button) => {
     const allowed = getAllowedMobileViews().includes(button.dataset.mobileView);
@@ -1419,9 +1424,9 @@ function renderMobileNav() {
 }
 
 function getAllowedMobileViews() {
-  if (getCurrentRole() === "admin") return ["today", "timetable", "members", "payments", "detail"];
-  if (getCurrentRole() === "coach") return ["today", "timetable", "members", "detail"];
-  return ["today", "timetable", "detail"];
+  if (getCurrentRole() === "admin") return ["today", "timetable", "overview", "members", "payments", "detail"];
+  if (getCurrentRole() === "coach") return ["today", "timetable", "overview", "members", "detail"];
+  return ["today", "timetable", "overview", "detail"];
 }
 
 function isMobileLayout() {
@@ -1924,20 +1929,29 @@ function renderTimetable() {
   const groups = getScheduleGroups();
   const visibleDays = getVisibleTimetableDays();
   const isWeekTable = isFullTimetableView();
+  const isWeekLike = isWeekTable || isReadOnlyOverviewView();
   elements.timetableGrid.innerHTML = "";
   elements.timetableGrid.classList.toggle("week-view", isWeekTable);
   elements.timetableGrid.classList.toggle("mobile-week-view", isMobileLayout() && isWeekTable);
-  elements.desktopPreviousDayButton.setAttribute("aria-label", isWeekTable ? "이전 주 시간표" : "전날 시간표");
-  elements.desktopNextDayButton.setAttribute("aria-label", isWeekTable ? "다음 주 시간표" : "다음날 시간표");
-  elements.desktopPreviousDayButton.title = isWeekTable ? "이전 주" : "전날";
-  elements.desktopNextDayButton.title = isWeekTable ? "다음 주" : "다음날";
-  elements.timetableRangeLabel.textContent = isWeekTable
+  elements.timetableGrid.classList.toggle("readonly-overview-view", isReadOnlyOverviewView());
+  elements.desktopPreviousDayButton.setAttribute("aria-label", isWeekLike ? "이전 주 시간표" : "전날 시간표");
+  elements.desktopNextDayButton.setAttribute("aria-label", isWeekLike ? "다음 주 시간표" : "다음날 시간표");
+  elements.desktopPreviousDayButton.title = isWeekLike ? "이전 주" : "전날";
+  elements.desktopNextDayButton.title = isWeekLike ? "다음 주" : "다음날";
+  elements.timetableRangeLabel.textContent = isWeekLike
     ? formatWeekRange()
     : new Intl.DateTimeFormat("ko-KR", {
         month: "long",
         day: "numeric",
         weekday: "long",
       }).format(getSelectedAttendanceDate());
+
+  if (isReadOnlyOverviewView()) {
+    elements.timetableRangeLabel.textContent = formatWeekRange();
+    elements.timetableGrid.append(createReadOnlyWeekOverview(groups));
+    scrollTimetableToFirstLesson();
+    return;
+  }
 
   if (isMobileLayout() && isWeekTable) {
     elements.timetableGrid.append(createMobileWeekSummary(groups));
@@ -2071,6 +2085,53 @@ function createMobileWeekSummary(groups) {
   });
 
   return summary;
+}
+
+function createReadOnlyWeekOverview(groups) {
+  const overview = document.createElement("div");
+  overview.className = "readonly-week-overview";
+
+  timetableDays.forEach((day) => {
+    const date = new Date(`${getDateForScheduleDay(day)}T12:00:00`);
+    const dayGroups = groups
+      .filter((item) => Number(item.day) === day)
+      .sort((a, b) => normalizeTime(a.time).localeCompare(normalizeTime(b.time)));
+
+    const section = document.createElement("section");
+    section.className = "readonly-week-day";
+    section.innerHTML = `
+      <header class="readonly-week-day-head">
+        <strong>${escapeHTML(dayNames[day])}</strong>
+        <span>${escapeHTML(formatShortTimetableDate(date))}</span>
+      </header>
+    `;
+
+    const list = document.createElement("div");
+    list.className = "readonly-week-list";
+
+    if (!dayGroups.length) {
+      list.append(createReadOnlyWeekLine("-", "수업 없음", true));
+    } else {
+      dayGroups.forEach((group) => {
+        list.append(createReadOnlyWeekLine(group.time, group.members.map((member) => member.name).join(", ")));
+      });
+    }
+
+    section.append(list);
+    overview.append(section);
+  });
+
+  return overview;
+}
+
+function createReadOnlyWeekLine(time, names, empty = false) {
+  const row = document.createElement("div");
+  row.className = `readonly-week-row ${empty ? "empty" : ""}`;
+  row.innerHTML = `
+    <span>${escapeHTML(time)}</span>
+    <strong>${escapeHTML(names)}</strong>
+  `;
+  return row;
 }
 
 function formatMobileWeekPreview(dayGroups, emptyTimes) {
@@ -4392,6 +4453,15 @@ function createTimeSlots(start, end, intervalMinutes) {
   }
 
   return slots;
+}
+
+function fillScheduleTimeOptions() {
+  const select = elements.scheduleForm?.time;
+  if (!select) return;
+
+  select.innerHTML = timetableTimes
+    .map((time) => `<option value="${escapeHTML(time)}">${escapeHTML(time)}</option>`)
+    .join("");
 }
 
 function timeToMinutes(time) {
