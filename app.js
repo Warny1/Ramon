@@ -2091,47 +2091,48 @@ function createReadOnlyWeekOverview(groups) {
   const overview = document.createElement("div");
   overview.className = "readonly-week-overview";
 
-  timetableDays.forEach((day) => {
-    const date = new Date(`${getDateForScheduleDay(day)}T12:00:00`);
-    const dayGroups = groups
-      .filter((item) => Number(item.day) === day)
-      .sort((a, b) => normalizeTime(a.time).localeCompare(normalizeTime(b.time)));
+  const table = document.createElement("table");
+  table.className = "readonly-week-table";
 
-    const section = document.createElement("section");
-    section.className = "readonly-week-day";
-    section.innerHTML = `
-      <header class="readonly-week-day-head">
-        <strong>${escapeHTML(dayNames[day])}</strong>
-        <span>${escapeHTML(formatShortTimetableDate(date))}</span>
-      </header>
-    `;
+  const thead = document.createElement("thead");
+  const headRow = document.createElement("tr");
+  headRow.innerHTML = `
+    <th scope="col" class="readonly-week-time-head">시간</th>
+    ${timetableDays.map((day) => {
+      const date = new Date(`${getDateForScheduleDay(day)}T12:00:00`);
+      return `
+        <th scope="col">
+          <span>${escapeHTML(dayNames[day])}</span>
+          <small>${escapeHTML(formatShortTimetableDate(date))}</small>
+        </th>
+      `;
+    }).join("")}
+  `;
+  thead.append(headRow);
 
-    const list = document.createElement("div");
-    list.className = "readonly-week-list";
+  const tbody = document.createElement("tbody");
+  timetableTimes.forEach((time) => {
+    const row = document.createElement("tr");
+    row.innerHTML = `<th scope="row" class="readonly-week-time-cell">${escapeHTML(time)}</th>`;
 
-    if (!dayGroups.length) {
-      list.append(createReadOnlyWeekLine("-", "수업 없음", true));
-    } else {
-      dayGroups.forEach((group) => {
-        list.append(createReadOnlyWeekLine(group.time, group.members.map((member) => member.name).join(", ")));
-      });
-    }
+    timetableDays.forEach((day) => {
+      const dayGroups = groups
+        .filter((item) => Number(item.day) === day && normalizeTime(item.time) === time);
+      const names = dayGroups
+        .flatMap((group) => group.members.map((member) => member.name))
+        .join(", ");
+      const cell = document.createElement("td");
+      cell.className = names ? "readonly-week-filled-cell" : "";
+      cell.textContent = names;
+      row.append(cell);
+    });
 
-    section.append(list);
-    overview.append(section);
+    tbody.append(row);
   });
 
+  table.append(thead, tbody);
+  overview.append(table);
   return overview;
-}
-
-function createReadOnlyWeekLine(time, names, empty = false) {
-  const row = document.createElement("div");
-  row.className = `readonly-week-row ${empty ? "empty" : ""}`;
-  row.innerHTML = `
-    <span>${escapeHTML(time)}</span>
-    <strong>${escapeHTML(names)}</strong>
-  `;
-  return row;
 }
 
 function formatMobileWeekPreview(dayGroups, emptyTimes) {

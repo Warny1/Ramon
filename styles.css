@@ -1840,74 +1840,78 @@ h4 {
 }
 
 .readonly-week-overview {
-  display: grid;
-  gap: 10px;
-  padding: 10px;
-}
-
-.readonly-week-day {
+  overflow: auto;
+  padding: 6px;
   border: 1px solid var(--line);
   border-radius: 10px;
   background: white;
-  overflow: hidden;
+  -webkit-overflow-scrolling: touch;
 }
 
-.readonly-week-day-head {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  border-bottom: 1px solid var(--line);
-  background: var(--row-soft);
-  padding: 9px 12px;
+.readonly-week-table {
+  width: 100%;
+  min-width: 0;
+  border-collapse: separate;
+  border-spacing: 0;
+  table-layout: fixed;
 }
 
-.readonly-week-day-head strong {
-  color: var(--ink);
-  font-size: 16px;
-}
-
-.readonly-week-day-head span {
-  color: var(--muted);
-  font-size: 12px;
-  font-weight: 800;
-}
-
-.readonly-week-list {
-  display: grid;
-}
-
-.readonly-week-row {
-  display: grid;
-  grid-template-columns: 58px minmax(0, 1fr);
-  align-items: center;
-  gap: 10px;
-  min-height: 34px;
+.readonly-week-table th,
+.readonly-week-table td {
+  height: 14px;
+  border-right: 1px solid #edf0f0;
   border-bottom: 1px solid #edf0f0;
-  padding: 6px 12px;
-}
-
-.readonly-week-row:last-child {
-  border-bottom: 0;
-}
-
-.readonly-week-row span {
-  color: var(--muted);
-  font-size: 13px;
-  font-weight: 900;
-}
-
-.readonly-week-row strong {
+  padding: 1px 2px;
   overflow: hidden;
-  color: var(--ink);
-  font-size: 15px;
+  vertical-align: middle;
+  font-size: 6.5px;
   font-weight: 900;
+  line-height: 1.12;
+  color: var(--ink);
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.readonly-week-row.empty strong,
-.readonly-week-row.empty span {
-  color: #a0a8ae;
+.readonly-week-table thead th {
+  height: 20px;
+  background: var(--row-soft);
+  color: var(--ink);
+  text-align: center;
+}
+
+.readonly-week-table thead th span,
+.readonly-week-table thead th small {
+  display: block;
+}
+
+.readonly-week-table thead th small {
+  margin-top: 1px;
+  color: var(--muted);
+  font-size: 5.5px;
+}
+
+.readonly-week-table th:last-child,
+.readonly-week-table td:last-child {
+  border-right: 0;
+}
+
+.readonly-week-table tbody tr:last-child th,
+.readonly-week-table tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.readonly-week-time-head,
+.readonly-week-time-cell {
+  width: 28px;
+  color: var(--muted);
+  text-align: center;
+  white-space: nowrap;
+}
+
+.readonly-week-filled-cell {
+  background: #f4fbf8;
+  color: #0f5d50;
+  word-break: keep-all;
 }
 
 .available-time-label {
