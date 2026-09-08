@@ -1840,31 +1840,32 @@ h4 {
 }
 
 .readonly-week-overview {
-  overflow: auto;
+  height: var(--readonly-week-height, auto);
+  overflow: hidden;
   padding: 6px;
   border: 1px solid var(--line);
   border-radius: 10px;
   background: white;
-  -webkit-overflow-scrolling: touch;
 }
 
 .readonly-week-table {
-  width: 100%;
-  min-width: 0;
+  width: 720px;
   border-collapse: separate;
   border-spacing: 0;
   table-layout: fixed;
+  transform: scale(var(--readonly-week-scale, 1));
+  transform-origin: top left;
 }
 
 .readonly-week-table th,
 .readonly-week-table td {
-  height: 14px;
+  height: 22px;
   border-right: 1px solid #edf0f0;
   border-bottom: 1px solid #edf0f0;
-  padding: 1px 2px;
+  padding: 2px 4px;
   overflow: hidden;
   vertical-align: middle;
-  font-size: 6.5px;
+  font-size: 12px;
   font-weight: 900;
   line-height: 1.12;
   color: var(--ink);
@@ -1873,7 +1874,7 @@ h4 {
 }
 
 .readonly-week-table thead th {
-  height: 20px;
+  height: 26px;
   background: var(--row-soft);
   color: var(--ink);
   text-align: center;
@@ -1887,7 +1888,7 @@ h4 {
 .readonly-week-table thead th small {
   margin-top: 1px;
   color: var(--muted);
-  font-size: 5.5px;
+  font-size: 10px;
 }
 
 .readonly-week-table th:last-child,
@@ -1902,7 +1903,7 @@ h4 {
 
 .readonly-week-time-head,
 .readonly-week-time-cell {
-  width: 28px;
+  width: 54px;
   color: var(--muted);
   text-align: center;
   white-space: nowrap;

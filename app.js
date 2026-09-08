@@ -1948,7 +1948,9 @@ function renderTimetable() {
 
   if (isReadOnlyOverviewView()) {
     elements.timetableRangeLabel.textContent = formatWeekRange();
-    elements.timetableGrid.append(createReadOnlyWeekOverview(groups));
+    const overview = createReadOnlyWeekOverview(groups);
+    elements.timetableGrid.append(overview);
+    fitReadOnlyWeekOverview(overview);
     scrollTimetableToFirstLesson();
     return;
   }
@@ -2133,6 +2135,19 @@ function createReadOnlyWeekOverview(groups) {
   table.append(thead, tbody);
   overview.append(table);
   return overview;
+}
+
+function fitReadOnlyWeekOverview(overview) {
+  requestAnimationFrame(() => {
+    const table = overview.querySelector(".readonly-week-table");
+    if (!table) return;
+
+    const availableWidth = overview.clientWidth - 12;
+    const tableWidth = table.offsetWidth || 720;
+    const scale = Math.min(1, availableWidth / tableWidth);
+    overview.style.setProperty("--readonly-week-scale", scale.toFixed(3));
+    overview.style.setProperty("--readonly-week-height", `${Math.ceil(table.offsetHeight * scale) + 12}px`);
+  });
 }
 
 function formatMobileWeekPreview(dayGroups, emptyTimes) {
