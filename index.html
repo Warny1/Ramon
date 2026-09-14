@@ -290,6 +290,25 @@
       </button>
     </nav>
 
+    <dialog id="scheduleRemovalModal" class="modal" aria-labelledby="scheduleRemovalTitle">
+      <form method="dialog">
+        <div class="modal-head">
+          <h3 id="scheduleRemovalTitle">시간표 삭제</h3>
+          <button class="close-button" type="button" data-close="scheduleRemovalModal" aria-label="닫기">×</button>
+        </div>
+        <p data-removal-label></p>
+        <p class="modal-note" data-removal-date></p>
+        <div class="sheet-actions">
+          <button class="secondary-action" type="button" data-removal-mode="week">이번 주만 빼기</button>
+          <button class="secondary-action" type="button" data-removal-mode="future">앞으로 빼기</button>
+        </div>
+        <p class="modal-note">회원/결제/출석 기록은 삭제되지 않아.</p>
+        <div class="modal-actions">
+          <button class="secondary-action" type="button" data-close="scheduleRemovalModal">취소</button>
+        </div>
+      </form>
+    </dialog>
+
     <dialog id="memberModal" class="modal">
       <form id="memberForm" method="dialog">
         <div class="modal-head">
@@ -618,7 +637,7 @@
     <script src="./supabase-config.js?v=20260729-1"></script>
     <script src="./attendance-data.js"></script>
     <script src="./sync-engine.js?v=20260729-1"></script>
-    <script src="./app.js?v=20260914-1"></script>
+    <script src="./app.js?v=20260914-2"></script>
     <script>
       if ("serviceWorker" in navigator) {
         window.addEventListener("load", () => {

@@ -3314,10 +3314,9 @@ function removeSchedule(memberId, scheduleId) {
   if (!member || !schedule) return;
 
   const effectiveDate = schedule.date || getDateForScheduleDay(Number(schedule.day));
-  const mode = chooseScheduleRemovalMode(`${member.name} ${schedule.time || ""}`, effectiveDate);
-  if (!mode) return;
-
-  removeScheduleEntries([{ memberId, scheduleId }], mode, effectiveDate);
+  chooseScheduleRemovalMode(`${member.name} ${schedule.time || ""}`, effectiveDate, (mode) => {
+    removeScheduleEntries([{ memberId, scheduleId }], mode, effectiveDate);
+  });
 }
 
 function getScheduleGroupEntries(group) {
@@ -3359,28 +3358,22 @@ function removeScheduleGroup(group) {
   const groups = group.groups?.length ? group.groups : [group];
   const firstGroup = groups[0] || group;
   const effectiveDate = firstGroup.date || getDateForScheduleDay(Number(firstGroup.day));
-  const mode = chooseScheduleRemovalMode(`${memberNames} ${group.time}`, effectiveDate);
-  if (!mode) return;
-
-  removeScheduleEntries(entries, mode, effectiveDate);
+  chooseScheduleRemovalMode(`${memberNames} ${group.time}`, effectiveDate, (mode) => {
+    removeScheduleEntries(entries, mode, effectiveDate);
+  });
 }
 
-function chooseScheduleRemovalMode(label, effectiveDate) {
-  const choice = prompt(
-    `${label} 시간표 삭제 방법을 선택해줘.\n\n` +
-    `1. 이번 주만 빼기\n` +
-    `2. 앞으로 빼기\n\n` +
-    `회원/결제/출석 기록은 삭제되지 않아.\n` +
-    `기준일: ${formatShortDate(effectiveDate)}\n\n` +
-    `번호 입력:`,
-    "1",
-  );
-  const normalized = String(choice || "").trim();
-  if (!normalized) return "";
-  if (normalized === "1" || normalized.includes("이번")) return "week";
-  if (normalized === "2" || normalized.includes("앞")) return "future";
-  alert("1, 2 중 하나로 입력해줘.");
-  return "";
+function chooseScheduleRemovalMode(label, effectiveDate, onChoose) {
+  const modal = document.getElementById("scheduleRemovalModal");
+  modal.querySelector("[data-removal-label]").textContent = label;
+  modal.querySelector("[data-removal-date]").textContent = `기준일: ${formatShortDate(effectiveDate)}`;
+  modal.querySelectorAll("[data-removal-mode]").forEach((button) => {
+    button.onclick = () => {
+      closeModal(modal);
+      if (canManageSettings()) onChoose(button.dataset.removalMode);
+    };
+  });
+  openModal(modal);
 }
 
 function removeScheduleEntries(entries, mode, effectiveDate) {
