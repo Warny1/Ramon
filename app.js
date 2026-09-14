@@ -40,6 +40,9 @@ const seedData = {
     coach1: "코치1",
   },
   paymentHistoryPassword: "0000",
+  deletedScheduleIds: [],
+  closedSchedules: [],
+  scheduleExclusions: [],
   members: [],
 };
 
@@ -531,10 +534,22 @@ async function loadData() {
 function mergeSharedData(localData, remoteData) {
   const local = Array.isArray(localData?.members) ? cloneData(localData) : cloneData(seedData);
   const remote = Array.isArray(remoteData?.members) ? cloneData(remoteData) : cloneData(seedData);
+  const deletedScheduleIds = mergeUniqueValues(local.deletedScheduleIds, remote.deletedScheduleIds);
+  const closedSchedules = normalizeClosedSchedules([
+    ...(local.closedSchedules || []),
+    ...(remote.closedSchedules || []),
+  ]);
+  const scheduleExclusions = normalizeScheduleExclusions([
+    ...(local.scheduleExclusions || []),
+    ...(remote.scheduleExclusions || []),
+  ]);
 
   return deduplicateMemberData({
     ...local,
     ...remote,
+    deletedScheduleIds,
+    closedSchedules,
+    scheduleExclusions,
     lessonTypes: Array.isArray(remote.lessonTypes)
       ? remote.lessonTypes
       : Array.isArray(local.lessonTypes)
@@ -570,6 +585,9 @@ function loadLocalData() {
 function normalizeAppSettings() {
   state.scheduleBoardLabels = normalizeScheduleBoardLabels(state.scheduleBoardLabels);
   state.paymentHistoryPassword = normalizePaymentHistoryPassword(state.paymentHistoryPassword);
+  state.deletedScheduleIds = mergeUniqueValues(state.deletedScheduleIds);
+  state.closedSchedules = normalizeClosedSchedules(state.closedSchedules);
+  state.scheduleExclusions = normalizeScheduleExclusions(state.scheduleExclusions);
 }
 
 function ensureTrialMember(data = state) {
@@ -924,9 +942,15 @@ function mergeRecordsById(first = [], second = []) {
 
 function deduplicateMemberData(data) {
   if (!Array.isArray(data.members)) return data;
+  data.deletedScheduleIds = mergeUniqueValues(data.deletedScheduleIds);
+  data.closedSchedules = normalizeClosedSchedules(data.closedSchedules);
+  data.scheduleExclusions = normalizeScheduleExclusions(data.scheduleExclusions);
+  const deletedScheduleIds = new Set(data.deletedScheduleIds);
+  const closedScheduleEndDates = new Map(data.closedSchedules.map((item) => [item.scheduleId, item.endDate]));
 
   const membersByKey = new Map();
   data.members.forEach((member) => {
+    const memberSchedules = applyClosedSchedules(member.schedules, closedScheduleEndDates);
     const key = getMemberRecordKey(member);
     const existing = membersByKey.get(key);
 
@@ -934,7 +958,7 @@ function deduplicateMemberData(data) {
       membersByKey.set(key, {
         ...member,
         id: member.id || crypto.randomUUID(),
-        schedules: deduplicateSchedules(member.schedules),
+        schedules: deduplicateSchedules(memberSchedules).filter((schedule) => !deletedScheduleIds.has(schedule.id)),
         payments: mergeRecordsById(member.payments),
         attendances: deduplicateAttendances(member.attendances),
       });
@@ -945,13 +969,90 @@ function deduplicateMemberData(data) {
     if (!existing.memo && member.memo) existing.memo = member.memo;
     if (!existing.defaultLessonType && member.defaultLessonType) existing.defaultLessonType = member.defaultLessonType;
     if (!existing.createdAt && member.createdAt) existing.createdAt = member.createdAt;
-    existing.schedules = deduplicateSchedules([...(existing.schedules || []), ...(member.schedules || [])]);
+    existing.schedules = deduplicateSchedules([...(existing.schedules || []), ...memberSchedules])
+      .filter((schedule) => !deletedScheduleIds.has(schedule.id));
     existing.payments = mergeRecordsById(existing.payments, member.payments);
     existing.attendances = deduplicateAttendances([...(existing.attendances || []), ...(member.attendances || [])]);
   });
 
   data.members = [...membersByKey.values()];
   return data;
+}
+
+function mergeUniqueValues(...groups) {
+  return [...new Set(groups.flat().filter(Boolean).map((item) => String(item).trim()).filter(Boolean))];
+}
+
+function normalizeScheduleExclusions(exclusions = []) {
+  const exclusionsByKey = new Map();
+  exclusions.forEach((item) => {
+    const memberId = String(item?.memberId || "").trim();
+    const scheduleId = String(item?.scheduleId || "").trim();
+    const date = String(item?.date || "").trim();
+    if (!memberId || !scheduleId || !date) return;
+    const key = `${memberId}|${scheduleId}|${date}`;
+    exclusionsByKey.set(key, {
+      id: item.id || crypto.randomUUID(),
+      memberId,
+      scheduleId,
+      date,
+    });
+  });
+  return [...exclusionsByKey.values()];
+}
+
+function normalizeClosedSchedules(items = []) {
+  const closedById = new Map();
+  items.forEach((item) => {
+    const scheduleId = String(item?.scheduleId || "").trim();
+    const endDate = String(item?.endDate || "").trim();
+    if (!scheduleId || !endDate) return;
+    const existing = closedById.get(scheduleId);
+    if (!existing || endDate < existing.endDate) {
+      closedById.set(scheduleId, { scheduleId, endDate });
+    }
+  });
+  return [...closedById.values()];
+}
+
+function applyClosedSchedules(schedules = [], closedScheduleEndDates = new Map()) {
+  return (schedules || []).map((schedule) => {
+    const forcedEndDate = closedScheduleEndDates.get(schedule.id);
+    if (!forcedEndDate || schedule.date) return schedule;
+    const currentEndDate = String(schedule.endDate || "").trim();
+    if (currentEndDate && currentEndDate <= forcedEndDate) return schedule;
+    return { ...schedule, endDate: forcedEndDate };
+  });
+}
+
+function rememberDeletedScheduleIds(ids = []) {
+  state.deletedScheduleIds = mergeUniqueValues(state.deletedScheduleIds, ids);
+  const deletedIds = new Set(state.deletedScheduleIds);
+  state.scheduleExclusions = normalizeScheduleExclusions(state.scheduleExclusions)
+    .filter((item) => !deletedIds.has(item.scheduleId));
+}
+
+function rememberClosedSchedules(entries = []) {
+  state.closedSchedules = normalizeClosedSchedules([...(state.closedSchedules || []), ...entries]);
+}
+
+function addScheduleExclusions(entries = [], date) {
+  const next = entries
+    .filter((entry) => entry.memberId && entry.scheduleId && date)
+    .map((entry) => ({
+      id: crypto.randomUUID(),
+      memberId: entry.memberId,
+      scheduleId: entry.scheduleId,
+      date,
+    }));
+  state.scheduleExclusions = normalizeScheduleExclusions([...(state.scheduleExclusions || []), ...next]);
+}
+
+function isScheduleExcluded(member, schedule, date) {
+  if (!member?.id || !schedule?.id || !date) return false;
+  return normalizeScheduleExclusions(state.scheduleExclusions).some((item) =>
+    item.memberId === member.id && item.scheduleId === schedule.id && item.date === date,
+  );
 }
 
 function findOrCreateMemberInData(data, name) {
@@ -3212,12 +3313,11 @@ function removeSchedule(memberId, scheduleId) {
   const schedule = member?.schedules.find((item) => item.id === scheduleId);
   if (!member || !schedule) return;
 
-  if (schedule.date) {
-    member.schedules = member.schedules.filter((item) => item.id !== scheduleId);
-  } else {
-    closeScheduleBeforeDate(member, schedule, getDateForScheduleDay(Number(schedule.day)));
-  }
-  commit();
+  const effectiveDate = schedule.date || getDateForScheduleDay(Number(schedule.day));
+  const mode = chooseScheduleRemovalMode(`${member.name} ${schedule.time || ""}`, effectiveDate);
+  if (!mode) return;
+
+  removeScheduleEntries([{ memberId, scheduleId }], mode, effectiveDate);
 }
 
 function getScheduleGroupEntries(group) {
@@ -3256,13 +3356,41 @@ function removeScheduleGroup(group) {
   if (!entries.length) return;
 
   const memberNames = group.members.map((member) => member.name).join(", ");
-  const ok = confirm(`${memberNames} ${group.time} 시간표를 이 날짜부터 삭제할까요?`);
-  if (!ok) return;
-
   const groups = group.groups?.length ? group.groups : [group];
   const firstGroup = groups[0] || group;
   const effectiveDate = firstGroup.date || getDateForScheduleDay(Number(firstGroup.day));
+  const mode = chooseScheduleRemovalMode(`${memberNames} ${group.time}`, effectiveDate);
+  if (!mode) return;
 
+  removeScheduleEntries(entries, mode, effectiveDate);
+}
+
+function chooseScheduleRemovalMode(label, effectiveDate) {
+  const choice = prompt(
+    `${label} 시간표 삭제 방법을 선택해줘.\n\n` +
+    `1. 이번 주만 빼기\n` +
+    `2. 앞으로 빼기\n\n` +
+    `회원/결제/출석 기록은 삭제되지 않아.\n` +
+    `기준일: ${formatShortDate(effectiveDate)}\n\n` +
+    `번호 입력:`,
+    "1",
+  );
+  const normalized = String(choice || "").trim();
+  if (!normalized) return "";
+  if (normalized === "1" || normalized.includes("이번")) return "week";
+  if (normalized === "2" || normalized.includes("앞")) return "future";
+  alert("1, 2 중 하나로 입력해줘.");
+  return "";
+}
+
+function removeScheduleEntries(entries, mode, effectiveDate) {
+  if (mode === "week") {
+    addScheduleExclusions(entries, effectiveDate);
+    commit();
+    return;
+  }
+
+  const closedSchedules = [];
   entries.forEach(({ memberId, scheduleId }) => {
     const member = state.members.find((item) => item.id === memberId);
     const schedule = member?.schedules.find((item) => item.id === scheduleId);
@@ -3272,8 +3400,11 @@ function removeScheduleGroup(group) {
       member.schedules = member.schedules.filter((item) => item.id !== scheduleId);
     } else {
       closeScheduleBeforeDate(member, schedule, effectiveDate);
+      if (schedule.endDate) closedSchedules.push({ scheduleId, endDate: schedule.endDate });
     }
   });
+
+  if (closedSchedules.length) rememberClosedSchedules(closedSchedules);
   commit();
 }
 
@@ -4063,13 +4194,15 @@ function getScheduleItems() {
   return getAccessibleMembers().flatMap((member) =>
     member.schedules
       .filter((item) => getScheduleBoard(item) === activeScheduleBoard)
-      .filter((item) =>
-        item.date
+      .filter((item) => {
+        const targetDate = item.date || getDateForScheduleDay(item.day);
+        const isVisible = item.date
           ? isFullTimetableView()
             ? isDateInSelectedWeek(item.date)
             : item.date === selectedAttendanceDate
-          : isScheduleActiveOnDate(item, getDateForScheduleDay(item.day), member),
-      )
+          : isScheduleActiveOnDate(item, targetDate, member);
+        return isVisible && !isScheduleExcluded(member, item, targetDate);
+      })
       .map((item) => ({ ...item, member })),
   );
 }
