@@ -4888,3 +4888,48 @@ select {
     align-items: stretch;
   }
 }
+
+/* Schedule removal uses the shared modal and button styles. */
+#scheduleRemovalModal {
+  color: var(--ink);
+  background: var(--panel);
+  font-family: inherit;
+}
+
+#scheduleRemovalModal p {
+  margin: 0;
+  line-height: 1.5;
+}
+
+#scheduleRemovalModal [data-removal-label] {
+  font-size: 14px;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+#scheduleRemovalModal [data-removal-mode] {
+  min-height: 44px;
+  font-size: 14px;
+}
+
+#scheduleRemovalModal .modal-actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+@media (max-width: 760px) {
+  #scheduleRemovalModal form {
+    gap: 12px;
+  }
+
+  #scheduleRemovalModal [data-removal-mode] {
+    min-height: 48px;
+    padding: 10px 16px;
+  }
+
+  #scheduleRemovalModal .modal-actions .secondary-button {
+    width: 100%;
+    min-height: 44px;
+    font-size: 14px;
+  }
+}
