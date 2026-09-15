@@ -7,6 +7,10 @@ const tables = Object.fromEntries(
   ["app_settings", "members", "schedules", "payments", "attendances"].map((name) => [name, new Map()]),
 );
 
+function resetTables() {
+  Object.values(tables).forEach((table) => table.clear());
+}
+
 function createEngine() {
   const context = vm.createContext({
     console,
@@ -140,5 +144,75 @@ assert.equal(finalLoad.data.members[0].payments.length, 1);
 
 await firstDevice.deleteAttendances(["attendance-1"]);
 assert.equal(tables.attendances.size, 0, "직접 삭제한 출석 기록은 원격에서도 삭제되어야 합니다.");
+
+resetTables();
+
+const protectedInitial = {
+  lessonTypes: [{ name: "주1 / 1인 (30분)", amount: 190000, sessions: 4 }],
+  members: [
+    {
+      id: "member-2",
+      name: "삭제 보호 회원",
+      phone: "",
+      memo: "",
+      defaultLessonType: "주1 / 1인 (30분)",
+      createdAt: "2026-09-01",
+      schedules: [
+        {
+          id: "schedule-2",
+          day: 2,
+          time: "10:00",
+          className: "수업",
+          lessonType: "주1 / 1인 (30분)",
+        },
+      ],
+      payments: [
+        {
+          id: "payment-2",
+          date: "2026-09-01",
+          lessonType: "주1 / 1인 (30분)",
+          sessions: 4,
+          amount: 190000,
+          memo: "",
+        },
+      ],
+      attendances: [
+        {
+          id: "attendance-2",
+          date: "2026-09-01",
+          className: "수업",
+          time: "10:00",
+          status: "출석",
+        },
+      ],
+    },
+  ],
+};
+
+const freshDevice = createEngine();
+await freshDevice.replaceAll(protectedInitial);
+
+const staleDevice = createEngine();
+const staleLoad = await staleDevice.load();
+const staleState = structuredClone(staleLoad.data);
+staleState.members = [];
+await staleDevice.flush(staleState);
+
+assert.equal(tables.members.size, 1, "오래된 기기의 회원 누락은 원격 회원을 삭제하면 안 됩니다.");
+assert.equal(tables.payments.size, 1, "오래된 기기의 결제 누락은 원격 결제를 삭제하면 안 됩니다.");
+assert.equal(tables.schedules.size, 1, "오래된 기기의 시간표 누락은 원격 시간표를 삭제하면 안 됩니다.");
+assert.equal(tables.attendances.size, 1, "오래된 기기의 출석 누락은 원격 출석을 삭제하면 안 됩니다.");
+
+const deleteDevice = createEngine();
+const deleteLoad = await deleteDevice.load();
+const deleteState = structuredClone(deleteLoad.data);
+deleteState.deletedMemberIds = ["member-2"];
+deleteState.members = [];
+await deleteDevice.flush(deleteState);
+
+assert.equal(tables.members.size, 0, "명시 삭제한 회원은 원격에서도 삭제되어야 합니다.");
+assert.equal(tables.payments.size, 0, "명시 삭제한 회원의 결제는 원격에서도 삭제되어야 합니다.");
+assert.equal(tables.schedules.size, 0, "명시 삭제한 회원의 시간표는 원격에서도 삭제되어야 합니다.");
+assert.equal(tables.attendances.size, 0, "명시 삭제한 회원의 출석은 원격에서도 삭제되어야 합니다.");
 
 console.log("동시 기기 출석/결제 저장 충돌 테스트 통과");

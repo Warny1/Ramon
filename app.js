@@ -40,6 +40,8 @@ const seedData = {
     coach1: "코치1",
   },
   paymentHistoryPassword: "0000",
+  deletedMemberIds: [],
+  deletedPaymentIds: [],
   deletedScheduleIds: [],
   closedSchedules: [],
   scheduleExclusions: [],
@@ -534,6 +536,8 @@ async function loadData() {
 function mergeSharedData(localData, remoteData) {
   const local = Array.isArray(localData?.members) ? cloneData(localData) : cloneData(seedData);
   const remote = Array.isArray(remoteData?.members) ? cloneData(remoteData) : cloneData(seedData);
+  const deletedMemberIds = mergeUniqueValues(local.deletedMemberIds, remote.deletedMemberIds);
+  const deletedPaymentIds = mergeUniqueValues(local.deletedPaymentIds, remote.deletedPaymentIds);
   const deletedScheduleIds = mergeUniqueValues(local.deletedScheduleIds, remote.deletedScheduleIds);
   const closedSchedules = normalizeClosedSchedules([
     ...(local.closedSchedules || []),
@@ -547,6 +551,8 @@ function mergeSharedData(localData, remoteData) {
   return deduplicateMemberData({
     ...local,
     ...remote,
+    deletedMemberIds,
+    deletedPaymentIds,
     deletedScheduleIds,
     closedSchedules,
     scheduleExclusions,
@@ -585,6 +591,8 @@ function loadLocalData() {
 function normalizeAppSettings() {
   state.scheduleBoardLabels = normalizeScheduleBoardLabels(state.scheduleBoardLabels);
   state.paymentHistoryPassword = normalizePaymentHistoryPassword(state.paymentHistoryPassword);
+  state.deletedMemberIds = mergeUniqueValues(state.deletedMemberIds);
+  state.deletedPaymentIds = mergeUniqueValues(state.deletedPaymentIds);
   state.deletedScheduleIds = mergeUniqueValues(state.deletedScheduleIds);
   state.closedSchedules = normalizeClosedSchedules(state.closedSchedules);
   state.scheduleExclusions = normalizeScheduleExclusions(state.scheduleExclusions);
@@ -942,14 +950,19 @@ function mergeRecordsById(first = [], second = []) {
 
 function deduplicateMemberData(data) {
   if (!Array.isArray(data.members)) return data;
+  data.deletedMemberIds = mergeUniqueValues(data.deletedMemberIds);
+  data.deletedPaymentIds = mergeUniqueValues(data.deletedPaymentIds);
   data.deletedScheduleIds = mergeUniqueValues(data.deletedScheduleIds);
   data.closedSchedules = normalizeClosedSchedules(data.closedSchedules);
   data.scheduleExclusions = normalizeScheduleExclusions(data.scheduleExclusions);
+  const deletedMemberIds = new Set(data.deletedMemberIds);
+  const deletedPaymentIds = new Set(data.deletedPaymentIds);
   const deletedScheduleIds = new Set(data.deletedScheduleIds);
   const closedScheduleEndDates = new Map(data.closedSchedules.map((item) => [item.scheduleId, item.endDate]));
 
   const membersByKey = new Map();
   data.members.forEach((member) => {
+    if (deletedMemberIds.has(member.id)) return;
     const memberSchedules = applyClosedSchedules(member.schedules, closedScheduleEndDates);
     const key = getMemberRecordKey(member);
     const existing = membersByKey.get(key);
@@ -959,7 +972,7 @@ function deduplicateMemberData(data) {
         ...member,
         id: member.id || crypto.randomUUID(),
         schedules: deduplicateSchedules(memberSchedules).filter((schedule) => !deletedScheduleIds.has(schedule.id)),
-        payments: mergeRecordsById(member.payments),
+        payments: mergeRecordsById(member.payments).filter((payment) => !deletedPaymentIds.has(payment.id)),
         attendances: deduplicateAttendances(member.attendances),
       });
       return;
@@ -971,7 +984,8 @@ function deduplicateMemberData(data) {
     if (!existing.createdAt && member.createdAt) existing.createdAt = member.createdAt;
     existing.schedules = deduplicateSchedules([...(existing.schedules || []), ...memberSchedules])
       .filter((schedule) => !deletedScheduleIds.has(schedule.id));
-    existing.payments = mergeRecordsById(existing.payments, member.payments);
+    existing.payments = mergeRecordsById(existing.payments, member.payments)
+      .filter((payment) => !deletedPaymentIds.has(payment.id));
     existing.attendances = deduplicateAttendances([...(existing.attendances || []), ...(member.attendances || [])]);
   });
 
@@ -1030,6 +1044,14 @@ function rememberDeletedScheduleIds(ids = []) {
   const deletedIds = new Set(state.deletedScheduleIds);
   state.scheduleExclusions = normalizeScheduleExclusions(state.scheduleExclusions)
     .filter((item) => !deletedIds.has(item.scheduleId));
+}
+
+function rememberDeletedMemberIds(ids = []) {
+  state.deletedMemberIds = mergeUniqueValues(state.deletedMemberIds, ids);
+}
+
+function rememberDeletedPaymentIds(ids = []) {
+  state.deletedPaymentIds = mergeUniqueValues(state.deletedPaymentIds, ids);
 }
 
 function rememberClosedSchedules(entries = []) {
@@ -3300,6 +3322,7 @@ function deleteSelectedMember() {
   const ok = confirm(`${member.name} 회원을 삭제할까요?`);
   if (!ok) return;
 
+  rememberDeletedMemberIds([member.id]);
   state.members = state.members.filter((item) => item.id !== member.id);
   selectedMemberId = state.members[0]?.id ?? null;
   if (isMobileLayout()) setMobileView("members");
@@ -3384,6 +3407,7 @@ function removeScheduleEntries(entries, mode, effectiveDate) {
   }
 
   const closedSchedules = [];
+  const deletedScheduleIds = [];
   entries.forEach(({ memberId, scheduleId }) => {
     const member = state.members.find((item) => item.id === memberId);
     const schedule = member?.schedules.find((item) => item.id === scheduleId);
@@ -3391,12 +3415,14 @@ function removeScheduleEntries(entries, mode, effectiveDate) {
 
     if (schedule.date) {
       member.schedules = member.schedules.filter((item) => item.id !== scheduleId);
+      deletedScheduleIds.push(scheduleId);
     } else {
       closeScheduleBeforeDate(member, schedule, effectiveDate);
       if (schedule.endDate) closedSchedules.push({ scheduleId, endDate: schedule.endDate });
     }
   });
 
+  if (deletedScheduleIds.length) rememberDeletedScheduleIds(deletedScheduleIds);
   if (closedSchedules.length) rememberClosedSchedules(closedSchedules);
   commit();
 }
@@ -3415,6 +3441,8 @@ function removePayment(memberId, paymentId) {
   if (!canManagePayments()) return;
 
   const member = state.members.find((item) => item.id === memberId);
+  if (!member) return;
+  rememberDeletedPaymentIds([paymentId]);
   member.payments = member.payments.filter((item) => item.id !== paymentId);
   commit();
 }

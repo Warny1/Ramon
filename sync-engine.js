@@ -143,13 +143,23 @@
   }
 
   async function syncChanges(previous, next) {
-    const memberDeletes = removedIds(previous.members, next.members);
-    const scheduleDeletes = removedIds(previous.schedules, next.schedules);
-    const paymentDeletes = removedIds(previous.payments, next.payments);
-    // 오래된 브라우저가 아직 최신 출석 기록을 못 받은 상태에서 저장하면,
-    // "내 화면에 없음"을 삭제로 오해해 실제 출석 기록을 지울 수 있다.
-    // 출석은 수업/잔여횟수의 원장에 가까워서 자동 동기화 삭제를 막고, 추가/수정만 반영한다.
-    const attendanceDeletes = [];
+    const deletedMemberIds = settingIdSet(next.settings.deletedMemberIds);
+    const deletedPaymentIds = settingIdSet(next.settings.deletedPaymentIds);
+    const deletedScheduleIds = settingIdSet(next.settings.deletedScheduleIds);
+    const memberDeletes = removedIds(previous.members, next.members)
+      .filter((id) => deletedMemberIds.has(id));
+    const deletedMembers = new Set(memberDeletes);
+    const scheduleDeletes = removedIds(previous.schedules, next.schedules)
+      .filter((id) => deletedScheduleIds.has(id) || deletedMembers.has(previous.schedules.get(id)?.member_id));
+    const paymentDeletes = removedIds(previous.payments, next.payments)
+      .filter((id) => deletedPaymentIds.has(id) || deletedMembers.has(previous.payments.get(id)?.member_id));
+    // 오래된 브라우저가 아직 최신 기록을 못 받은 상태에서 저장하면,
+    // "내 화면에 없음"을 삭제로 오해해 실제 원장 데이터를 지울 수 있다.
+    // 자동 동기화 삭제는 명시 삭제 목록에 있는 회원/결제/시간표만 반영한다.
+    // 개별 출석 삭제는 삭제 버튼 경로(deleteAttendances)로만 원격 삭제한다.
+    // 회원을 명시 삭제한 경우에만 그 회원의 출석까지 함께 정리한다.
+    const attendanceDeletes = removedIds(previous.attendances, next.attendances)
+      .filter((id) => deletedMembers.has(previous.attendances.get(id)?.member_id));
 
     await Promise.all([
       deleteRows(TABLES.schedules, scheduleDeletes),
@@ -185,6 +195,12 @@
 
   function removedIds(previous, next) {
     return [...previous.keys()].filter((id) => !next.has(id));
+  }
+
+  function settingIdSet(value) {
+    return new Set((Array.isArray(value) ? value : [])
+      .map((item) => String(item || "").trim())
+      .filter(Boolean));
   }
 
   async function upsertRows(table, rows) {
