@@ -1914,7 +1914,7 @@ function hasLessonScheduleMismatch(member) {
   const defaultLesson = String(member.defaultLessonType || "").trim();
   if (!defaultLesson || !member.schedules.length) return false;
 
-  return member.schedules.some((schedule) => {
+  return member.schedules.filter((schedule) => isScheduleCurrentOrFuture(schedule, todayISO, member)).some((schedule) => {
     const scheduleLesson = String(getScheduleLessonType(schedule) || "").trim();
     return scheduleLesson && scheduleLesson !== defaultLesson;
   });
@@ -1922,22 +1922,76 @@ function hasLessonScheduleMismatch(member) {
 
 function renderSchedule(member) {
   elements.scheduleList.innerHTML = "";
-  const sorted = [...member.schedules].sort((a, b) => Number(a.day) - Number(b.day) || a.time.localeCompare(b.time));
+  const schedules = [...member.schedules];
+  const current = schedules
+    .filter((item) => isScheduleCurrentOrFuture(item, todayISO, member))
+    .sort(compareSchedules);
+  const past = schedules
+    .filter((item) => !isScheduleCurrentOrFuture(item, todayISO, member))
+    .sort(compareSchedules);
 
-  if (!sorted.length) {
+  if (!current.length && !past.length) {
     elements.scheduleList.append(createEmptyLine("등록된 시간표가 없습니다."));
     return;
   }
 
-  sorted.forEach((item) => {
+  current.forEach((item) => {
     elements.scheduleList.append(
       createRow(
-        `${dayNames[item.day]}요일 ${item.time}`,
-        [getScheduleBoardLabel(item.scheduleBoard), item.className || "수업", getScheduleLessonType(item), getScheduleStatus(item)].filter(Boolean).join(" · "),
+        getScheduleTitle(item),
+        getScheduleSubtitle(item),
         () => removeSchedule(member.id, item.id),
       ),
     );
   });
+
+  if (past.length) {
+    const pastSummary = document.createElement("div");
+    pastSummary.className = "empty-line";
+    pastSummary.textContent = `지난 시간표 ${past.length}개는 기록 보존용으로 숨김`;
+    elements.scheduleList.append(pastSummary);
+  }
+}
+
+function compareSchedules(first, second) {
+  return Number(first.day) - Number(second.day) ||
+    normalizeTime(first.time).localeCompare(normalizeTime(second.time)) ||
+    String(first.date || "").localeCompare(String(second.date || "")) ||
+    String(first.startDate || "").localeCompare(String(second.startDate || "")) ||
+    String(first.endDate || "").localeCompare(String(second.endDate || ""));
+}
+
+function getScheduleTitle(schedule) {
+  const dayLabel = Number.isFinite(Number(schedule.day)) ? `${dayNames[schedule.day]}요일` : "요일 없음";
+  return `${dayLabel} ${schedule.time || "시간 없음"}`;
+}
+
+function getScheduleSubtitle(schedule) {
+  return [
+    getScheduleBoardLabel(schedule.scheduleBoard),
+    schedule.className || "수업",
+    getScheduleLessonType(schedule),
+    getScheduleStatus(schedule),
+    getSchedulePeriodLabel(schedule),
+  ].filter(Boolean).join(" · ");
+}
+
+function getSchedulePeriodLabel(schedule) {
+  const startDate = String(schedule.startDate || "").trim();
+  const endDate = String(schedule.endDate || "").trim();
+  if (schedule.date) return formatDate(schedule.date);
+  if (startDate && endDate) return `${formatDate(startDate)}~${formatDate(endDate)}`;
+  if (startDate) return `${formatDate(startDate)}부터`;
+  if (endDate) return `${formatDate(endDate)}까지`;
+  return "";
+}
+
+function isScheduleCurrentOrFuture(schedule, referenceDate = todayISO, member) {
+  if (schedule.date) return String(schedule.date || "").trim() >= referenceDate;
+  const endDate = String(schedule.endDate || "").trim();
+  if (endDate && endDate < referenceDate) return false;
+  const startDate = getScheduleStartBasis(schedule, member);
+  return !startDate || startDate <= "9999-99-99";
 }
 
 function renderAttendance(member) {
