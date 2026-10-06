@@ -1915,6 +1915,11 @@ h4 {
   word-break: keep-all;
 }
 
+.readonly-week-filled-cell.long-pressing {
+  background: #dff5ee;
+  box-shadow: inset 0 0 0 1px #78c7b3;
+}
+
 .available-time-label {
   flex: 0 0 auto;
   color: #79838b;

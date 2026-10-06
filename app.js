@@ -3,6 +3,7 @@ const PENDING_SYNC_KEY = "member-desk-pending-shared-sync";
 const LEGACY_STORAGE_KEY = "member-desk-data-v1";
 const SUPABASE_TABLE = "app_state";
 const SUPABASE_RECORD_ID = "member-desk";
+const OVERVIEW_LONG_PRESS_MS = 2000;
 const PRESET_TIMETABLE_VERSION = "2026-06-photo-timetable-1";
 const PRESET_PAYMENTS_VERSION = "2026-06-corrected-payments-1";
 const PRESET_ATTENDANCE_VERSION = window.PRESET_ATTENDANCE_VERSION || "";
@@ -2303,6 +2304,7 @@ function createReadOnlyWeekOverview(groups) {
       const cell = document.createElement("td");
       cell.className = names ? "readonly-week-filled-cell" : "";
       cell.textContent = names;
+      if (dayGroups.length) addOverviewLongPressEdit(cell, dayGroups);
       row.append(cell);
     });
 
@@ -2312,6 +2314,29 @@ function createReadOnlyWeekOverview(groups) {
   table.append(thead, tbody);
   overview.append(table);
   return overview;
+}
+
+function addOverviewLongPressEdit(cell, groups) {
+  let timer = null;
+
+  const clear = () => {
+    window.clearTimeout(timer);
+    timer = null;
+    cell.classList.remove("long-pressing");
+  };
+
+  cell.addEventListener("touchstart", () => {
+    clear();
+    cell.classList.add("long-pressing");
+    timer = window.setTimeout(() => {
+      clear();
+      editScheduleGroup(groups.length > 1 ? { ...groups[0], groups } : groups[0]);
+    }, OVERVIEW_LONG_PRESS_MS);
+  }, { passive: true });
+
+  cell.addEventListener("touchend", clear);
+  cell.addEventListener("touchcancel", clear);
+  cell.addEventListener("touchmove", clear);
 }
 
 function fitReadOnlyWeekOverview(overview) {
