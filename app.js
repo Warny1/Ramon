@@ -3194,7 +3194,7 @@ function addSchedule(event) {
   prepareScheduleModal("regular");
   editingScheduleGroup = null;
   closeModal(elements.scheduleModal);
-  commit();
+  commit({ prioritizeRender: true });
 }
 
 function hasOverlappingSchedule(member, nextSchedule) {
@@ -3456,7 +3456,7 @@ function chooseScheduleRemovalMode(label, effectiveDate, onChoose) {
 function removeScheduleEntries(entries, mode, effectiveDate) {
   if (mode === "week") {
     addScheduleExclusions(entries, effectiveDate);
-    commit();
+    commit({ prioritizeRender: true });
     return;
   }
 
@@ -3478,7 +3478,7 @@ function removeScheduleEntries(entries, mode, effectiveDate) {
 
   if (deletedScheduleIds.length) rememberDeletedScheduleIds(deletedScheduleIds);
   if (closedSchedules.length) rememberClosedSchedules(closedSchedules);
-  commit();
+  commit({ prioritizeRender: true });
 }
 
 function removeAttendance(memberId, attendanceId) {
@@ -4753,6 +4753,16 @@ function preserveScrollPosition(callback) {
 }
 
 function commit(options = {}) {
+  if (options.prioritizeRender) {
+    if (options.preserveScroll) {
+      preserveScrollPosition(render);
+    } else {
+      render();
+    }
+    window.setTimeout(saveData, 0);
+    return;
+  }
+
   saveData();
   if (options.preserveScroll) {
     preserveScrollPosition(render);
