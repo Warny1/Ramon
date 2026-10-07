@@ -93,6 +93,33 @@ before update on public.schedules
 for each row
 execute function public.preserve_schedule_end_date();
 
+-- 시간표 교체의 DELETE와 INSERT/UPDATE를 한 트랜잭션에서 실행한다.
+-- advisory lock은 여러 기기의 교체 요청도 순서대로 처리한다.
+create or replace function public.apply_schedule_changes(
+  p_deleted_ids text[] default array[]::text[],
+  p_rows jsonb default '[]'::jsonb
+)
+returns void
+language plpgsql
+set search_path = ''
+as $$
+begin
+  perform pg_advisory_xact_lock(hashtext('public.schedules'));
+
+  delete from public.schedules
+  where id = any(coalesce(p_deleted_ids, array[]::text[]));
+
+  insert into public.schedules (id, member_id, data, updated_at)
+  select incoming.id, incoming.member_id, incoming.data, coalesce(incoming.updated_at, now())
+  from jsonb_to_recordset(coalesce(p_rows, '[]'::jsonb))
+    as incoming(id text, member_id text, data jsonb, updated_at timestamptz)
+  on conflict (id) do update
+  set member_id = excluded.member_id,
+      data = excluded.data,
+      updated_at = excluded.updated_at;
+end;
+$$;
+
 create table if not exists public.app_backups (
   id text primary key,
   backup_date date not null,

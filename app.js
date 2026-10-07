@@ -3161,7 +3161,7 @@ function addSchedule(event) {
   if (!canManageSettings() || isScheduleSubmitting) return;
 
   const form = new FormData(elements.scheduleForm);
-  const memberIds = form.getAll("memberIds");
+  const memberIds = [...new Set(form.getAll("memberIds"))];
   const isMakeup = elements.scheduleForm.dataset.mode === "makeup";
   const isEdit = elements.scheduleForm.dataset.mode === "edit";
   const scheduleScope = getScheduleScope();
@@ -3195,6 +3195,16 @@ function addSchedule(event) {
   const scheduleTimes = editGroups.length
     ? editGroups.map((group) => minutesToTime(timeToMinutes(formTime) + timeToMinutes(group.time) - editStartMinutes))
     : [formTime];
+  const editedScheduleIds = new Map();
+  const editedScheduleBaseIds = new Map();
+  editGroups.forEach((group, timeIndex) => {
+    const entries = group.entries || [];
+    const baseScheduleId = entries.map(({ scheduleId }) => scheduleId).filter(Boolean).sort()[0];
+    if (baseScheduleId) editedScheduleBaseIds.set(timeIndex, baseScheduleId);
+    entries.forEach(({ memberId, scheduleId }) => {
+      editedScheduleIds.set(`${memberId}|${timeIndex}`, scheduleId);
+    });
+  });
 
   const submitButton = event.submitter || elements.scheduleForm.querySelector('[type="submit"]');
   const editRollbackState = isEdit ? cloneData(state) : null;
@@ -3202,6 +3212,8 @@ function addSchedule(event) {
   isScheduleSubmitting = true;
   if (submitButton) submitButton.disabled = true;
   let addedScheduleCount = 0;
+  let expectedScheduleCount = 0;
+  const reusedScheduleIds = new Set();
 
   try {
     const shouldSplitWeeklyEdit = isEdit && editingScheduleGroup && scheduleScope === "weekly" && scheduleStartDate;
@@ -3226,9 +3238,17 @@ function addSchedule(event) {
         ? scheduleStartDate || (!isEdit ? getMemberFirstPaymentDate(member) : "") || getDateForScheduleDay(scheduleDay)
         : "";
 
-      scheduleTimes.forEach((time) => {
+      scheduleTimes.forEach((time, timeIndex) => {
+        expectedScheduleCount += 1;
+        const editedScheduleId = editedScheduleIds.get(`${memberId}|${timeIndex}`);
+        const editBaseId = editedScheduleId || (isEdit && editedScheduleBaseIds.get(timeIndex));
+        const nextScheduleId = editedScheduleId && !shouldSplitWeeklyEdit
+          ? editedScheduleId
+          : editBaseId
+            ? `${editBaseId}:member:${memberId}${shouldSplitWeeklyEdit ? `:from:${scheduleStartDate}` : ""}`
+            : crypto.randomUUID();
         const nextSchedule = {
-          id: crypto.randomUUID(),
+          id: nextScheduleId,
           day: scheduleDay,
           time,
           className: String(form.get("className")).trim() || "수업",
@@ -3242,6 +3262,7 @@ function addSchedule(event) {
 
         if (hasOverlappingSchedule(member, nextSchedule)) return;
         member.schedules.push(nextSchedule);
+        if (editedScheduleId && !shouldSplitWeeklyEdit) reusedScheduleIds.add(editedScheduleId);
         addedScheduleCount += 1;
       });
     });
@@ -3250,13 +3271,16 @@ function addSchedule(event) {
     if (submitButton) submitButton.disabled = false;
   }
 
-  if (!addedScheduleCount) {
+  if (!addedScheduleCount || (isEdit && addedScheduleCount !== expectedScheduleCount)) {
     if (editRollbackState) state = editRollbackState;
-    alert(isEdit ? "수정한 시간표가 기존 시간표와 겹쳐 변경하지 않았습니다." : "이미 같은 시간표가 등록되어 있습니다.");
+    alert(isEdit
+      ? "수정한 시간표 중 기존 시간표와 겹치는 항목이 있어 전체 변경을 취소했습니다."
+      : "이미 같은 시간표가 등록되어 있습니다.");
     return;
   }
 
-  if (replacedScheduleIds.length) rememberDeletedScheduleIds(replacedScheduleIds);
+  const deletedReplacedScheduleIds = replacedScheduleIds.filter((id) => !reusedScheduleIds.has(id));
+  if (deletedReplacedScheduleIds.length) rememberDeletedScheduleIds(deletedReplacedScheduleIds);
 
   elements.scheduleForm.reset();
   prepareScheduleModal("regular");

@@ -6,9 +6,11 @@ const source = await readFile(new URL("../sync-engine.js", import.meta.url), "ut
 const tables = Object.fromEntries(
   ["app_settings", "members", "schedules", "payments", "attendances"].map((name) => [name, new Map()]),
 );
+let scheduleRpcCalls = 0;
 
 function resetTables() {
   Object.values(tables).forEach((table) => table.clear());
+  scheduleRpcCalls = 0;
 }
 
 function createEngine() {
@@ -48,6 +50,14 @@ function createEngine() {
 
 async function fakeFetch(input, options = {}) {
   const url = new URL(input);
+  if (url.pathname.endsWith("/rpc/apply_schedule_changes")) {
+    scheduleRpcCalls += 1;
+    const { p_deleted_ids: deletedIds = [], p_rows: rows = [] } = JSON.parse(options.body);
+    deletedIds.forEach((id) => tables.schedules.delete(id));
+    rows.forEach((row) => tables.schedules.set(row.id, structuredClone(row)));
+    return response(204, null);
+  }
+
   const tableName = url.pathname.split("/").at(-1);
   const table = tables[tableName];
   const method = options.method || "GET";
@@ -295,5 +305,34 @@ assert.equal(tables.schedules.has("schedule-once-old"), false, "일회성 시간
 assert.equal(tables.schedules.has("schedule-weekly-old"), false, "시작일 없는 반복 시간표 수정 시 기존 원격 row를 삭제해야 합니다.");
 assert.equal(tables.schedules.has("schedule-once-new"), true, "수정된 일회성 시간표를 저장해야 합니다.");
 assert.equal(tables.schedules.has("schedule-weekly-new"), true, "수정된 반복 시간표를 저장해야 합니다.");
+assert.equal(scheduleRpcCalls, 2, "초기 저장과 시간표 교체를 각각 원자적 RPC로 처리해야 합니다.");
+
+resetTables();
+
+const concurrentInitial = {
+  lessonTypes: [],
+  members: [{
+    id: "member-5",
+    name: "동시 수정 회원",
+    schedules: [{ id: "schedule-stable", day: 4, time: "10:00", className: "수업" }],
+    payments: [],
+    attendances: [],
+  }],
+};
+const concurrentFirstDevice = createEngine();
+await concurrentFirstDevice.replaceAll(concurrentInitial);
+const concurrentSecondDevice = createEngine();
+const concurrentFirstState = structuredClone((await concurrentFirstDevice.load()).data);
+const concurrentSecondState = structuredClone((await concurrentSecondDevice.load()).data);
+
+concurrentFirstState.members[0].schedules[0].time = "10:30";
+concurrentSecondState.members[0].schedules[0].time = "11:00";
+await Promise.all([
+  concurrentFirstDevice.flush(concurrentFirstState),
+  concurrentSecondDevice.flush(concurrentSecondState),
+]);
+
+assert.equal(tables.schedules.size, 1, "같은 원본 시간표를 두 기기가 수정해도 row가 둘로 늘어나면 안 됩니다.");
+assert.equal(tables.schedules.has("schedule-stable"), true, "수정 중에도 원본 시간표 ID를 유지해야 합니다.");
 
 console.log("동시 기기 출석/결제 저장 충돌 테스트 통과");

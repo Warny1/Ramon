@@ -161,8 +161,13 @@
     const attendanceDeletes = removedIds(previous.attendances, next.attendances)
       .filter((id) => deletedMembers.has(previous.attendances.get(id)?.member_id));
 
+    const changedSchedules = await preserveClosedScheduleRows(
+      changedRows(previous.schedules, next.schedules),
+      next.schedules,
+    );
+
     await Promise.all([
-      deleteRows(TABLES.schedules, scheduleDeletes),
+      applyScheduleChanges(scheduleDeletes, changedSchedules),
       deleteRows(TABLES.payments, paymentDeletes),
       deleteRows(TABLES.attendances, attendanceDeletes),
     ]);
@@ -179,17 +184,27 @@
       ]);
     }
 
-    const changedSchedules = await preserveClosedScheduleRows(
-      changedRows(previous.schedules, next.schedules),
-      next.schedules,
-    );
-
     await upsertRows(TABLES.members, changedRows(previous.members, next.members));
     await Promise.all([
-      upsertRows(TABLES.schedules, changedSchedules),
       upsertRows(TABLES.payments, changedRows(previous.payments, next.payments)),
       upsertRows(TABLES.attendances, changedRows(previous.attendances, next.attendances)),
     ]);
+  }
+
+  async function applyScheduleChanges(deletedIds, rows) {
+    if (!deletedIds.length && !rows.length) return;
+
+    try {
+      await requestRpc("apply_schedule_changes", {
+        p_deleted_ids: deletedIds,
+        p_rows: rows,
+      });
+    } catch (error) {
+      // 최신 SQL을 아직 적용하지 않은 환경도 저장 기능은 유지한다.
+      if (error.status !== 404) throw error;
+      await deleteRows(TABLES.schedules, deletedIds);
+      await upsertRows(TABLES.schedules, rows);
+    }
   }
 
   async function preserveClosedScheduleRows(rows, nextSchedules) {
@@ -404,6 +419,26 @@
     if (response.status === 204) return [];
     const text = await response.text();
     return text ? JSON.parse(text) : [];
+  }
+
+  async function requestRpc(functionName, body) {
+    const response = await fetch(`${getBaseUrl()}/rest/v1/rpc/${functionName}`, {
+      method: "POST",
+      headers: {
+        apikey: window.SUPABASE_CONFIG.anonKey,
+        Authorization: `Bearer ${window.SUPABASE_CONFIG.anonKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(body),
+      cache: "no-store",
+    });
+
+    if (!response.ok) {
+      const bodyText = await response.text().catch(() => "");
+      const error = new Error(`Supabase ${functionName} 요청 실패 (${response.status})${bodyText ? `\n${bodyText.slice(0, 300)}` : ""}`);
+      error.status = response.status;
+      throw error;
+    }
   }
 
   async function requestAll(table, query = "") {
