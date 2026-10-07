@@ -935,9 +935,9 @@ function mergeSchedulePeriod(target, source) {
   const ends = [target.endDate, source.endDate].map((date) => String(date || "").trim()).filter(Boolean);
 
   if (starts.length) target.startDate = starts.sort((a, b) => a.localeCompare(b))[0];
-  if (target.endDate || source.endDate) {
-    target.endDate = ends.length === 2 ? ends.sort((a, b) => b.localeCompare(a))[0] : "";
-  }
+  // 종료된 일정과 오래된 열린 일정이 겹치면 종료 상태를 우선한다.
+  // 빈 종료일이 이전 기기의 상태 때문에 수업을 다시 열면 안 된다.
+  if (ends.length) target.endDate = ends.sort((a, b) => a.localeCompare(b))[0];
 }
 
 function mergeRecordsById(first = [], second = []) {
@@ -954,7 +954,10 @@ function deduplicateMemberData(data) {
   data.deletedMemberIds = mergeUniqueValues(data.deletedMemberIds);
   data.deletedPaymentIds = mergeUniqueValues(data.deletedPaymentIds);
   data.deletedScheduleIds = mergeUniqueValues(data.deletedScheduleIds);
-  data.closedSchedules = normalizeClosedSchedules(data.closedSchedules);
+  data.closedSchedules = normalizeClosedSchedules([
+    ...(data.closedSchedules || []),
+    ...getClosedScheduleEntries(data.members),
+  ]);
   data.scheduleExclusions = normalizeScheduleExclusions(data.scheduleExclusions);
   const deletedMemberIds = new Set(data.deletedMemberIds);
   const deletedPaymentIds = new Set(data.deletedPaymentIds);
@@ -1028,6 +1031,19 @@ function normalizeClosedSchedules(items = []) {
     }
   });
   return [...closedById.values()];
+}
+
+function getClosedScheduleEntries(members = []) {
+  return (members || []).flatMap((member) =>
+    (member.schedules || [])
+      .filter((schedule) => schedule.id && !schedule.date && String(schedule.endDate || "").trim())
+      .map((schedule) => ({ scheduleId: schedule.id, endDate: String(schedule.endDate).trim() })),
+  );
+}
+
+function hasClosedScheduleBackfill(current = [], remote = []) {
+  const remoteById = new Map(normalizeClosedSchedules(remote).map((item) => [item.scheduleId, item.endDate]));
+  return normalizeClosedSchedules(current).some((item) => remoteById.get(item.scheduleId) !== item.endDate);
 }
 
 function applyClosedSchedules(schedules = [], closedScheduleEndDates = new Map()) {
@@ -1210,6 +1226,7 @@ function startSharedDataSync() {
     }
 
     const selectedId = selectedMemberId;
+    const remoteClosedSchedules = normalizeClosedSchedules(remoteData.closedSchedules);
     state = applyPresetTimetable({
       ...remoteData,
       lessonTypes: Array.isArray(remoteData.lessonTypes)
@@ -1219,6 +1236,9 @@ function startSharedDataSync() {
     normalizeAppSettings();
     deduplicateMemberData(state);
     localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    if (canEditSharedData() && hasClosedScheduleBackfill(state.closedSchedules, remoteClosedSchedules)) {
+      window.RamonSync.queue(state);
+    }
     selectedMemberId = state.members.some((member) => member.id === selectedId)
       ? selectedId
       : state.members[0]?.id ?? null;
@@ -3304,13 +3324,21 @@ function getPreviousISODate(date) {
 }
 
 function closeScheduleGroupBeforeDate(group, date) {
+  const closedSchedules = [];
+  const deletedScheduleIds = [];
+
   getScheduleGroupEntries(group).forEach(({ memberId, scheduleId }) => {
     const member = state.members.find((item) => item.id === memberId);
     const schedule = member?.schedules.find((item) => item.id === scheduleId);
     if (!member || !schedule) return;
 
-    closeScheduleBeforeDate(member, schedule, date);
+    const endDate = closeScheduleBeforeDate(member, schedule, date);
+    if (endDate) closedSchedules.push({ scheduleId, endDate });
+    else deletedScheduleIds.push(scheduleId);
   });
+
+  if (closedSchedules.length) rememberClosedSchedules(closedSchedules);
+  if (deletedScheduleIds.length) rememberDeletedScheduleIds(deletedScheduleIds);
 }
 
 function closeScheduleBeforeDate(member, schedule, date) {
@@ -3318,10 +3346,11 @@ function closeScheduleBeforeDate(member, schedule, date) {
 
   if (schedule.startDate && endDate < schedule.startDate) {
     member.schedules = member.schedules.filter((item) => item.id !== schedule.id);
-    return;
+    return "";
   }
 
   schedule.endDate = endDate;
+  return endDate;
 }
 
 function markAttendance() {

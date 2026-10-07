@@ -179,12 +179,38 @@
       ]);
     }
 
+    const changedSchedules = await preserveClosedScheduleRows(
+      changedRows(previous.schedules, next.schedules),
+      next.schedules,
+    );
+
     await upsertRows(TABLES.members, changedRows(previous.members, next.members));
     await Promise.all([
-      upsertRows(TABLES.schedules, changedRows(previous.schedules, next.schedules)),
+      upsertRows(TABLES.schedules, changedSchedules),
       upsertRows(TABLES.payments, changedRows(previous.payments, next.payments)),
       upsertRows(TABLES.attendances, changedRows(previous.attendances, next.attendances)),
     ]);
+  }
+
+  async function preserveClosedScheduleRows(rows, nextSchedules) {
+    if (!rows.length) return rows;
+
+    const remoteRows = await requestRowsByIds(TABLES.schedules, rows.map((row) => row.id));
+    const remoteById = new Map(remoteRows.map((row) => [row.id, row]));
+
+    return rows.map((row) => {
+      const remoteEndDate = String(remoteById.get(row.id)?.data?.endDate || "").trim();
+      const nextEndDate = String(row.data?.endDate || "").trim();
+      if (!remoteEndDate || (nextEndDate && nextEndDate <= remoteEndDate)) return row;
+
+      const protectedRow = {
+        ...row,
+        data: { ...row.data, endDate: remoteEndDate },
+      };
+      const nextRow = nextSchedules.get(row.id);
+      if (nextRow) nextRow.data = { ...nextRow.data, endDate: remoteEndDate };
+      return protectedRow;
+    });
   }
 
   function changedRows(previous, next) {
@@ -223,6 +249,14 @@
         .join(",");
       await request(table, `?id=in.(${encodeURIComponent(values)})`, { method: "DELETE" });
     }
+  }
+
+  async function requestRowsByIds(table, ids = []) {
+    const values = [...new Set(ids)].filter(Boolean)
+      .map((id) => `"${String(id).replaceAll('"', '\\"')}"`)
+      .join(",");
+    if (!values) return [];
+    return request(table, `?id=in.(${encodeURIComponent(values)})`);
   }
 
   function flatten(data) {

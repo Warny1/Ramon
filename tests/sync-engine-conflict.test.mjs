@@ -215,4 +215,48 @@ assert.equal(tables.payments.size, 0, "명시 삭제한 회원의 결제는 원�
 assert.equal(tables.schedules.size, 0, "명시 삭제한 회원의 시간표는 원격에서도 삭제되어야 합니다.");
 assert.equal(tables.attendances.size, 0, "명시 삭제한 회원의 출석은 원격에서도 삭제되어야 합니다.");
 
+resetTables();
+
+const scheduleInitial = {
+  lessonTypes: [],
+  members: [
+    {
+      id: "member-3",
+      name: "종료 일정 보호 회원",
+      phone: "",
+      memo: "",
+      defaultLessonType: "",
+      createdAt: "2026-10-01",
+      schedules: [
+        {
+          id: "schedule-3",
+          day: 3,
+          time: "10:00",
+          className: "수업",
+          startDate: "2026-10-01",
+          endDate: "",
+        },
+      ],
+      payments: [],
+      attendances: [],
+    },
+  ],
+};
+
+const scheduleFreshDevice = createEngine();
+await scheduleFreshDevice.replaceAll(scheduleInitial);
+
+const scheduleStaleDevice = createEngine();
+const scheduleStaleState = structuredClone((await scheduleStaleDevice.load()).data);
+const scheduleFreshState = structuredClone((await scheduleFreshDevice.load()).data);
+scheduleFreshState.members[0].schedules[0].endDate = "2026-10-07";
+await scheduleFreshDevice.flush(scheduleFreshState);
+
+scheduleStaleState.members[0].schedules[0].status = "보강";
+await scheduleStaleDevice.flush(scheduleStaleState);
+
+const protectedSchedule = tables.schedules.get("schedule-3");
+assert.equal(protectedSchedule.data.endDate, "2026-10-07", "오래된 기기가 빈 종료일을 저장해 종료된 시간표를 다시 열면 안 됩니다.");
+assert.equal(protectedSchedule.data.status, "보강", "종료일과 무관한 오래된 기기의 수정은 유지되어야 합니다.");
+
 console.log("동시 기기 출석/결제 저장 충돌 테스트 통과");
