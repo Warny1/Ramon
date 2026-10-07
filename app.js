@@ -21,7 +21,7 @@ const defaultLessonTypes = [
   { name: "주2 / 2인 (30분)", amount: 250000, sessions: 4 },
   { name: "주1 / 1인 (20분)", amount: 150000, sessions: 4 },
   { name: "주1 / 2인 (20분)", amount: 260000, sessions: 2 },
-  { name: "주2 / 1인 (20분)", amount: 120000, sessions: 8 },
+  { name: "주2 / 1인 (20분)", amount: 260000, sessions: 8 },
   { name: "주2 / 2인 (20분)", amount: 170000, sessions: 4 },
   { name: "쿠폰 (30분)", amount: 380000, sessions: 8 },
   { name: "1회 체험 (1인)", amount: 45000, sessions: 1 },
@@ -410,16 +410,6 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
     syncScheduleStartDateDefault();
   });
-  elements.scheduleMemberOptions.addEventListener("change", (event) => {
-    const checkbox = event.target.closest('input[name="memberIds"]');
-    if (!checkbox?.checked) return;
-    const member = state.members.find((item) => item.id === checkbox.value);
-    if (!member?.defaultLessonType) return;
-    const select = elements.scheduleForm.querySelector('[name="scheduleLessonType"]');
-    if (state.lessonTypes.some((lesson) => lesson.name === member.defaultLessonType)) {
-      select.value = member.defaultLessonType;
-    }
-  });
   elements.desktopNavButtons.forEach((button) => {
     button.addEventListener("click", () => setDesktopView(button.dataset.desktopView));
   });
@@ -590,6 +580,11 @@ function loadLocalData() {
 }
 
 function normalizeAppSettings() {
+  const twentyMinutePrivateTwiceWeekly = (state.lessonTypes || [])
+    .find((lesson) => lesson.name === "주2 / 1인 (20분)");
+  if (twentyMinutePrivateTwiceWeekly && Number(twentyMinutePrivateTwiceWeekly.amount) === 120000) {
+    twentyMinutePrivateTwiceWeekly.amount = 260000;
+  }
   state.scheduleBoardLabels = normalizeScheduleBoardLabels(state.scheduleBoardLabels);
   state.paymentHistoryPassword = normalizePaymentHistoryPassword(state.paymentHistoryPassword);
   state.deletedMemberIds = mergeUniqueValues(state.deletedMemberIds);
@@ -2906,7 +2901,6 @@ function addMember(event) {
     existing.phone = nextPhone;
     existing.memo = nextMemo;
     existing.defaultLessonType = nextLessonType;
-    syncMemberSchedulesToLessonType(existing, nextLessonType);
     applyMemberScheduleStartFields(existing);
     selectedMemberId = existing.id;
     elements.memberForm.reset();
@@ -2966,14 +2960,6 @@ function confirmMemberDuplicate({ name, phone, editingMemberId = "" }) {
   }
 
   return true;
-}
-
-function syncMemberSchedulesToLessonType(member, lessonType) {
-  if (!member || !lessonType) return;
-
-  member.schedules.forEach((schedule) => {
-    schedule.lessonType = lessonType;
-  });
 }
 
 function prepareMemberModal() {
@@ -3122,6 +3108,10 @@ function addPayment(event) {
     member.payments.push(nextPayment);
   }
 
+  if (form.get("applyLessonTypeToSchedule") === "on") {
+    applyMemberLessonTypeFromDate(member, nextPayment.lessonType, nextPayment.date);
+  }
+
   selectedMemberId = member.id;
   elements.paymentForm.reset();
   preparePaymentModal();
@@ -3134,6 +3124,7 @@ function preparePaymentModal() {
   delete elements.paymentForm.dataset.editingMemberId;
   delete elements.paymentForm.dataset.editingPaymentId;
   elements.paymentForm.reset();
+  elements.paymentForm.querySelector('[name="applyLessonTypeToSchedule"]').checked = true;
 }
 
 function openPaymentEditor(memberId, paymentId) {
@@ -3153,6 +3144,7 @@ function openPaymentEditor(memberId, paymentId) {
   elements.paymentForm.querySelector('[name="discountOption"]').value = "0";
   elements.paymentForm.querySelector('[name="amount"]').value = String(Number(payment.amount || 0));
   elements.paymentForm.querySelector('[name="memo"]').value = payment.memo || "";
+  elements.paymentForm.querySelector('[name="applyLessonTypeToSchedule"]').checked = false;
   openModal(elements.paymentModal);
 }
 
@@ -3173,6 +3165,17 @@ function addSchedule(event) {
   if (!memberIds.length) {
     alert("참여 회원을 선택해주세요.");
     return;
+  }
+
+  const scheduleLessonType = String(form.get("scheduleLessonType"));
+  const participantLimit = getLessonParticipantLimit(scheduleLessonType);
+  if (participantLimit && memberIds.length > participantLimit) {
+    alert(`${scheduleLessonType}은(는) 회원 ${participantLimit}명까지만 선택할 수 있습니다.`);
+    return;
+  }
+  if (participantLimit && memberIds.length < participantLimit) {
+    const shouldSavePending = confirm(`${scheduleLessonType}에 ${memberIds.length}명만 선택했습니다.\n파트너 미정 상태로 저장할까요?`);
+    if (!shouldSavePending) return;
   }
 
   if ((isMakeup || scheduleScope === "once") && !scheduleDate) {
@@ -3231,6 +3234,11 @@ function addSchedule(event) {
       });
     }
 
+    const lessonGroupIds = scheduleTimes.map((_, timeIndex) => {
+      const existingGroupId = String(editGroups[timeIndex]?.lessonGroupId || "").trim();
+      return isEdit && !shouldSplitWeeklyEdit && existingGroupId ? existingGroupId : crypto.randomUUID();
+    });
+
     memberIds.forEach((memberId) => {
       const member = state.members.find((item) => item.id === memberId);
       if (!member) return;
@@ -3253,7 +3261,8 @@ function addSchedule(event) {
           time,
           className: String(form.get("className")).trim() || "수업",
           scheduleBoard: normalizeScheduleBoard(form.get("scheduleBoard")),
-          lessonType: String(form.get("scheduleLessonType")),
+          lessonType: scheduleLessonType,
+          lessonGroupId: lessonGroupIds[timeIndex],
           status: String(form.get("scheduleStatus")),
           date: scheduleDate,
           startDate: memberScheduleStartDate,
@@ -3355,6 +3364,59 @@ function getPreviousISODate(date) {
   const target = new Date(`${date}T12:00:00`);
   target.setDate(target.getDate() - 1);
   return toISODate(target);
+}
+
+function applyMemberLessonTypeFromDate(member, lessonType, effectiveDate) {
+  const nextLessonType = String(lessonType || "").trim();
+  const startDate = String(effectiveDate || "").trim();
+  if (!member || !nextLessonType || !startDate) return;
+
+  member.defaultLessonType = nextLessonType;
+  const previousDate = getPreviousISODate(startDate);
+  const nextSchedules = [];
+  const closedSchedules = [];
+
+  (member.schedules || []).forEach((schedule) => {
+    if (getScheduleLessonType(schedule) === nextLessonType) return;
+
+    if (schedule.date) {
+      if (String(schedule.date) >= startDate) {
+        schedule.lessonType = nextLessonType;
+        schedule.lessonGroupId = crypto.randomUUID();
+      }
+      return;
+    }
+
+    const scheduleStart = getScheduleStartBasis(schedule, member);
+    const scheduleEnd = String(schedule.endDate || "").trim();
+    if (scheduleEnd && scheduleEnd < startDate) return;
+
+    if (scheduleStart && scheduleStart >= startDate) {
+      schedule.lessonType = nextLessonType;
+      schedule.lessonGroupId = crypto.randomUUID();
+      return;
+    }
+
+    const nextSchedule = {
+      ...schedule,
+      id: crypto.randomUUID(),
+      lessonType: nextLessonType,
+      lessonGroupId: crypto.randomUUID(),
+      startDate,
+      endDate: scheduleEnd,
+    };
+    schedule.endDate = previousDate;
+    closedSchedules.push({ scheduleId: schedule.id, endDate: previousDate });
+    nextSchedules.push(nextSchedule);
+  });
+
+  member.schedules.push(...nextSchedules);
+  if (closedSchedules.length) rememberClosedSchedules(closedSchedules);
+}
+
+function getLessonParticipantLimit(lessonType) {
+  const match = String(lessonType || "").match(/\/\s*(\d+)인/);
+  return match ? Number(match[1]) : 0;
 }
 
 function closeScheduleGroupBeforeDate(group, date) {
@@ -4405,7 +4467,9 @@ function getScheduleGroups() {
   const groups = new Map();
 
   getScheduleItems().forEach((item) => {
-    const key = [item.day, normalizeTime(item.time), item.className || "수업", getScheduleLessonType(item), getScheduleStatus(item), getScheduleBoard(item), item.date || ""].join("|");
+    const lessonGroupId = String(item.lessonGroupId || "").trim();
+    const legacyKey = [item.day, normalizeTime(item.time), item.className || "수업", getScheduleLessonType(item), getScheduleStatus(item), getScheduleBoard(item), item.date || ""].join("|");
+    const key = lessonGroupId ? `group:${lessonGroupId}` : `legacy:${legacyKey}`;
     if (!groups.has(key)) {
       groups.set(key, {
         day: item.day,
@@ -4417,6 +4481,7 @@ function getScheduleGroups() {
         date: item.date || "",
         startDate: item.startDate || "",
         endDate: item.endDate || "",
+        lessonGroupId,
         members: [],
         entries: [],
       });

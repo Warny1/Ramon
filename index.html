@@ -421,6 +421,11 @@
           메모
           <input name="memo" autocomplete="off" />
         </label>
+        <label class="inline-check payment-lesson-sync-option">
+          <input name="applyLessonTypeToSchedule" type="checkbox" checked />
+          <span>이 결제일부터 회원 기본 레슨과 이후 시간표에도 적용</span>
+        </label>
+        <p class="modal-note payment-lesson-sync-note">이전 시간표는 보존하고 적용일부터 새 레슨으로 분리합니다.</p>
         <div class="modal-actions">
           <button class="secondary-button" value="cancel" type="button" data-close="paymentModal">취소</button>
           <button class="primary-action" type="submit">저장</button>
@@ -637,7 +642,7 @@
     <script src="./supabase-config.js?v=20260729-1"></script>
     <script src="./attendance-data.js"></script>
     <script src="./sync-engine.js?v=20261008-2"></script>
-    <script src="./app.js?v=20261008-2"></script>
+    <script src="./app.js?v=20261008-3"></script>
     <script>
       if ("serviceWorker" in navigator) {
         window.addEventListener("load", () => {
