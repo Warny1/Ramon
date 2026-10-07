@@ -4308,7 +4308,7 @@ function getTodayEntries() {
 
 function getScheduleItems() {
   return getAccessibleMembers().flatMap((member) =>
-    member.schedules
+    (getMemberLifecycleStatus(member) === "expired" ? [] : member.schedules)
       .filter((item) => getScheduleBoard(item) === activeScheduleBoard)
       .filter((item) => {
         const targetDate = item.date || getDateForScheduleDay(item.day);
