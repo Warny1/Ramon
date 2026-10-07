@@ -69,6 +69,30 @@ create index if not exists payments_member_id_idx on public.payments (member_id)
 create index if not exists attendances_member_id_idx on public.attendances (member_id);
 create index if not exists attendances_updated_at_idx on public.attendances (updated_at);
 
+-- 같은 schedule을 두 기기가 동시에 저장해도 이미 기록된 종료일을
+-- 빈 값이나 더 늦은 날짜로 다시 열 수 없도록 DB에서 원자적으로 보호한다.
+create or replace function public.preserve_schedule_end_date()
+returns trigger
+language plpgsql
+set search_path = ''
+as $$
+declare
+  old_end_date text := nullif(trim(coalesce(old.data->>'endDate', '')), '');
+  new_end_date text := nullif(trim(coalesce(new.data->>'endDate', '')), '');
+begin
+  if old_end_date is not null and (new_end_date is null or new_end_date > old_end_date) then
+    new.data := jsonb_set(coalesce(new.data, '{}'::jsonb), '{endDate}', to_jsonb(old_end_date), true);
+  end if;
+  return new;
+end;
+$$;
+
+drop trigger if exists preserve_schedule_end_date_before_update on public.schedules;
+create trigger preserve_schedule_end_date_before_update
+before update on public.schedules
+for each row
+execute function public.preserve_schedule_end_date();
+
 create table if not exists public.app_backups (
   id text primary key,
   backup_date date not null,

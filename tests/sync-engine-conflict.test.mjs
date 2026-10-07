@@ -259,4 +259,41 @@ const protectedSchedule = tables.schedules.get("schedule-3");
 assert.equal(protectedSchedule.data.endDate, "2026-10-07", "오래된 기기가 빈 종료일을 저장해 종료된 시간표를 다시 열면 안 됩니다.");
 assert.equal(protectedSchedule.data.status, "보강", "종료일과 무관한 오래된 기기의 수정은 유지되어야 합니다.");
 
+resetTables();
+
+const replaceInitial = {
+  lessonTypes: [],
+  members: [
+    {
+      id: "member-4",
+      name: "시간표 교체 회원",
+      phone: "",
+      memo: "",
+      defaultLessonType: "",
+      createdAt: "2026-10-01",
+      schedules: [
+        { id: "schedule-once-old", day: 4, date: "2026-10-08", time: "10:00", className: "보강" },
+        { id: "schedule-weekly-old", day: 4, date: "", startDate: "", time: "11:00", className: "수업" },
+      ],
+      payments: [],
+      attendances: [],
+    },
+  ],
+};
+
+const replaceDevice = createEngine();
+await replaceDevice.replaceAll(replaceInitial);
+const replaceState = structuredClone((await replaceDevice.load()).data);
+replaceState.deletedScheduleIds = ["schedule-once-old", "schedule-weekly-old"];
+replaceState.members[0].schedules = [
+  { id: "schedule-once-new", day: 4, date: "2026-10-08", time: "10:30", className: "보강" },
+  { id: "schedule-weekly-new", day: 5, date: "", startDate: "", time: "11:00", className: "수업" },
+];
+await replaceDevice.flush(replaceState);
+
+assert.equal(tables.schedules.has("schedule-once-old"), false, "일회성 시간표 수정 시 기존 원격 row를 삭제해야 합니다.");
+assert.equal(tables.schedules.has("schedule-weekly-old"), false, "시작일 없는 반복 시간표 수정 시 기존 원격 row를 삭제해야 합니다.");
+assert.equal(tables.schedules.has("schedule-once-new"), true, "수정된 일회성 시간표를 저장해야 합니다.");
+assert.equal(tables.schedules.has("schedule-weekly-new"), true, "수정된 반복 시간표를 저장해야 합니다.");
+
 console.log("동시 기기 출석/결제 저장 충돌 테스트 통과");

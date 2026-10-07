@@ -3039,7 +3039,7 @@ function renderMemberScheduleStartFields(member) {
     list.append(createEmptyLine("등록된 주간 시간표가 없습니다."));
   } else {
     weeklySchedules.forEach((schedule) => {
-      const periodLabel = getSchedulePeriodLabel(schedule);
+      const periodLabel = getShortSchedulePeriodLabel(schedule);
       const label = [dayNames[schedule.day], schedule.time, getScheduleBoardLabel(schedule.scheduleBoard), schedule.className || "수업", periodLabel].filter(Boolean).join(" · ");
       const row = document.createElement("label");
       row.className = "member-schedule-start-row";
@@ -3052,7 +3052,7 @@ function renderMemberScheduleStartFields(member) {
   }
 }
 
-function getSchedulePeriodLabel(schedule) {
+function getShortSchedulePeriodLabel(schedule) {
   const startDate = String(schedule.startDate || "").trim();
   const endDate = String(schedule.endDate || "").trim();
   if (startDate && endDate) return `${formatShortDate(startDate)}~${formatShortDate(endDate)}`;
@@ -3197,6 +3197,8 @@ function addSchedule(event) {
     : [formTime];
 
   const submitButton = event.submitter || elements.scheduleForm.querySelector('[type="submit"]');
+  const editRollbackState = isEdit ? cloneData(state) : null;
+  const replacedScheduleIds = [];
   isScheduleSubmitting = true;
   if (submitButton) submitButton.disabled = true;
   let addedScheduleCount = 0;
@@ -3209,9 +3211,11 @@ function addSchedule(event) {
     } else if (isEdit && editingScheduleGroup) {
       getScheduleGroupEntries(editingScheduleGroup).forEach(({ memberId, scheduleId }) => {
         const member = state.members.find((item) => item.id === memberId);
-        if (!member) return;
+        const schedule = member?.schedules.find((item) => item.id === scheduleId);
+        if (!member || !schedule) return;
 
         member.schedules = member.schedules.filter((item) => item.id !== scheduleId);
+        replacedScheduleIds.push(scheduleId);
       });
     }
 
@@ -3246,10 +3250,13 @@ function addSchedule(event) {
     if (submitButton) submitButton.disabled = false;
   }
 
-  if (!addedScheduleCount && !isEdit) {
-    alert("이미 같은 시간표가 등록되어 있습니다.");
+  if (!addedScheduleCount) {
+    if (editRollbackState) state = editRollbackState;
+    alert(isEdit ? "수정한 시간표가 기존 시간표와 겹쳐 변경하지 않았습니다." : "이미 같은 시간표가 등록되어 있습니다.");
     return;
   }
+
+  if (replacedScheduleIds.length) rememberDeletedScheduleIds(replacedScheduleIds);
 
   elements.scheduleForm.reset();
   prepareScheduleModal("regular");
@@ -3298,9 +3305,12 @@ function doSchedulePeriodsOverlap(member, first, second) {
 }
 
 function normalizeTime(value) {
-  const match = String(value || "").trim().match(/^(\d{1,2}):(\d{2})/);
-  if (!match) return String(value || "").trim();
-  return `${match[1].padStart(2, "0")}:${match[2]}`;
+  const match = String(value || "").trim().match(/^(\d{1,2})(?::(\d{1,2}))?(?::\d{1,2})?$/);
+  if (!match) return "";
+  const hours = Number(match[1]);
+  const minutes = Number(match[2] || 0);
+  if (hours < 0 || hours > 23 || minutes < 0 || minutes > 59) return "";
+  return `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}`;
 }
 
 function isHalfHourTime(value) {
@@ -3541,8 +3551,9 @@ function removeScheduleEntries(entries, mode, effectiveDate) {
       member.schedules = member.schedules.filter((item) => item.id !== scheduleId);
       deletedScheduleIds.push(scheduleId);
     } else {
-      closeScheduleBeforeDate(member, schedule, effectiveDate);
-      if (schedule.endDate) closedSchedules.push({ scheduleId, endDate: schedule.endDate });
+      const endDate = closeScheduleBeforeDate(member, schedule, effectiveDate);
+      if (endDate) closedSchedules.push({ scheduleId, endDate });
+      else deletedScheduleIds.push(scheduleId);
     }
   });
 
@@ -4337,7 +4348,7 @@ function getTodayEntries() {
 
 function getScheduleItems() {
   return getAccessibleMembers().flatMap((member) =>
-    (getMemberLifecycleStatus(member) === "expired" ? [] : member.schedules)
+    (selectedAttendanceDate >= todayISO && getMemberLifecycleStatus(member) === "expired" ? [] : member.schedules)
       .filter((item) => getScheduleBoard(item) === activeScheduleBoard)
       .filter((item) => {
         const targetDate = item.date || getDateForScheduleDay(item.day);
@@ -4907,15 +4918,6 @@ function findNextNoteColumn(headers, startIndex) {
     if (headers[index] === "비고" || headers[index] === "note") return index;
   }
   return -1;
-}
-
-function normalizeTime(value) {
-  const match = String(value || "").match(/^(\d{1,2})(?::(\d{1,2}))?$/);
-  if (!match) return "";
-  const hours = Number(match[1]);
-  const minutes = Number(match[2] || 0);
-  if (hours < 0 || hours > 23 || minutes < 0 || minutes > 59) return "";
-  return `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}`;
 }
 
 function normalizePastedDate(value) {
