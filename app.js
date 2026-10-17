@@ -3324,8 +3324,36 @@ function addSchedule(event) {
 
 function findOverlappingSchedule(member, nextSchedule) {
   return (member.schedules || []).find((schedule) =>
-    isSameScheduleSlot(schedule, nextSchedule) && doSchedulePeriodsOverlap(member, schedule, nextSchedule),
+    isSameMemberScheduleTime(schedule, nextSchedule) && doMemberScheduleOccurrencesOverlap(member, schedule, nextSchedule),
   );
+}
+
+function isSameMemberScheduleTime(first, second) {
+  if (normalizeTime(first.time) !== normalizeTime(second.time)) return false;
+
+  const firstDate = String(first.date || "").trim();
+  const secondDate = String(second.date || "").trim();
+  if (firstDate && secondDate) return firstDate === secondDate;
+
+  if (firstDate || secondDate) {
+    const fixedDate = firstDate || secondDate;
+    const recurring = firstDate ? second : first;
+    return Number(recurring.day) === new Date(`${fixedDate}T12:00:00`).getDay();
+  }
+
+  return Number(first.day) === Number(second.day);
+}
+
+function doMemberScheduleOccurrencesOverlap(member, first, second) {
+  const firstDate = String(first.date || "").trim();
+  const secondDate = String(second.date || "").trim();
+  if (!firstDate && !secondDate) return doSchedulePeriodsOverlap(member, first, second);
+  if (firstDate && secondDate) return firstDate === secondDate;
+
+  const fixedDate = firstDate || secondDate;
+  const recurring = firstDate ? second : first;
+  return isScheduleActiveOnDate(recurring, fixedDate, member) &&
+    !isScheduleExcluded(member, recurring, fixedDate);
 }
 
 function isSameScheduleSlot(first, second) {
