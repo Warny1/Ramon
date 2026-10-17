@@ -304,6 +304,7 @@ const elements = {
   scheduleForm: $("#scheduleForm"),
   scheduleDayField: $("#scheduleDayField"),
   makeupDateField: $("#makeupDateField"),
+  scheduleStartDateField: $("#scheduleStartDateField"),
   scheduleScopeField: $("#scheduleScopeField"),
   scheduleMemberSearch: $("#scheduleMemberSearch"),
   scheduleMemberOptions: $("#scheduleMemberOptions"),
@@ -408,7 +409,12 @@ document.addEventListener("DOMContentLoaded", async () => {
     if (getScheduleScope() === "once") {
       elements.scheduleForm.date.value = getDateForScheduleDay(Number(elements.scheduleForm.day.value));
     }
-    syncScheduleStartDateDefault();
+    syncScheduleStartDateDefault({ force: true });
+  });
+  elements.scheduleForm.startDate.addEventListener("change", () => {
+    const startDate = String(elements.scheduleForm.startDate.value || "").trim();
+    if (!startDate || getScheduleScope() !== "weekly") return;
+    elements.scheduleForm.day.value = String(new Date(`${startDate}T12:00:00`).getDay());
   });
   elements.desktopNavButtons.forEach((button) => {
     button.addEventListener("click", () => setDesktopView(button.dataset.desktopView));
@@ -3214,9 +3220,10 @@ function addSchedule(event) {
   const replacedScheduleIds = [];
   isScheduleSubmitting = true;
   if (submitButton) submitButton.disabled = true;
-  let addedScheduleCount = 0;
   let expectedScheduleCount = 0;
   const reusedScheduleIds = new Set();
+  const pendingSchedules = [];
+  const conflicts = [];
 
   try {
     const shouldSplitWeeklyEdit = isEdit && editingScheduleGroup && scheduleScope === "weekly" && scheduleStartDate;
@@ -3269,10 +3276,19 @@ function addSchedule(event) {
           endDate: scheduleEndDate,
         };
 
-        if (hasOverlappingSchedule(member, nextSchedule)) return;
-        member.schedules.push(nextSchedule);
+        const pendingForMember = pendingSchedules
+          .filter((item) => item.member.id === member.id)
+          .map((item) => item.schedule);
+        const overlappingSchedule = findOverlappingSchedule({
+          ...member,
+          schedules: [...member.schedules, ...pendingForMember],
+        }, nextSchedule);
+        if (overlappingSchedule) {
+          conflicts.push({ member, schedule: overlappingSchedule });
+          return;
+        }
+        pendingSchedules.push({ member, schedule: nextSchedule });
         if (editedScheduleId && !shouldSplitWeeklyEdit) reusedScheduleIds.add(editedScheduleId);
-        addedScheduleCount += 1;
       });
     });
   } finally {
@@ -3280,13 +3296,21 @@ function addSchedule(event) {
     if (submitButton) submitButton.disabled = false;
   }
 
-  if (!addedScheduleCount || (isEdit && addedScheduleCount !== expectedScheduleCount)) {
+  if (conflicts.length || pendingSchedules.length !== expectedScheduleCount) {
     if (editRollbackState) state = editRollbackState;
-    alert(isEdit
-      ? "수정한 시간표 중 기존 시간표와 겹치는 항목이 있어 전체 변경을 취소했습니다."
-      : "이미 같은 시간표가 등록되어 있습니다.");
+    const conflictLines = conflicts.map(({ member, schedule }) =>
+      `${member.name}: ${dayNames[schedule.day]}요일 ${schedule.time} (${getSchedulePeriodLabel(schedule)})`,
+    );
+    alert([
+      isEdit
+        ? "수정한 시간표 중 기존 시간표와 겹치는 항목이 있어 전체 변경을 취소했습니다."
+        : "기존 시간표와 겹치는 회원이 있어 저장하지 않았습니다.",
+      ...conflictLines,
+    ].join("\n"));
     return;
   }
+
+  pendingSchedules.forEach(({ member, schedule }) => member.schedules.push(schedule));
 
   const deletedReplacedScheduleIds = replacedScheduleIds.filter((id) => !reusedScheduleIds.has(id));
   if (deletedReplacedScheduleIds.length) rememberDeletedScheduleIds(deletedReplacedScheduleIds);
@@ -3298,8 +3322,8 @@ function addSchedule(event) {
   commit({ prioritizeRender: true });
 }
 
-function hasOverlappingSchedule(member, nextSchedule) {
-  return (member.schedules || []).some((schedule) =>
+function findOverlappingSchedule(member, nextSchedule) {
+  return (member.schedules || []).find((schedule) =>
     isSameScheduleSlot(schedule, nextSchedule) && doSchedulePeriodsOverlap(member, schedule, nextSchedule),
   );
 }
@@ -4678,8 +4702,9 @@ function syncScheduleScopeFields() {
   const showStartDate = !isMakeup && scope === "weekly";
 
   elements.makeupDateField.hidden = !showDate;
+  elements.scheduleStartDateField.hidden = !showStartDate;
   elements.scheduleForm.date.required = showDate;
-  elements.scheduleForm.startDate.required = false;
+  elements.scheduleForm.startDate.required = showStartDate;
   elements.scheduleForm.endDate.required = false;
   if (dateLabel) dateLabel.textContent = isMakeup ? "보강 날짜" : "적용 날짜";
 
@@ -4693,9 +4718,9 @@ function syncScheduleScopeFields() {
   }
 }
 
-function syncScheduleStartDateDefault() {
+function syncScheduleStartDateDefault({ force = false } = {}) {
   if (getScheduleScope() !== "weekly") return;
-  if (elements.scheduleForm.dataset.mode !== "edit") return;
+  if (!force && elements.scheduleForm.startDate.value) return;
   elements.scheduleForm.startDate.value = getDateForScheduleDay(Number(elements.scheduleForm.day.value || getSelectedAttendanceDate().getDay()));
   elements.scheduleForm.endDate.value = "";
 }
