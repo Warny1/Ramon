@@ -143,6 +143,12 @@
   }
 
   async function syncChanges(previous, next) {
+    let settingsChanged = serialize(previous.settings) !== serialize(next.settings);
+    if (settingsChanged) {
+      await preserveDeletionTombstones(next.settings);
+      settingsChanged = serialize(previous.settings) !== serialize(next.settings);
+    }
+
     const deletedMemberIds = settingIdSet(next.settings.deletedMemberIds);
     const deletedPaymentIds = settingIdSet(next.settings.deletedPaymentIds);
     const deletedScheduleIds = settingIdSet(next.settings.deletedScheduleIds);
@@ -173,7 +179,6 @@
     ]);
     await deleteRows(TABLES.members, memberDeletes);
 
-    const settingsChanged = serialize(previous.settings) !== serialize(next.settings);
     if (settingsChanged) {
       await upsertRows(TABLES.settings, [
         {
@@ -205,6 +210,15 @@
       await deleteRows(TABLES.schedules, deletedIds);
       await upsertRows(TABLES.schedules, rows);
     }
+  }
+
+  async function preserveDeletionTombstones(settings) {
+    const rows = await request(TABLES.settings, `?id=eq.${encodeURIComponent(SETTINGS_ID)}&select=data`);
+    const remoteSettings = rows[0]?.data || {};
+
+    ["deletedMemberIds", "deletedMemberKeys", "deletedPaymentIds", "deletedScheduleIds"].forEach((key) => {
+      settings[key] = mergeSettingIds(remoteSettings[key], settings[key]);
+    });
   }
 
   async function preserveClosedScheduleRows(rows, nextSchedules) {
@@ -239,9 +253,13 @@
   }
 
   function settingIdSet(value) {
-    return new Set((Array.isArray(value) ? value : [])
+    return new Set(mergeSettingIds(value));
+  }
+
+  function mergeSettingIds(...groups) {
+    return [...new Set(groups.flatMap((value) => (Array.isArray(value) ? value : []))
       .map((item) => String(item || "").trim())
-      .filter(Boolean));
+      .filter(Boolean))];
   }
 
   async function upsertRows(table, rows) {

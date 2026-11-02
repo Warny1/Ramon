@@ -335,4 +335,27 @@ await Promise.all([
 assert.equal(tables.schedules.size, 1, "같은 원본 시간표를 두 기기가 수정해도 row가 둘로 늘어나면 안 됩니다.");
 assert.equal(tables.schedules.has("schedule-stable"), true, "수정 중에도 원본 시간표 ID를 유지해야 합니다.");
 
+resetTables();
+
+const memberTombstoneInitial = {
+  lessonTypes: [],
+  deletedMemberKeys: ["정보윤|01071432042"],
+  members: [],
+};
+
+const tombstoneFreshDevice = createEngine();
+await tombstoneFreshDevice.replaceAll(memberTombstoneInitial);
+
+const tombstoneStaleDevice = createEngine();
+const tombstoneStaleState = structuredClone((await tombstoneStaleDevice.load()).data);
+tombstoneStaleState.deletedMemberKeys = [];
+tombstoneStaleState.scheduleBoardLabels = { admin: "관리자", coach1: "코치1" };
+await tombstoneStaleDevice.flush(tombstoneStaleState);
+
+assert.deepEqual(
+  tables.app_settings.get("member-desk").data.deletedMemberKeys,
+  ["정보윤|01071432042"],
+  "오래된 기기의 설정 저장이 삭제된 회원 보호 기록을 지우면 안 됩니다.",
+);
+
 console.log("동시 기기 출석/결제 저장 충돌 테스트 통과");
