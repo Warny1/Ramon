@@ -42,7 +42,7 @@ const seedData = {
   },
   paymentHistoryPassword: "0000",
   deletedMemberIds: [],
-  deletedMemberKeys: [],
+  deletedMemberTombstones: [],
   deletedPaymentIds: [],
   deletedScheduleIds: [],
   closedSchedules: [],
@@ -535,7 +535,10 @@ function mergeSharedData(localData, remoteData) {
   const local = Array.isArray(localData?.members) ? cloneData(localData) : cloneData(seedData);
   const remote = Array.isArray(remoteData?.members) ? cloneData(remoteData) : cloneData(seedData);
   const deletedMemberIds = mergeUniqueValues(local.deletedMemberIds, remote.deletedMemberIds);
-  const deletedMemberKeys = mergeUniqueValues(local.deletedMemberKeys, remote.deletedMemberKeys);
+  const deletedMemberTombstones = normalizeDeletedMemberTombstones([
+    ...(local.deletedMemberTombstones || []),
+    ...(remote.deletedMemberTombstones || []),
+  ]);
   const deletedPaymentIds = mergeUniqueValues(local.deletedPaymentIds, remote.deletedPaymentIds);
   const deletedScheduleIds = mergeUniqueValues(local.deletedScheduleIds, remote.deletedScheduleIds);
   const closedSchedules = normalizeClosedSchedules([
@@ -551,7 +554,7 @@ function mergeSharedData(localData, remoteData) {
     ...local,
     ...remote,
     deletedMemberIds,
-    deletedMemberKeys,
+    deletedMemberTombstones,
     deletedPaymentIds,
     deletedScheduleIds,
     closedSchedules,
@@ -597,7 +600,7 @@ function normalizeAppSettings() {
   state.scheduleBoardLabels = normalizeScheduleBoardLabels(state.scheduleBoardLabels);
   state.paymentHistoryPassword = normalizePaymentHistoryPassword(state.paymentHistoryPassword);
   state.deletedMemberIds = mergeUniqueValues(state.deletedMemberIds);
-  state.deletedMemberKeys = mergeUniqueValues(state.deletedMemberKeys);
+  state.deletedMemberTombstones = normalizeDeletedMemberTombstones(state.deletedMemberTombstones);
   state.deletedPaymentIds = mergeUniqueValues(state.deletedPaymentIds);
   state.deletedScheduleIds = mergeUniqueValues(state.deletedScheduleIds);
   state.closedSchedules = normalizeClosedSchedules(state.closedSchedules);
@@ -875,6 +878,27 @@ function getMemberIdentityKey(member) {
   return name && phone ? `${name}|${phone}` : "";
 }
 
+function normalizeDeletedMemberTombstones(items = []) {
+  const tombstonesByKey = new Map();
+  (items || []).forEach((item) => {
+    const memberKey = String(item?.memberKey || "").trim();
+    const deletedAt = String(item?.deletedAt || "").trim();
+    if (!memberKey || !deletedAt) return;
+    const existing = tombstonesByKey.get(memberKey);
+    if (!existing || deletedAt > existing.deletedAt) {
+      tombstonesByKey.set(memberKey, { memberKey, deletedAt });
+    }
+  });
+  return [...tombstonesByKey.values()];
+}
+
+function isMemberRecordBeforeDeletion(member, tombstone) {
+  if (!tombstone) return false;
+  if (String(member?.identityConfirmedAt || "").trim()) return false;
+  const createdAt = String(member?.createdAt || "").trim();
+  return !createdAt || createdAt <= tombstone.deletedAt;
+}
+
 function deduplicateSchedules(schedules = []) {
   const schedulesByKey = new Map();
 
@@ -963,7 +987,7 @@ function mergeRecordsById(first = [], second = []) {
 function deduplicateMemberData(data) {
   if (!Array.isArray(data.members)) return data;
   data.deletedMemberIds = mergeUniqueValues(data.deletedMemberIds);
-  data.deletedMemberKeys = mergeUniqueValues(data.deletedMemberKeys);
+  data.deletedMemberTombstones = normalizeDeletedMemberTombstones(data.deletedMemberTombstones);
   data.deletedPaymentIds = mergeUniqueValues(data.deletedPaymentIds);
   data.deletedScheduleIds = mergeUniqueValues(data.deletedScheduleIds);
   data.closedSchedules = normalizeClosedSchedules([
@@ -972,7 +996,7 @@ function deduplicateMemberData(data) {
   ]);
   data.scheduleExclusions = normalizeScheduleExclusions(data.scheduleExclusions);
   const deletedMemberIds = new Set(data.deletedMemberIds);
-  const deletedMemberKeys = new Set(data.deletedMemberKeys);
+  const deletedMemberTombstones = new Map(data.deletedMemberTombstones.map((item) => [item.memberKey, item]));
   const deletedPaymentIds = new Set(data.deletedPaymentIds);
   const deletedScheduleIds = new Set(data.deletedScheduleIds);
   const closedScheduleEndDates = new Map(data.closedSchedules.map((item) => [item.scheduleId, item.endDate]));
@@ -980,7 +1004,7 @@ function deduplicateMemberData(data) {
   const membersByKey = new Map();
   data.members.forEach((member) => {
     if (deletedMemberIds.has(member.id)) return;
-    if (deletedMemberKeys.has(getMemberIdentityKey(member))) {
+    if (isMemberRecordBeforeDeletion(member, deletedMemberTombstones.get(getMemberIdentityKey(member)))) {
       data.deletedMemberIds = mergeUniqueValues(data.deletedMemberIds, [member.id]);
       return;
     }
@@ -1089,17 +1113,20 @@ function rememberDeletedMemberIds(ids = []) {
   state.deletedMemberIds = mergeUniqueValues(state.deletedMemberIds, ids);
 }
 
-function rememberDeletedMemberKeys(members = []) {
-  state.deletedMemberKeys = mergeUniqueValues(
-    state.deletedMemberKeys,
-    members.map(getMemberIdentityKey),
-  );
+function rememberDeletedMemberTombstones(members = []) {
+  const tombstones = members.map((member) => ({
+    memberKey: getMemberIdentityKey(member),
+    deletedAt: todayISO,
+  }));
+  state.deletedMemberTombstones = normalizeDeletedMemberTombstones([
+    ...(state.deletedMemberTombstones || []),
+    ...tombstones,
+  ]);
 }
 
-function allowMemberIdentity(member) {
-  const memberKey = getMemberIdentityKey(member);
-  if (!memberKey) return;
-  state.deletedMemberKeys = (state.deletedMemberKeys || []).filter((key) => key !== memberKey);
+function confirmMemberIdentity(member) {
+  if (!getMemberIdentityKey(member)) return;
+  member.identityConfirmedAt = todayISO;
 }
 
 function rememberDeletedPaymentIds(ids = []) {
@@ -2945,7 +2972,7 @@ function addMember(event) {
     existing.phone = nextPhone;
     existing.memo = nextMemo;
     existing.defaultLessonType = nextLessonType;
-    allowMemberIdentity(existing);
+    confirmMemberIdentity(existing);
     syncMemberSchedulesToLessonType(existing, nextLessonType);
     applyMemberScheduleStartFields(existing);
     selectedMemberId = existing.id;
@@ -2971,8 +2998,8 @@ function addMember(event) {
   const initialPayment = createInlineMemberPayment(form);
   if (initialPayment) member.payments.push(initialPayment);
 
-  // 현재 앱에서 의도적으로 다시 등록한 회원은 삭제 보호를 해제한다.
-  allowMemberIdentity(member);
+  // 현재 앱에서 의도적으로 다시 등록한 회원은 이전 기록과 구분한다.
+  confirmMemberIdentity(member);
   state.members.unshift(member);
   selectedMemberId = member.id;
   if (isMobileLayout()) setMobileView("detail");
@@ -3637,7 +3664,7 @@ function deleteSelectedMember() {
   if (!ok) return;
 
   rememberDeletedMemberIds([member.id]);
-  rememberDeletedMemberKeys([member]);
+  rememberDeletedMemberTombstones([member]);
   state.members = state.members.filter((item) => item.id !== member.id);
   selectedMemberId = state.members[0]?.id ?? null;
   if (isMobileLayout()) setMobileView("members");
@@ -3997,7 +4024,7 @@ function importPastedMembers() {
         payments: [],
         attendances: [],
       };
-      allowMemberIdentity(member);
+      confirmMemberIdentity(member);
       state.members.push(member);
       added += 1;
     });

@@ -339,7 +339,7 @@ resetTables();
 
 const memberTombstoneInitial = {
   lessonTypes: [],
-  deletedMemberKeys: ["정보윤|01071432042"],
+  deletedMemberTombstones: [{ memberKey: "정보윤|01071432042", deletedAt: "2026-11-03" }],
   members: [],
 };
 
@@ -348,13 +348,13 @@ await tombstoneFreshDevice.replaceAll(memberTombstoneInitial);
 
 const tombstoneStaleDevice = createEngine();
 const tombstoneStaleState = structuredClone((await tombstoneStaleDevice.load()).data);
-tombstoneStaleState.deletedMemberKeys = [];
+tombstoneStaleState.deletedMemberTombstones = [];
 tombstoneStaleState.scheduleBoardLabels = { admin: "관리자", coach1: "코치1" };
 await tombstoneStaleDevice.flush(tombstoneStaleState);
 
 assert.deepEqual(
-  tables.app_settings.get("member-desk").data.deletedMemberKeys,
-  ["정보윤|01071432042"],
+  tables.app_settings.get("member-desk").data.deletedMemberTombstones,
+  [{ memberKey: "정보윤|01071432042", deletedAt: "2026-11-03" }],
   "오래된 기기의 설정 저장이 삭제된 회원 보호 기록을 지우면 안 됩니다.",
 );
 

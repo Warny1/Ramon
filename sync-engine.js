@@ -216,9 +216,13 @@
     const rows = await request(TABLES.settings, `?id=eq.${encodeURIComponent(SETTINGS_ID)}&select=data`);
     const remoteSettings = rows[0]?.data || {};
 
-    ["deletedMemberIds", "deletedMemberKeys", "deletedPaymentIds", "deletedScheduleIds"].forEach((key) => {
+    ["deletedMemberIds", "deletedPaymentIds", "deletedScheduleIds"].forEach((key) => {
       settings[key] = mergeSettingIds(remoteSettings[key], settings[key]);
     });
+    settings.deletedMemberTombstones = mergeMemberTombstones(
+      remoteSettings.deletedMemberTombstones,
+      settings.deletedMemberTombstones,
+    );
   }
 
   async function preserveClosedScheduleRows(rows, nextSchedules) {
@@ -260,6 +264,18 @@
     return [...new Set(groups.flatMap((value) => (Array.isArray(value) ? value : []))
       .map((item) => String(item || "").trim())
       .filter(Boolean))];
+  }
+
+  function mergeMemberTombstones(...groups) {
+    const tombstonesByKey = new Map();
+    groups.flatMap((value) => (Array.isArray(value) ? value : [])).forEach((item) => {
+      const memberKey = String(item?.memberKey || "").trim();
+      const deletedAt = String(item?.deletedAt || "").trim();
+      if (!memberKey || !deletedAt) return;
+      const existing = tombstonesByKey.get(memberKey);
+      if (!existing || deletedAt > existing.deletedAt) tombstonesByKey.set(memberKey, { memberKey, deletedAt });
+    });
+    return [...tombstonesByKey.values()];
   }
 
   async function upsertRows(table, rows) {
