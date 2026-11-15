@@ -3293,6 +3293,16 @@ function addSchedule(event) {
   const reusedScheduleIds = new Set();
   const pendingSchedules = [];
   const conflicts = [];
+  // 만료 회원을 다시 등록할 때는 예전 시간표를 부활시키지 않는다.
+  // 새 시간표가 저장되면 이전 일정은 재등록일 전날에 종료한다.
+  const expiredMemberIds = new Set(
+    !isEdit
+      ? memberIds.filter((memberId) => {
+        const member = state.members.find((item) => item.id === memberId);
+        return member && getMemberLifecycleStatus(member) === "expired";
+      })
+      : [],
+  );
 
   try {
     const shouldSplitWeeklyEdit = isEdit && editingScheduleGroup && scheduleScope === "weekly" && scheduleStartDate;
@@ -3319,8 +3329,11 @@ function addSchedule(event) {
       const member = state.members.find((item) => item.id === memberId);
       if (!member) return;
       const memberScheduleStartDate = !isMakeup && scheduleScope === "weekly"
-        ? scheduleStartDate || (!isEdit ? getMemberFirstPaymentDate(member) : "") || getDateForScheduleDay(scheduleDay)
+        ? scheduleStartDate || (expiredMemberIds.has(member.id)
+          ? getDateForScheduleDay(scheduleDay)
+          : (!isEdit ? getMemberFirstPaymentDate(member) : "") || getDateForScheduleDay(scheduleDay))
         : "";
+      const existingScheduleIds = new Set(member.schedules.map((schedule) => schedule.id));
 
       scheduleTimes.forEach((time, timeIndex) => {
         expectedScheduleCount += 1;
@@ -3351,7 +3364,10 @@ function addSchedule(event) {
         const overlappingSchedule = findOverlappingSchedule({
           ...member,
           schedules: [...member.schedules, ...pendingForMember],
-        }, nextSchedule);
+        }, nextSchedule, {
+          shouldIgnoreSchedule: (schedule) =>
+            expiredMemberIds.has(member.id) && existingScheduleIds.has(schedule.id),
+        });
         if (overlappingSchedule) {
           conflicts.push({ member, schedule: overlappingSchedule });
           return;
@@ -3379,6 +3395,20 @@ function addSchedule(event) {
     return;
   }
 
+  const restartDates = new Map();
+  pendingSchedules.forEach(({ member, schedule }) => {
+    if (!expiredMemberIds.has(member.id)) return;
+    const restartDate = schedule.date || schedule.startDate;
+    const currentRestartDate = restartDates.get(member.id);
+    if (restartDate && (!currentRestartDate || restartDate < currentRestartDate)) {
+      restartDates.set(member.id, restartDate);
+    }
+  });
+  restartDates.forEach((restartDate, memberId) => {
+    const member = state.members.find((item) => item.id === memberId);
+    if (member) retireExpiredMemberSchedulesBeforeDate(member, restartDate);
+  });
+
   pendingSchedules.forEach(({ member, schedule }) => member.schedules.push(schedule));
 
   const deletedReplacedScheduleIds = replacedScheduleIds.filter((id) => !reusedScheduleIds.has(id));
@@ -3391,9 +3421,12 @@ function addSchedule(event) {
   commit({ prioritizeRender: true });
 }
 
-function findOverlappingSchedule(member, nextSchedule) {
+function findOverlappingSchedule(member, nextSchedule, options = {}) {
+  const shouldIgnoreSchedule = options.shouldIgnoreSchedule || (() => false);
   return (member.schedules || []).find((schedule) =>
-    isSameMemberScheduleTime(schedule, nextSchedule) && doMemberScheduleOccurrencesOverlap(member, schedule, nextSchedule),
+    !shouldIgnoreSchedule(schedule) &&
+      isSameMemberScheduleTime(schedule, nextSchedule) &&
+      doMemberScheduleOccurrencesOverlap(member, schedule, nextSchedule),
   );
 }
 
@@ -3568,6 +3601,29 @@ function closeScheduleBeforeDate(member, schedule, date) {
 
   schedule.endDate = endDate;
   return endDate;
+}
+
+function retireExpiredMemberSchedulesBeforeDate(member, restartDate) {
+  const closedSchedules = [];
+  const deletedScheduleIds = [];
+
+  (member.schedules || []).slice().forEach((schedule) => {
+    if (schedule.date) {
+      if (String(schedule.date) >= restartDate) {
+        member.schedules = member.schedules.filter((item) => item.id !== schedule.id);
+        deletedScheduleIds.push(schedule.id);
+      }
+      return;
+    }
+
+    if (schedule.endDate && String(schedule.endDate) < restartDate) return;
+    const endDate = closeScheduleBeforeDate(member, schedule, restartDate);
+    if (endDate) closedSchedules.push({ scheduleId: schedule.id, endDate });
+    else deletedScheduleIds.push(schedule.id);
+  });
+
+  if (closedSchedules.length) rememberClosedSchedules(closedSchedules);
+  if (deletedScheduleIds.length) rememberDeletedScheduleIds(deletedScheduleIds);
 }
 
 function markAttendance() {

@@ -86,6 +86,14 @@ assert.equal(
   "활성 주간 수업과 같은 날짜·시간의 단발 수업은 충돌해야 합니다.",
 );
 
+assert.equal(
+  findOverlap(activeMember, weekly({ id: "restart", startDate: "2026-11-15" }), {
+    shouldIgnoreSchedule: (schedule) => schedule.id === "active",
+  }),
+  undefined,
+  "만료 후 재등록 시 종료할 기존 시간표는 새 시간표 저장을 막으면 안 됩니다.",
+);
+
 const excludedMember = { ...activeMember, exclusions: [{ scheduleId: "active", date: "2026-10-26" }] };
 assert.equal(
   findOverlap(excludedMember, once("2026-10-26")),
